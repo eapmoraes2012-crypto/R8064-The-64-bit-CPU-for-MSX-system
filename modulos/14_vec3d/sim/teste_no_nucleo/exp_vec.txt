@@ -1,0 +1,456 @@
+F8 op1 sh4
+F8 op0 sh4
+F8 op2 sh2
+F8 op2 sh2
+F8 op1 sh12
+FB op10
+FA immaa
+F8 op3 sh15
+F8 op0 sh2
+FA imm51
+F8 op0 sh7
+F8 op2 sh10
+F8 op3 sh8
+F8 op1 sh11
+F8 op0 sh12
+F8 op2 sh9
+F8 op2 sh0
+F8 op1 sh8
+FA immb8
+FA imm4c
+F8 op1 sh15
+FA imma3
+FB op10
+F8 op2 sh15
+F8 op3 sh2
+F8 op1 sh14
+FB op9
+F8 op1 sh7
+F8 op2 sh13
+F8 op1 sh2
+FA imm66
+FB op9
+F8 op2 sh2
+F8 op3 sh8
+FA imm34
+F8 op0 sh12
+F8 op1 sh5
+FA imm3e
+F8 op0 sh9
+F8 op3 sh3
+F8 op3 sh15
+FB op10
+F8 op0 sh12
+FA imm9a
+F8 op0 sh0
+F8 op0 sh2
+F8 op2 sh2
+F8 op1 sh8
+FA imme7
+FA imm6e
+F8 op1 sh12
+F8 op2 sh5
+FB op9
+FB op9
+FB op9
+FB op9
+F8 op1 sh6
+FB op9
+F8 op2 sh0
+F8 op1 sh4
+FA imm3e
+F8 op2 sh0
+F8 op0 sh11
+F8 op3 sh9
+F8 op0 sh5
+F8 op2 sh11
+FA immc1
+F8 op3 sh3
+F8 op1 sh10
+F8 op0 sh3
+FA imm11
+F8 op0 sh0
+F8 op0 sh7
+F8 op3 sh0
+FB op9
+F8 op2 sh2
+F8 op3 sh8
+FB op10
+F8 op0 sh4
+FA immdc
+FB op9
+F8 op1 sh14
+F8 op2 sh11
+FB op9
+FA imm0c
+F8 op0 sh6
+F8 op1 sh1
+F8 op0 sh11
+F8 op0 sh13
+FB op9
+FB op9
+FB op9
+F8 op1 sh8
+F8 op3 sh3
+F8 op0 sh1
+F8 op2 sh6
+FA imm12
+F8 op2 sh5
+F8 op0 sh11
+F8 op3 sh7
+F8 op0 sh2
+FB op10
+FA imm0f
+FA imm89
+FB op9
+F8 op2 sh1
+F8 op1 sh3
+FB op9
+F8 op2 sh2
+FA immfb
+F8 op0 sh8
+FB op9
+FB op9
+FA imm8c
+FB op10
+FB op10
+F8 op1 sh3
+F8 op3 sh8
+F8 op1 sh13
+FA immf2
+FA imm6e
+F8 op3 sh9
+FA immf9
+F8 op2 sh8
+F8 op0 sh9
+FA imm56
+F8 op2 sh9
+F8 op2 sh7
+F8 op2 sh7
+FA imm12
+F8 op3 sh7
+FB op9
+F8 op1 sh15
+F8 op3 sh2
+FB op10
+F8 op2 sh7
+F8 op1 sh5
+F8 op2 sh9
+F8 op1 sh11
+F8 op2 sh2
+FA immab
+F8 op3 sh1
+FA immc2
+F8 op0 sh8
+FA immb1
+F8 op3 sh10
+FB op9
+FA immb6
+FB op10
+F8 op1 sh9
+FB op10
+FA imm68
+F8 op0 sh11
+FB op10
+FA imm32
+FA imm40
+F8 op3 sh8
+FA imm1f
+F8 op0 sh0
+FA immcc
+F8 op3 sh1
+F8 op2 sh13
+F8 op0 sh14
+FA imm05
+F8 op1 sh5
+F8 op0 sh3
+FB op9
+FA imm16
+F8 op0 sh6
+F8 op2 sh3
+F8 op0 sh6
+F8 op3 sh15
+F8 op0 sh0
+FA imm00
+F8 op1 sh8
+FA imm2f
+F8 op1 sh2
+F8 op2 sh5
+F8 op1 sh1
+F8 op3 sh9
+FA imm96
+F8 op3 sh1
+FB op10
+F8 op1 sh13
+FA imm7e
+F8 op0 sh5
+F8 op3 sh3
+F8 op0 sh14
+FA immee
+F8 op3 sh13
+FA immaf
+F8 op3 sh2
+FA imm4e
+FB op10
+F8 op1 sh0
+FB op10
+F8 op0 sh11
+F8 op0 sh1
+F8 op3 sh10
+F8 op2 sh10
+FA imm16
+F8 op3 sh8
+F8 op1 sh13
+FA imm58
+F8 op0 sh0
+FB op10
+FB op10
+F8 op3 sh1
+FA imme1
+F8 op0 sh4
+F8 op0 sh3
+FA immce
+FA imm25
+FA immf1
+FB op9
+F8 op3 sh4
+F8 op1 sh7
+FA immff
+FB op10
+F8 op0 sh14
+F8 op3 sh15
+FB op10
+F8 op1 sh3
+F8 op0 sh11
+F8 op3 sh1
+F8 op1 sh9
+F8 op1 sh12
+FA imm29
+F8 op1 sh0
+FB op9
+F8 op1 sh13
+FA immea
+F8 op0 sh3
+F8 op2 sh14
+FB op9
+FB op10
+FA immfc
+FA immc9
+FB op9
+F8 op3 sh9
+F8 op2 sh0
+F8 op1 sh15
+F8 op0 sh13
+F8 op3 sh4
+FA imm03
+F8 op0 sh2
+F8 op0 sh15
+F8 op1 sh0
+F8 op1 sh10
+FB op9
+F8 op1 sh9
+F8 op1 sh9
+F8 op1 sh1
+F8 op3 sh13
+F8 op3 sh1
+F8 op3 sh2
+FA immf3
+F8 op1 sh8
+FA imm04
+F8 op0 sh10
+FB op9
+F8 op1 sh15
+FB op10
+F8 op2 sh8
+F8 op0 sh0
+F8 op1 sh5
+FA immd6
+F8 op0 sh10
+F8 op0 sh5
+F8 op0 sh8
+FA imm51
+FB op10
+FB op9
+FA immf0
+F8 op1 sh9
+F8 op0 sh6
+F8 op1 sh4
+F8 op2 sh15
+F8 op0 sh13
+F8 op2 sh8
+F8 op3 sh9
+F8 op0 sh14
+FA imm37
+F8 op1 sh8
+FB op10
+FB op9
+FB op10
+FA imma0
+F8 op0 sh7
+F8 op3 sh5
+F8 op0 sh5
+F8 op3 sh14
+FA imm06
+F8 op0 sh15
+F8 op3 sh15
+F8 op1 sh6
+F8 op2 sh14
+F8 op2 sh12
+F8 op0 sh9
+FA imm86
+FB op9
+F8 op1 sh3
+F8 op1 sh15
+FB op9
+FB op9
+FB op10
+F8 op1 sh0
+F8 op2 sh2
+F8 op3 sh5
+FB op10
+F8 op3 sh5
+F8 op0 sh4
+F8 op2 sh12
+FB op9
+F8 op0 sh11
+FB op10
+F8 op3 sh14
+FB op9
+FA imm00
+FA imm87
+F8 op2 sh2
+FA imm12
+F8 op1 sh14
+F8 op1 sh2
+FB op9
+F8 op3 sh5
+F8 op2 sh13
+F8 op1 sh10
+F8 op2 sh5
+F8 op0 sh14
+F8 op1 sh4
+F8 op0 sh4
+FA imma1
+FA imm9c
+F8 op3 sh14
+F8 op2 sh15
+F8 op3 sh2
+FB op9
+F8 op1 sh5
+FB op9
+F8 op3 sh12
+F8 op0 sh7
+FB op9
+F8 op2 sh7
+FB op9
+FB op10
+F8 op2 sh15
+F8 op0 sh10
+F8 op0 sh12
+F8 op0 sh2
+FA imm2d
+F8 op0 sh15
+F8 op0 sh0
+FB op10
+F8 op2 sh13
+F8 op1 sh11
+F8 op2 sh5
+F8 op3 sh10
+FA imm64
+FB op9
+F8 op0 sh11
+F8 op1 sh5
+F8 op3 sh11
+FB op10
+FB op9
+F8 op0 sh7
+FA imm5a
+FA imm90
+F8 op1 sh11
+F8 op3 sh15
+F8 op0 sh3
+F8 op1 sh15
+F8 op1 sh2
+FA immb5
+F8 op3 sh10
+FB op10
+F8 op3 sh5
+FB op9
+FB op9
+F8 op0 sh14
+F8 op0 sh10
+F8 op3 sh15
+F8 op3 sh10
+FB op9
+FB op10
+F8 op1 sh7
+FB op10
+F8 op0 sh9
+F8 op2 sh12
+F8 op0 sh11
+FB op9
+F8 op1 sh13
+F8 op3 sh14
+FA immab
+F8 op3 sh2
+F8 op2 sh12
+FA immc8
+F8 op0 sh14
+F8 op0 sh1
+FB op10
+F8 op2 sh11
+FB op9
+FB op9
+F8 op3 sh14
+FA imm47
+FB op9
+F8 op1 sh3
+F8 op2 sh6
+F8 op0 sh10
+F8 op1 sh3
+FA imm45
+F8 op1 sh0
+FA immfb
+F8 op2 sh10
+FB op9
+F8 op0 sh4
+F8 op1 sh0
+F8 op3 sh10
+F8 op3 sh7
+FB op10
+F8 op0 sh11
+F8 op2 sh6
+FA imma8
+F8 op1 sh3
+F8 op0 sh11
+FA imm97
+FB op10
+F8 op3 sh13
+F8 op2 sh0
+F8 op1 sh6
+FB op9
+F8 op3 sh15
+FA immb1
+F8 op1 sh0
+F8 op2 sh11
+F8 op0 sh7
+F8 op2 sh6
+FB op9
+F8 op2 sh9
+F8 op0 sh9
+F8 op2 sh6
+F8 op0 sh8
+F8 op1 sh15
+FB op9
+FA immf9
+FB op9
+F8 op2 sh5
+F8 op2 sh13
+F8 op0 sh12
+F8 op3 sh13
+F8 op1 sh6
+FA immd0
+F8 op2 sh12
+FB op9
+F8 op1 sh15
+FA imm6e

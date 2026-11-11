@@ -1,0 +1,132 @@
+Generating RTLIL representation for module `\DFF'.
+Generating RTLIL representation for module `\DFFE'.
+Generating RTLIL representation for module `\DFFS'.
+Generating RTLIL representation for module `\DFFSE'.
+Generating RTLIL representation for module `\DFFR'.
+Generating RTLIL representation for module `\DFFRE'.
+Generating RTLIL representation for module `\DFFP'.
+Generating RTLIL representation for module `\DFFPE'.
+Generating RTLIL representation for module `\DFFC'.
+Generating RTLIL representation for module `\DFFCE'.
+Generating RTLIL representation for module `\DFFN'.
+Generating RTLIL representation for module `\DFFNE'.
+Generating RTLIL representation for module `\DFFNS'.
+Generating RTLIL representation for module `\DFFNSE'.
+Generating RTLIL representation for module `\DFFNR'.
+Generating RTLIL representation for module `\DFFNRE'.
+Generating RTLIL representation for module `\DFFNP'.
+Generating RTLIL representation for module `\DFFNPE'.
+Generating RTLIL representation for module `\DFFNC'.
+Generating RTLIL representation for module `\DFFNCE'.
+Generating RTLIL representation for module `\RAM16SDP4'.
+Generating RTLIL representation for module `\SPX9'.
+Generating RTLIL representation for module `\SDPX9B'.
+Generating RTLIL representation for module `\DPX9B'.
+3.4.9. Executing PROC_DFF pass (convert process syncs to FFs).
+3.12.6. Executing OPT_DFF pass (perform DFF optimizations).
+3.12.13. Executing OPT_DFF pass (perform DFF optimizations).
+3.14.6. Executing OPT_DFF pass (perform DFF optimizations).
+3.14.13. Executing OPT_DFF pass (perform DFF optimizations).
+3.14.20. Executing OPT_DFF pass (perform DFF optimizations).
+3.25.6. Executing OPT_DFF pass (perform DFF optimizations).
+3.25.13. Executing OPT_DFF pass (perform DFF optimizations).
+3.26.5. Executing MEMORY_DFF pass (merging $dff cells to $memrd).
+3.30.3. Executing OPT_DFF pass (perform DFF optimizations).
+3.30.8. Executing OPT_DFF pass (perform DFF optimizations).
+3.32.6. Executing OPT_DFF pass (perform DFF optimizations).
+3.32.13. Executing OPT_DFF pass (perform DFF optimizations).
+3.34.3. Executing OPT_DFF pass (perform DFF optimizations).
+3.37. Executing DFFLEGALIZE pass (convert FFs and LATCHes to types supported by the target).
+Generating RTLIL representation for module `$_DFF_N_'.
+Generating RTLIL representation for module `$_DFF_P_'.
+Generating RTLIL representation for module `$_DFFE_PP_'.
+Generating RTLIL representation for module `$_DFFE_NP_'.
+Generating RTLIL representation for module `$_SDFF_PP0_'.
+Generating RTLIL representation for module `$_SDFF_NP0_'.
+Generating RTLIL representation for module `$_SDFFE_PP0P_'.
+Generating RTLIL representation for module `$_SDFFE_NP0P_'.
+Generating RTLIL representation for module `$_SDFF_PP1_'.
+Generating RTLIL representation for module `$_SDFF_NP1_'.
+Generating RTLIL representation for module `$_SDFFE_PP1P_'.
+Generating RTLIL representation for module `$_SDFFE_NP1P_'.
+Generating RTLIL representation for module `$_DFF_PP1_'.
+Generating RTLIL representation for module `$_DFF_NP1_'.
+Generating RTLIL representation for module `$_DFF_PP0_'.
+Generating RTLIL representation for module `$_DFF_NP0_'.
+Generating RTLIL representation for module `$_DFFE_PP1P_'.
+Generating RTLIL representation for module `$_DFFE_NP1P_'.
+Generating RTLIL representation for module `$_DFFE_PP0P_'.
+Generating RTLIL representation for module `$_DFFE_NP0P_'.
+Using template $_DFFE_PP_ for cells of type $_DFFE_PP_.
+Using template $_SDFF_PP1_ for cells of type $_SDFF_PP1_.
+Using template $_DFF_P_ for cells of type $_DFF_P_.
+Using template $_SDFF_PP0_ for cells of type $_SDFF_PP0_.
+Using template $_SDFFE_PP0P_ for cells of type $_SDFFE_PP0P_.
+Generating RTLIL representation for module `$__DFF_N__$abc9_flop'.
+Generating RTLIL representation for module `$__DFF_P__$abc9_flop'.
+3.44.3.9. Executing PROC_DFF pass (convert process syncs to FFs).
+3.44.7.6. Executing OPT_DFF pass (perform DFF optimizations).
+Replacing existing module `$__DFF_N__$abc9_flop' at D:\MSXfiles\TECHNICAL\MSX_64\CLAUDE\oss-cad-suite-windows-x64-20261104\oss-cad-suite\bin\../share/yosys/abc9_model.v:21.1-27.10.
+Generating RTLIL representation for module `$__DFF_N__$abc9_flop'.
+Replacing existing module `$__DFF_P__$abc9_flop' at D:\MSXfiles\TECHNICAL\MSX_64\CLAUDE\oss-cad-suite-windows-x64-20261104\oss-cad-suite\bin\../share/yosys/abc9_model.v:30.1-36.10.
+Generating RTLIL representation for module `$__DFF_P__$abc9_flop'.
+3.44.14.6. Executing OPT_DFF pass (perform DFF optimizations).
+3.44.14.13. Executing OPT_DFF pass (perform DFF optimizations).
+     276 DFF
+      42 DFFE
+      10 DFFS
+       3 DFFR
+      10 DFFRE
+       2 SDPX9B
+       1 DPX9B
+      24 $paramod$bf5d18c77bd32001a78ee8032ee8564d486f1b33\RAM16SDP4
+Generating RTLIL representation for module `$__DFF_x__$abc9_flop'.
+Using template $paramod$bf5d18c77bd32001a78ee8032ee8564d486f1b33\RAM16SDP4 for cells of type $paramod$bf5d18c77bd32001a78ee8032ee8564d486f1b33\RAM16SDP4.
+Generating RTLIL representation for module `$_DFF_N_'.
+Generating RTLIL representation for module `$_DFF_P_'.
+Generating RTLIL representation for module `$_DFFE_PP_'.
+Generating RTLIL representation for module `$_DFFE_NP_'.
+Generating RTLIL representation for module `$_SDFF_PP0_'.
+Generating RTLIL representation for module `$_SDFF_NP0_'.
+Generating RTLIL representation for module `$_SDFFE_PP0P_'.
+Generating RTLIL representation for module `$_SDFFE_NP0P_'.
+Generating RTLIL representation for module `$_SDFF_PP1_'.
+Generating RTLIL representation for module `$_SDFF_NP1_'.
+Generating RTLIL representation for module `$_SDFFE_PP1P_'.
+Generating RTLIL representation for module `$_SDFFE_NP1P_'.
+Generating RTLIL representation for module `$_DFF_PP1_'.
+Generating RTLIL representation for module `$_DFF_NP1_'.
+Generating RTLIL representation for module `$_DFF_PP0_'.
+Generating RTLIL representation for module `$_DFF_NP0_'.
+Generating RTLIL representation for module `$_DFFE_PP1P_'.
+Generating RTLIL representation for module `$_DFFE_NP1P_'.
+Generating RTLIL representation for module `$_DFFE_PP0P_'.
+Generating RTLIL representation for module `$_DFFE_NP0P_'.
+        1   DPX9B
+       69   LUT1
+       53   LUT2
+       75   LUT3
+      196   LUT4
+       24   RAM16SDP4
+        2   SDPX9B
+       11   ALU
+      276   DFF
+       42   DFFE
+        3   DFFR
+       10   DFFRE
+       10   DFFS
+        1   DPX9B
+       69   LUT1
+       53   LUT2
+       75   LUT3
+      196   LUT4
+       24   RAM16SDP4
+        2   SDPX9B
+       11   ALU
+      276   DFF
+       42   DFFE
+        3   DFFR
+       10   DFFRE
+       10   DFFS
+Info: Max frequency for clock 'ic.clk': 163.08 MHz (PASS at 100.00 MHz)
+Info: Max frequency for clock 'ic.clk': 115.62 MHz (PASS at 100.00 MHz)

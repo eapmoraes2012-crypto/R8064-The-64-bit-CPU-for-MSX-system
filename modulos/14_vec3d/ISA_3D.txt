@@ -1,0 +1,15 @@
+INSTRUCOES 3D DO R8064 (integradas ao nucleo em 09_core_min / 10_mode_gov) - 09/11/2026
+=====================================================================================
+Vetor = 4 lanes int16 (x,y,z,w) num registrador de 64 bits (BC, DE, HL, AX; com prefixo de banco ED 0E / ED 0D: N0-N3 / N4-N7; ED 0B = sombra).
+Formato (4 bytes, 5 com prefixo de banco):  ED <op> <mod> <imm8>      mod = rd[5:3] | rs[2:0], codigos BC=0 DE=2 HL=4 AX=7 (os mesmos de LDQ rr,imm64)
+  ED F8  VOP  rd,rs,sh   rd := rd OP rs        imm8 = (OP<<4) | sh      OP: 0 VMUL  1 VDOT4  2 VDOT3  3 VCROSS3  4 VADD  5 VSUB  6 VMIN  7 VMAX ; sh = 0..15
+  ED FB  VOP1 rd,rs      rd := OP(rs)          imm8 = (OP<<4)           OP: 9 VNEG  10 VABS     (OP 8, 11-15 reservados; no ED FB executam como VSHUF / VABS conforme o decodificador da unidade)
+  ED FA  VSHUF rd,rs,imm rd := swizzle(rs)     lane_i = rs.lane[imm[2i+1:2i]]
+Semantica: VMUL/VCROSS3/VADD/VSUB/VNEG/VABS saturam em int16 (-32768..32767); produtos e somas com arredondamento ao mais proximo: (valor + 2^(sh-1)) >>> sh.
+  VDOT4 = sum(a_i*b_i, i=0..3), VDOT3 = sem a lane w; resultado ESCALAR de 64 bits (com sinal) em rd.  VCROSS3 = (y1*z2-z1*y2, z1*x2-x1*z2, x1*y2-y1*x2, 0) >>> sh.
+  Nao alteram flags. Uma unica uop; o estagio M espera a unidade (latencia 4 clocks) pelo mesmo mecanismo de 'hold' dos acessos lentos.
+IDs de instrucao (pagina ED): 294 (F8), 295 (FA), 296 (FB); uops em 256+id; ctrl_b: len 4, bancavel. Montagem: ver sim/gen_prog_vec.py (09_core_min).
+Pendente: tempo dessas instrucoes nos modos Z80/R800 (a tabela do governador nao as conhece), forma de 3 operandos, reciproco/rsqrt, matriz x vetor microcodificada.
+
+REVISAO 10/11/2026 (2): o nucleo instancia a unidade MINIMA (parametro VEC_LANE_ALU = 0 em r8064_core_min): OP 4 VADD, 5 VSUB, 6 VMIN, 7 VMAX ficam RESERVADOS (devolvem 0).
+  Continuam: VMUL, VDOT4, VDOT3, VCROSS3 (ED F8, OP 0-3), VSHUF (ED FA), VNEG/VABS (ED FB, OP 9/10). Para a completa: VEC_LANE_ALU=1 (gen_prog_vec.py ... full gera programas com OP 4-7).

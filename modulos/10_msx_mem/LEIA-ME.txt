@@ -1,0 +1,10 @@
+MODULO 10 - Memoria mapeada MSX + MegaRAM (msx_mem.v)  -  SIMULADO: PASS 0 erros (Icarus, 04/11/2026, pelo usuario); sintese ainda nao feita
+Compilar: cd sim; iverilog -g2012 -o t.vvp tb_msx_mem.v ../rtl/msx_mem.v && vvp t.vvp   (espera "PASS: msx_mem 0 erros")
+- Mapper: portas FC,FD,FE,FF = segmento das paginas 0000,4000,8000,C000 (16 KB). Leitura devolve o valor com bits nao usados em 1. Reset 3,2,1,0.
+- MegaRAM ASCII8: bancos de 8 KB para 4000,6000,8000,A000; escrita em 6000-67FF,6800-6FFF,7000-77FF,7800-7FFF escolhe o banco.
+- Slot primario A8h incluido (SLOT_MAP=3, SLOT_MEGA=2, parametros). Slots expandidos (FFFFh) NAO implementados.
+- Uma instancia por nucleo (registradores proprios, memoria fisica compartilhada pelo arbitro). Entrada 'en' desliga o bloco (R8064 fora do modo Z80).
+SUPOSICOES A CONFIRMAR: (1) portas FC,FD,FE,FF (o pedido dizia FC,FC,FE,FF); (2) modo escrita da MegaRAM via IN/OUT 8Eh; em modo de escrita, escrever em 6000-7FFF
+ tambem grava na RAM; (3) tamanhos padrao: mapper 1 MB (base 0), MegaRAM 1 MB (base 100000h); cabe ate 4 MB / 2 MB por parametro.
+Custo estimado (nao medido): ~120 LUT4 e ~75 FF por instancia, ~240 LUT4 para dois nucleos.
+Pendente: ligar ao arbitro/SDRAM (modulo 05), instanciar no Z80 classico (ainda nao escrito) e no R8064, expansao de slot.

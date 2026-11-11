@@ -1,0 +1,35 @@
+
+4. Printing statistics.
+
+=== msx_if ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      571 wires
+     1070 wire bits
+      571 public wires
+     1070 public wire bits
+       21 ports
+       63 port bits
+      719 cells
+        2   $scopeinfo
+       92   ALU
+       94   DFF
+        2   DFFE
+       84   DFFR
+       57   DFFRE
+        8   DFFS
+        2   DPX9B
+        1   GND
+       41   IBUF
+       90   LUT1
+       42   LUT2
+       30   LUT3
+       83   LUT4
+       47   MUX2_LUT5
+       14   MUX2_LUT6
+        5   MUX2_LUT7
+        2   MUX2_LUT8
+       22   OBUF
+        1   VCC
+

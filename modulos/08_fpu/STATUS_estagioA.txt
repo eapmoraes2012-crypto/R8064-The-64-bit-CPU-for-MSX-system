@@ -1,0 +1,7 @@
+FPU estagio A - status (atualizado)
+Arquitetura: rtl/fpu_half.v = FPU em clk2 = clk/2 (exatamente metade do pipeline; divisor alternador com reset, em fase com clk).
+  Pipeline fica a 100 MHz; nucleo fpu_alu roda a 50 MHz. Travessia de dominios por toggle (req_t/dt2). Interface igual a do fpu_alu.
+Funcional: sim/tb_half.v + vetores.txt: 39000 vetores, 0 erros (latencia em clocks do pipeline: ADD med 43, MUL 43, DIV 123, SQRT 125, CMP 21).
+Timing (nextpnr GW2AR-LV18QN88C8/I7, router2, seed padrao): clk2 64,65 MHz (alvo 50: PASSA, folga 29%); clk 139,4 MHz (alvo 100: PASSA).
+Observacao: caminhos clk<->clk2 nao sao analisados pelo nextpnr (sao em fase; protocolo por toggle com operandos estaveis).
+Pendente: testes de mutacao do fpu_alu/fpu_half, resultados_modulo08.txt, LEIA-ME, zip; depois estagio B (fpu_top) e C (CORDIC/FREM).

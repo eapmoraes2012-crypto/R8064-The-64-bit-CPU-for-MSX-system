@@ -1,0 +1,21 @@
+MODULO 07 - MMU / TLB (mmu.v)   [premissas minhas: a planilha so define PGINV, PROT, JP USER, LDCR/STCR]
+Projeto: VA 64 bits traduzidos em 39 (estilo Sv39: bits 63:39 = copia do 38, senao falta de pagina), pagina 4 KB, megapagina 2 MB (folha no nivel 1), 3 niveis, PTE 64 b:
+  [0]V [1]R [2]W [3]X [4]U [5]G [6]A [7]D [29:10]PPN. A/D gerenciados por software (A=0 ou escrita com D=0 -> causa 3). Usuario so U=1; supervisor nao executa U=1.
+  PA 32 bits (byte); memoria de 4 MB (indice de palavra de 19 b): PPN[19:10]!=0 -> causa 4. Causas: 1 pagina, 2 permissao, 3 A/D, 4 fora da memoria.
+  TLB totalmente associativa, 16 entradas (parametro NENT), ASID 8 b, bit global, descarga: tudo / por VA (PGINV, vale p/ megapagina) / por ASID (preserva globais).
+  2 estagios (1: comparacao de todas as entradas -> vetor mt2 registrado; 2: selecao + permissoes), 1 traducao por clock; caminhador de hardware pelo protocolo m_req/m_accept/m_done (igual ao da cache).
+  Com en=0: identidade. p_valid e um pulso de 1 clock.
+SIMULACAO (Icarus; tb_mmu.v): tabelas reais em memoria com latencia aleatoria (1..14), dado capturado no aceite; modelo de referencia percorre as tabelas; fila de esperados.
+  Latencia de acerto: 2 clocks; vazao: 1 traducao/clock (200 em 202 clocks). Falha de TLB (3 niveis): 31 clocks com memoria de 4..12 clocks/leitura (~10 clocks por PTE).
+  Testes: T1 en=0, T2/T2b latencia e vazao, T3 permissoes R/W/X x usuario/supervisor x U/A/D, T4 faltas (nao canonico, V=0, folha nivel 2, fora da memoria), T5 megapaginas (contagem de caminhadas = 2),
+  T6 PGINV/fl_all com remapeamento, T7 dois espacos de enderecos com ASID e pagina global sem descarga (15 caminhadas), T8 aleatorio (pressao de capacidade, 6 sementes), T9 remapeamento+descarga,
+  T10 descarga durante a caminhada (reinicio), T11 PGINV em offsets variados, T12 PGINV de megapagina em outro offset, T13 descarga por ASID. ~26 mil traducoes conferidas, 0 erros.
+  Mutantes (20): 18 mortos (um por travamento) e 2 equivalentes por especificacao: s2_stale na corrida com descarga (pedido concorrente com PGINV pode ver o mapeamento antigo ou o novo) e limpeza de wf_valid em p_valid.
+SINTESE/P&R (Yosys synth_gowin + nextpnr, GW2AR-LV18QN88C8/I7, 100 MHz, wrapper LFSR com saidas registradas): 2331 LUT4, 1541 FF, 0 BSRAM (TLB em flip-flops); Fmax 111.6 MHz (semente 1), 116.0 MHz (semente 2).
+  Evolucao: versao de 1 estagio (mmu_v1_1estagio.v) 67 MHz (comparacao + selecao + ready no mesmo ciclo); versao final com 2 estagios 112-116 MHz.
+RESSALVAS / INTEGRACAO:
+  - Cache VIPT: o indice da cache (bits 11:3 do byte) cabe no deslocamento da pagina, mas a cache atual compara a tag no ciclo do aceite; com tag fisica (latencia 2 da TLB) a comparacao teria de ir para o estagio 1 da cache (era o caminho critico do cache8k). Alternativas: cache PIPT (traduz antes; +2 clocks por acesso) ou reprojetar o estagio de acerto.
+  - O caminhador usa porta propria; no sistema precisa de um 3o mestre no mem_arb (hoje 2 mestres) e passa por fora da cache de dados (coerencia das tabelas com a D-cache nao tratada).
+  - Dois pedidos concorrentes com PGINV/fl_* podem ver mapeamento antigo ou novo: o pipeline deve serializar (esvaziar) apos PGINV.
+  - Sem bits de acessado/sujo por hardware, sem paginas de 1 GB, sem excecao precisa (so p_fault/p_cause; o vetor de excecao e responsabilidade do pipeline).
+  - 2 instancias (ITLB e DTLB) dobram 2331 LUT/1541 FF; NENT=8 para o ITLB reduz.

@@ -1,0 +1,5 @@
+Warning: Replacing memory \p2 with list of registers. See ../rtl/mul_unit.v:73
+Warning: Replacing memory \y1 with list of registers. See ../rtl/mul_unit.v:71
+Warning: Replacing memory \x1 with list of registers. See ../rtl/mul_unit.v:71
+Warning: Replacing memory \yn with list of registers. See ../rtl/mul_unit.v:43, ../rtl/mul_unit.v:38
+Warning: Replacing memory \xn with list of registers. See ../rtl/mul_unit.v:36

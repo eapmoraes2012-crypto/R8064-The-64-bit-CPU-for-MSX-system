@@ -1,0 +1,108 @@
+SUBSISTEMA DE MEMORIA (MMU I/D + caches + arbitro + SDRAM), nextpnr pos-roteamento, --parallel-refine:
+  semente 1: 105,74 MHz (PASS a 100)   semente 3: 102,91 MHz (PASS)   | LUT4 3.819, ALU 238, DFF 2.690, RAM16SDP4 23, BSRAM 10 (STATS=0 nas caches e MMUs)
+  Antes de trocar a cascata de 3 arbitros combinacionais por mem_arb4 (pedido registrado): 80,6 MHz (caminho cache D -> arbitros -> FSM da SDRAM).
+SoC completo (Yosys, sem roteamento): LUT1-4 10.293 + ALU 899 (inclui ~260 FF do wrapper), BSRAM 36 de 46. Roteamento completo nao termina em 180 s nesta VM.
+Funcional: tb_soc OK (MMU em bypass e com MMU ligada, 6+3 leituras de tabela), 0 violacoes de protocolo na SDRAM.
+
+REV20 - EXCECOES DE MMU NO NUCLEO (08/11/2026)
+Funcional: tb_soc OK; tb_soc_exc +sc=1/2/3 OK (CR43=09h/19h/01h, CR44=2000h/1FFEh/2000h, CR45=0013h/0013h/2000h; reinicio do POP termina com BC=1234h, SP=2002h); 0 violacoes de SDRAM.
+Regressoes do nucleo (tb_core, seq, blk, xing, bank, io, irq/irq2/irq3, ldai, exini, cpu_gov x4 modos, sys, sys_seq, sys_ldir, sys_irq, sys_fifo): todas OK.
+Area do nucleo (pnr_gov_top, nextpnr): LUT4 7.191 -> 7.519 (+328), ALU 748 -> 772, DFF 3.729 -> 3.908. Fmax pos-roteamento NAO medida (roteamento passa de 180 s nesta VM; a versao anterior tambem nao fecha em 150 s hoje).
+Estimativa pos-posicionamento: 80,5 MHz (nova) vs 82,5 MHz (anterior, que mediu 102-105 MHz roteada) => esperar ~100 MHz; confirmar em maquina sem limite de tempo.
+
+REV21 (08/11/2026): alvo de clock definitivo = 86 MHz (era 100). Medido no nucleo+governador+modo: 82,3 / 93,0 / 97,7 MHz (3 sementes); ver 10_mode_gov/pnr/resultado_core80.txt. REF_INT padrao = 600 (refresh a cada 6,98 us). Fmax do SoC completo ainda nao medido.
+
+REV22b (08/11/2026): fluxo de PnR do SoC completo recriado (13_soc/pnr/rodar_pnr_soc.bat). ys_soc_top.ys tinha caminhos antigos; pnr_soc_top.v ligava saidas do SoC (mmu_en/mmu_user) a sinais de entrada. Ambos corrigidos.
+Yosys do SoC completo: OK (sem erros), ~5.410 LUT4 + 23 RAM16SDP4 apos mapeamento, ~6.300 DFF. Avisos "sem driver": m_wdata/m_be da cache de instrucoes (WR=0, nunca escreve) - inofensivo.
+Fmax pos-roteamento do SoC completo: AGUARDANDO execucao no PC do usuario.
+
+Rodada PnR do SoC completo (--freq 86, pos-roteamento), sementes 1-4: 59,83 / 75,15 / 66,68 / 74,70 MHz (todas FALHAM). LUT4 11.832 (57%), DFF 6.539, BSRAM 36/46.
+Caminhos criticos: (s1, s3) interno do nucleo, uopm(BSRAM) -> f_pos -> sw_main -> iD_q -> iA_q, com redes de 2-6 ns; (s2, s4) c_d_ack combinacional (acerto da cache D) -> stall/flush do nucleo e -> fifo busy.
+REV22c: ack, dados e falta de dados do lado D agora registrados em r8064_memsys (+1 clock por acesso de dados; dv_req tambem espera o ack registrado). Testes: tb_soc (bypass e +mmu) OK, tb_soc_exc sc1-8 OK. Lado I NAO alterado (a resposta em voo depende de c_i_req). Fmax: aguardando nova rodada.
+
+REV22d - 2a rodada PnR do SoC (apos ack D registrado) e limpeza do wrapper
+  Rodada 2 (--freq 86, seeds 1-4): 71.42 / 78.40 / 74.26 / 76.10 MHz -> todas FALHAM (melhor 78.40).
+  Recursos: LUT4 ~11419, DFF ~6608.
+  Caminhos criticos restantes: (1) uopm(BSRAM) -> f_pos -> sw_main -> iD_q -> iA_q (issue/sequenciamento);
+  (2) core addr8_m -> daddr -> u_mmd mapper (CE do breg); (3) u_mode/is_rom -> u_fifo -> saidas (parte artefato do wrapper).
+  Wrapper (pnr/pnr_soc_top.v, backup .bak): reset registrado (rstw) e saidas capturadas em registradores
+  crus (ca..cf) antes da reducao XOR em 2 estagios. Yosys OK (rc=0, 5056 LUT4 no top de teste).
+  Proximo: rerodar pnr/rodar_pnr_soc.bat e enviar pnr_soc_s*.log.
+
+REV23 (08/11/2026): NOVO ALVO DE CLOCK = 57,28 MHz (3,58 MHz x 16, sincronismo com o clock MSX). Substitui 86 MHz.
+  --freq 57.28 nos .bat de PnR (06_cache, 10_mode_gov, 11_fpu_stk, 13_soc). SDRAM REF_INT 600 -> 400 clocks
+  (6,98 us < 7,8 us) em 05_sdram, 06_cache/sim e 13_soc/rtl. Medicoes anteriores (core 100,34 MHz; SoC 78,40 MHz)
+  ja superam 57,28 com folga: o SoC passa a ter margem (~37%) mesmo sem as otimizacoes pendentes.
+  z80_msx_top REF_INT default 700 -> 400 (idem).
+
+REV23b - PnR do SoC completo a 57,28 MHz (--freq 57.28, pos-roteamento, wrapper registrado), sementes 1-4:
+  81,66 / 81,63 / 82,41 / 77,45 MHz -> 4/4 PASSAM (folga 35-44%; melhor = seed 3, 82,41 MHz).
+  Recursos: LUT4 11483 (55%), DFF 6780 (43%), BSRAM 36/46 (78%), ALU 1066. Roteamento convergiu em todas.
+  Hold: 68 violacoes (-0,12 ns) nos pinos ADB do BSRAM u_dec.ctrl (mesmo padrao anterior; modelo/roteamento, nao confirmado em hardware).
+  Caminhos criticos: ainda atravessam c_d_ack -> logica de io_oe/fifo (wrapper) e core d_m/sw_b; nenhum exige acao a 57,28.
+
+REV24 (09/11/2026): gerador de clock r8064_clkgen (rtl/r8064_clkgen.v, sim/tb_clkgen.v, pnr/pnr_soc_pll_top.v, pnr/rodar_pnr_soc_pll.bat [SRC]).
+  SRC=0: cristal 27 MHz da placa -> rPLL IDIV 8 / FBDIV 17 / ODIV 16 (VCO 918 MHz) = 57,375 MHz (+0,18 %; a razao exata 70/33 daria PFD 0,82 MHz < 3 MHz).
+  SRC=1: 3,579545 MHz externo (oscilador/cristal com oscilador, ou CLOCK do slot MSX) -> rPLL x16 (VCO 916,4 MHz) = 57,2727 MHz exato.
+  SRC=2: oscilador ativo de 57,27 MHz direto, sem PLL. Reset sincrono liberado 16 ciclos apos o lock; rst_in assincrono opcional.
+  Verificado: tb_clkgen (modelo SIM mede/gera MUL/DIV) -> 57,35 / 57,30 / 57,25 MHz (resolucao 0,05), travou, rst liberado: OK.
+  Yosys: SoC + clkgen (SRC 0 e 1) sintetizam com 1 rPLL, 5056 LUT4 no topo de teste, sem ERROR.
+  NAO verificado: PnR com o PLL (nextpnr no PC), pino de entrada do cristal (pins_pll_src1/2.cst usam o pino 87 so como exemplo),
+  e CLKIN do rPLL vindo de pino nao dedicado de clock.
+  z80_ce a 57,2727 MHz: STEP_BASE = 268435456 (2^28) da exatamente 3,579545 MHz; turbo 3 (28,6 MHz) = 1 pulso a cada 2 clocks, viola a
+  exigencia ">= 3 clocks entre ce" do z80_msx_sys -> limitar o turbo a 14,3 MHz (turbo<=2) ou revisar o WAIT/dados registrados.
+
+REV25 (09/11/2026): Z80 a 57,2727 MHz. z80_ce/z80_top/z80_msx_sys/z80_msx_top: STEP_BASE padrao 153740287 -> 268435456 (2^28, 3,579545 MHz exato).
+  z80_ce agora limita o passo a 2^32/3 (>= 3 clocks entre ce): turbo 3 (28,6 MHz) cai para 14,3 MHz a 57,27 MHz; a 100 MHz nada muda.
+  tb_z80_msx (REF_INT 700 -> 400): turbo 0/1/2/3 PASS, violacoes SDRAM = 0; turbo 3 identico ao 2 (tempo igual) = clamp funcionando.
+  Backup: 12_z80/bak_clk57/. Nao rodado: sim/rodar_z80.bat (nucleo Z80 isolado, nao usa z80_ce).
+
+REV26 (09/11/2026): topo de placa Tang Nano 20K (rtl/r8064_board_top.v, pnr/ys_board.ys, pnr/tangnano20k_src{0..3}.cst, pnr/rodar_pnr_board.bat [SRC]).
+  Fonte dos pinos: relatorio de pinos (HTML) de um cartucho VDP Tang Nano 20K (GW2AR-LV18QN88C8). Usados: clk27=4 (LPLL1_T_in), btn_rst=88, saidas de observacao 84/83/82/81.
+  SDRAM embutida: 32 bits (dq[31:0], dqm[3:0], ba[1:0], a[10:0], cke/cs_n/ras_n/cas_n/wen_n, clk) = exatamente a interface do sdram_ctrl; nomes fixos O_sdram_*/IO_sdram_dq,
+  o nextpnr as posiciona sem IO_LOC (verificado em teste com nextpnr). dq via IOBUF (32), clk da SDRAM = CLKOUTP do rPLL (SDR_PSDA=4 -> 90 graus, ajustar no hardware).
+  Entradas de clock externo: SRC1 = pino 13 (LPLL2_T_in, livre, entrada dedicada de PLL); SRC2 = pino 10 (GCLKT_6); SRC3 = pino 80 (clk14m, GCLKT_0), 14,31818 MHz x4.
+  clkgen: +SRC=3, +saida clk_sdram; tb_clkgen: 57,35/57,30/57,25/57,30 MHz, fase clk_sdram 4,37 ns (~1/4 periodo): OK.
+  Yosys: topo de placa SRC 0/1/3 sem ERROR (1 rPLL, 32 IOBUF, ~4667 LUT4 sem o wrapper de teste). Teste nextpnr (design pequeno) com PLL em pino 13: PLL posicionado e SDRAM sem erros.
+  NAO verificado: PnR do topo de placa completo (rodar no PC), fase real do clk_sdram na SDRAM, barramento MSX externo (nao ligado), e se clk14m = 14,31818 MHz.
+  O relatorio e de um projeto de cartucho VDP: nao tem pino do CLOCK 3,58 MHz do slot, MREQ nem SLTSL.
+
+REV26b - PnR do topo de placa (SRC=0: 27 MHz da placa -> rPLL 57,375 MHz; --freq 57.28; pos-roteamento), sementes 1-4:
+  67,14 / 74,05 / 81,32 / 60,56 MHz -> 4/4 PASSAM. Pior caso (seed 4) 60,56 MHz = +5,6 % sobre 57,375 (clock real do PLL); melhor (seed 3) 81,32.
+  Recursos: LUT4 10982 (52 %), DFF 6317 (40 %), BSRAM 35/46 (76 %), IOB 30, rPLL 1/2, BUFG 1. clk e clk_sd roteados em recurso global.
+  Hold: 16 / 0 / 4 / (s4: nao listado) violacoes, sempre BSRAM u_dec.ctrl ADB (antes 68). Roteamento convergiu em todas.
+  Caminho critico da seed 4: um unico net c_d_rd (arbD_rdata -> MMU-D restart) com 10,3 ns de roteamento: variabilidade de colocacao, nao logica.
+  Observacao: a folga do pior caso e pequena; usar seed 3 (ou 2) para o bitstream. Nao verificado em hardware.
+
+REV27 (09/11/2026): geracao de bitstream: pnr/gerar_bitstream_board.bat [SRC] [SEMENTE] [gravar] (yosys -> nextpnr --write -> gowin_pack -> openFPGALoader -b tangnano20k) e LEIA-ME_bringup.txt.
+  Verificado na VM: nextpnr + gowin_pack geram .fs para um design pequeno com rPLL (pino 13) e SDRAM embutida; topo completo so no PC. Nao verificado em hardware.
+
+REV28 (09/11/2026): estudo de viabilidade de instrucoes 3D: modulo 14_vec3d (vec3d_unit: lanes 4xint16, VMUL/VDOT4/VDOT3/VCROSS3/VADD/VSUB/VMIN/VMAX/VSHUF/VNEG/VABS).
+  Simulado (30.000 vetores, 0 erros); Yosys 863 LUT4 + 452 ALU, 6 DSP (versao minima 762+309); nextpnr isolado 89-101 MHz. Ver 14_vec3d/resultados_modulo14.txt.
+  Nao integrado ao nucleo.
+
+REV29 (10/11/2026): instrucoes 3D INTEGRADAS ao nucleo (ED F8 VOP / ED FA VSHUF / ED FB VOP1; ver 14_vec3d/ISA_3D.txt) com a vec3d_unit v6 (completa, otimizada).
+  CORRECAO da REV28: a medida de area da unidade contava so LUT4; o correto (LUT1-4 + MUX2 + ALU, como o nextpnr) e ~2.335 LUT4-eq isolada (v5 era ~2.830), ~+1.860 no SoC (Yosys), +10 DSP.
+  Orcamento rev20 16.330 -> ~18.200-18.700 (87,7-90 %), acima da meta de 85 %. Regressao: 21 testes antigos identicos, tb_vec OK, tb_soc OK, tb_soc_exc OK.
+  Mudancas: uop de 81 bits (uop[80]=vec), hold += (vec_m && !vo_valid), ldval += vo, gen_roms.py/rom_ed_a/ctrl/instr_ids (ids 294-296), arquivos .ys/.bat com vec3d_unit.v.
+  PENDENTE: PnR do board top na maquina do usuario (Fmax a 57,28 MHz com o novo termo no hold); tempo das instrucoes 3D nos modos Z80/R800.
+
+REV30 (10/11/2026): UNIDADE 3D REMOVIDA do nucleo (pedido do usuario): ED F8/FA/FB voltam a ser instrucoes inexistentes. uop volta a 80 bits (uop[80] livre), ids 294-296 retirados
+  (instr_ids.csv, ctrl*.mem, rom_ed_a.mem, r8064_decode_rom.v restaurados da copia pre-3D), vec3d_unit.v fora de todos os .ys/.bat e movido para 09_core_min/bak/vec3d_rtl/ (o modulo
+  completo continua em 14_vec3d/rtl). Mantidos: EXINI desfaz EXX e EX AF,AF' (REV de 10/11), m_mem registrado (mm_q) no nucleo, B2B=0 nas caches da memsys.
+  Estado anterior guardado em 09_core_min/bak/com_vec3d/. Area esperada = board top sem 3D (11.205 LUT4 + 1.064 ALU, 54 %+), DSP 0. NAO simulado nem sintetizado nesta rodada (sem iverilog/yosys na nuvem): rodar
+  10_mode_gov\rodar_tudo.bat, 13_soc\rodar_exc.bat e rodar_pnr_board.bat.
+
+REV31 (10/11/2026): VALIDACAO da REV30 (rodada do usuario).
+  Simulacao: 10_mode_gov\rodar_tudo = tudo OK (EXINI OK, TEMPO IRQ OK, FIFO, SISTEMA+FIFO, modo, classificador, governador, cpu_gov, MSX, sequencias, LDIR, cruzamento).
+             Causa do erro tempo_irq: gen_gov_rom.py antigo de 10_mode_gov/sim gerava 1792 palavras (sem pagina 7 = IRQ) e sobrescrevia gov_rom.mem;
+             restaurado gov_rom.mem de 2048 palavras e a chamada do gerador ficou desativada (rem) em rodar_tudo.bat.
+             13_soc\rodar_exc = 8 cenarios EXCECOES SOC OK, 0 violacoes de SDRAM.
+  Board top (57,28 MHz, sem 3D, B2B=0, mm_q): LUT4 10.995 (53 %), MUX2 1.953, ALU 1.064, DFF 6.316 (40 %), BSRAM 35/46, DSP 0 => ~14.000 LUT4-eq (67 %).
+             Fmax: s1 72,4 | s2 67,5 | s3 76,9 (8 hold -0,12 ns no BSRAM u_dec.ctrl, artefato conhecido) | s4 43,4 FALHA (roteamento: net cio_a[2] 10,3 ns).
+             Use a semente 3 para o bitstream: gerar_bitstream_board.bat 0 3 [gravar].
+
+REV32 (10/11/2026): CPLB/NEGB adicionados; familia ED 26 recodificada (3o byte: tamanho[7:6] 00=B 01=W 10=E 11=Q; CPL x = tam,001,x ; NEG x = tam,x,001).
+  ids novos: CPLB 294, NEGB 295 (ctrl: len 3, 1 clock; sem prefixo de banco). W/E/Q (ids 169-174) agora tem uops. NEGB s: A <- 0 - s (destino fixo AX, fonte s).
+  CPLB/NEGB nao aceitam o registrador A (codigo 111): o Z80 ja tem CPL e NEG. Registradores validos: BC,DE,HL (B/W/E/Q); W/E/Q tambem aceitam AX. 001 e 110 nao sao registradores (resolve a colisao CPL x / NEG x).
+  Operam no byte baixo do registrador (sz=0). NAO simulado (sem iverilog na nuvem): rodar 10_mode_gov\rodar_tudo.bat (novo tb_cplneg), 13_soc\rodar_exc.bat e rodar_pnr_board.bat.

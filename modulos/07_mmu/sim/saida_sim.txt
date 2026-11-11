@@ -1,0 +1,24 @@
+ok   T1 en=0 identidade (2 traducoes conferidas ate aqui, 0 faltas)
+T2 latencia de falha de TLB (1 pagina, 3 niveis): 31 clocks
+T2 latencia de acerto: 2 clock(s)
+ok   T2 (4 traducoes conferidas ate aqui, 0 faltas)
+T2b 200 acertos seguidos: 202 clocks
+ok   T2b (204 traducoes conferidas ate aqui, 0 faltas)
+ok   oes (R,W,X x usuario/supervisor) (234 traducoes conferidas ate aqui, 23 faltas)
+ok   T3b repete apos descarga (249 traducoes conferidas ate aqui, 33 faltas)
+ok   T4 faltas diversas (257 traducoes conferidas ate aqui, 41 faltas)
+ok   T5 megapaginas (337 traducoes conferidas ate aqui, 41 faltas)
+ok   T6 PGINV (339 traducoes conferidas ate aqui, 41 faltas)
+ok   T6b fl_all (340 traducoes conferidas ate aqui, 41 faltas)
+ok   T7 ASID/global sem descarga (388 traducoes conferidas ate aqui, 41 faltas)
+   T7 apos a 1a passagem: TLB deve reaproveitar (walks=37)
+ok   T8 aleatorio (18388 traducoes conferidas ate aqui, 15568 faltas)
+ok   T9 remapeamento + fl_all (21588 traducoes conferidas ate aqui, 18416 faltas)
+ok   T10 descarga durante a caminhada (21768 traducoes conferidas ate aqui, 18421 faltas)
+ok   T11 PGINV em offsets variados (22768 traducoes conferidas ate aqui, 18421 faltas)
+ok   T12 PGINV em megapagina (22770 traducoes conferidas ate aqui, 18421 faltas)
+ok   T13 descarga por ASID (22774 traducoes conferidas ate aqui, 18421 faltas)
+ok   T13b (22776 traducoes conferidas ate aqui, 18421 faltas)
+Estatisticas: acertos=13162 falhas(walks)=19519 faltas=18416 leituras de PTE=57303
+RESULTADO: TODOS OS TESTES PASSARAM
+tb_mmu.v:265: $finish called at 4487450000 (1ps)

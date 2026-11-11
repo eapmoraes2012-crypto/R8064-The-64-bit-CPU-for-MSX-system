@@ -1,0 +1,20 @@
+..\rtl\r8064_decode.v:42: error: Unknown module type: r8064_rom_amb
+..\rtl\r8064_decode.v:43: error: Unknown module type: r8064_rom_a
+3 error(s) during elaboration.
+*** These modules were missing:
+        r8064_rom_a referenced 1 times.
+        r8064_rom_amb referenced 1 times.
+***
+WARNING: ..\rtl\r8064_core_min.v:103: Excess hex digits (8 of '000000001081f80204e0') while reading 48-bit words.
+WARNING: ..\rtl\r8064_core_min.v:103: $readmemh(uop.mem): Too many words in the file for the requested range [0:1023].
+ERRO AX: obtido 0000000000000000 esperado 000000000000000f
+ERRO DE: obtido 0000000000000005 esperado 000000000000000f
+ERRO HL: obtido 0000000000000008 esperado 0000000000000068
+ERRO m40: obtido 0000000000000000 esperado 0000000000000005
+ERRO m48: obtido 0000000000000000 esperado 0000000000000009
+ERRO m50: obtido 0000000000000000 esperado 000000000000000c
+ERRO m58: obtido 0000000000000000 esperado 000000000000000e
+ERRO m60: obtido 0000000000000000 esperado 000000000000000f
+pc=0000000000000108 flags=08  erros=8
+RESULTADO: 8 ERROS
+tb_core.v:32: $finish called at 15035000 (1ps)

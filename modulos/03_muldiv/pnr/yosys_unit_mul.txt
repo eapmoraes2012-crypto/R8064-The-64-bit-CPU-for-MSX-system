@@ -1,0 +1,29 @@
+
+3. Printing statistics.
+
+=== mul_unit ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1640 wires
+     3517 wire bits
+     1640 public wires
+     3517 public wire bits
+       10 ports
+      264 port bits
+     2282 cells
+      268   ALU
+      687   DFFE
+       18   DFFR
+      132   DFFRE
+        1   GND
+      134   IBUF
+       23   LUT1
+       95   LUT2
+      501   LUT3
+      218   LUT4
+        4   MULT18X18
+       70   MUX2_LUT5
+      130   OBUF
+        1   VCC
+

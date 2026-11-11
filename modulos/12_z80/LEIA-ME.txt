@@ -1,0 +1,33 @@
+MODULO 12 - Z80 CLASSICO INDEPENDENTE (R8064)                                      atualizado 06/11/2026
+==========================================================================================================
+STATUS: RTL escrito e VERIFICADO em simulacao (Icarus, pelo usuario): ZEXDOC (67 testes), 12 programas aleatorios (prefixos DD/FD/ED/CB/DDCB misturados),
+        rodadas com WAIT aleatorio e ce lento, tudo identico ao modelo em C instrucao a instrucao (PC, registradores, sombra, I/R, IFF, IM, MEMPTR e T-states).
+AREA MEDIDA (Yosys, z80_top com turbo, v2): 2.300 LUT4 + 231 ALU = 2.531; 471 FF; 0 BSRAM.   Fmax (nextpnr): 44-47 MHz (basta: ce a cada >= 3 clocks).
+        A v1 paralela (rtl/z80_core_v1_paralelo.v) media 4.940 LUT4 e 66,5 MHz; a v2 compartilha uma ULA de 8 bits e um somador de 16 bits entre as instrucoes.
+
+ARQUIVOS
+ rtl/z80_core.v   nucleo (v2, area reduzida). Um pulso 'ce' = um T-state. Barramento com convencao Z80 (mreq/rd/wr/iorq/m1/rfsh ativos em 1 dentro do nucleo; z80_top inverte).
+ rtl/z80_ce.v     gerador de clock-enable por acumulador de fase: turbo 0/1/2/3 = 3,58 / 7,16 / 14,3 / 28,6 MHz (parametro STEP_BASE para o clock da placa; padrao 100 MHz).
+                  use_ext=1: usa ce_ext (sincronia com o clock de slot do MSX). Pulsos de ce sempre separados por >= 3 clocks.
+ rtl/z80_top.v    ce + nucleo, portas no estilo Z80 (a, dout, din, mreq_n, iorq_n, rd_n, wr_n, m1_n, rfsh_n, halt_n, busak_n, wait_n, int_n, nmi_n, busrq_n).
+                  msx_w=1 acrescenta 1 wait em M1 e em E/S (comportamento MSX). instr_done pulsa ao fim de cada instrucao.
+ rtl/z80_core_v1_paralelo.v   versao anterior (maior e mais rapida), mantida como referencia verificada.
+ rtl/z80_msx_*.v, sdram_byte_if.v   integracao com memoria MSX e SDRAM (ver LEIA-ME_msx.txt).
+ ref/             montador (zasm.py), modelo de referencia em C (z80ref.c), ZEXDOC (zexdoc.z80/.com), tabelas de T-states (tdump.txt, cmpt.py).
+ sim/             tb_z80.v + vec/ (vetores gerados por gen_vectors.py). rodar_z80.bat = regressao completa (esperado: PASS em todas as linhas).
+ pnr/             medir_z80.bat = Yosys + nextpnr (resumo_z80.txt = Fmax; LUT4 e ALU no fim do yosys_z80.log, "Printing statistics").
+
+COMO RODAR (terminal do OSS CAD Suite)
+ 1) sim\rodar_z80.bat   -> sim\resultado_z80.txt   (r01-r12, zex, wait=1 r01, wait=1 zex: PASS)
+ 2) pnr\medir_z80.bat   -> pnr\resumo_z80.txt, yosys_z80.log
+ Para regerar vetores: python3 sim\gen_vectors.py (precisa do modelo: gcc -O2 -o z80ref ref\z80ref.c).
+
+MODELO DE TEMPO
+ M1 = 4 T (6 T no reconhecimento de INT), MR/MW = 3 T, E/S = 4 T; WAIT amostrado em T2 (E/S: T3). MSX: +1 T em M1 e E/S (msx_w). Tabela de T por opcode confere com R8064_Z80_instrucoes_fpga.txt (1269/1269).
+
+LIMITES CONHECIDOS (nao verificados contra silicio real)
+ - Flags X/Y (bits 5 e 3) e MEMPTR seguem o modelo estilo Fuse; ZEXDOC mascara estes bits, entao so o modelo em C os confirma.
+ - NMI usa um ciclo interno (5 T + push, vetor 0066h) sem M1 visivel no barramento; INT modo 0 so executa RST (opcode de reconhecimento tipo RST), modos 1 e 2 completos.
+ - INIR/OTIR/INDR/OTDR sem os efeitos de flag "modernos" (H/PV extras) das revisoes recentes do Z80.
+ - HALT fora dos testes aleatorios (so em r06/r12 e no fim dos vetores).
+ - Bus request (busrq/busak) implementado mas nao exercitado nos testes.

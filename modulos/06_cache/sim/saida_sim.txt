@@ -1,0 +1,25 @@
+T1 latencia de falha de leitura (aceite->rvalid) D: 31 clocks
+T1 latencia de acerto (mesma linha) D: 1 clock(s)
+T1 latencia de falha de leitura I: 33 clocks
+ok   T1 (D: 2 leit 0 esc | I: 1 leit)
+T2 2a passagem de 256 leituras com acerto: 258 clocks (esperado ~256)
+ok   T2 (D: 514 leit 0 esc | I: 1 leit)
+ok   T3 (D: 518 leit 4 esc | I: 1 leit)
+ok   T3: memoria SDRAM == sombra
+ok   T4 (D: 563 leit 4 esc | I: 1 leit)
+ok   T4b LRU mantem A (3 falhas)
+ok   T4b LRU expulsou B
+ERRO(0): dado a60d36b3df1434ad esperado 5555aaaa5555aaaa t=61105000
+T5 sem inv: leitura devolveu valor antigo da cache (esperado: erro de coerencia deliberado: 1)
+ok   T5 inv devolve o valor novo
+ok   T6 aleatorio conflitante (D: 2810 leit 1301 esc | I: 672 leit)
+ok   T6: memoria SDRAM == sombra
+ok   T7 aleatorio escrita intensa (D: 7251 leit 5788 esc | I: 31857 leit)
+ok   T7: memoria SDRAM == sombra
+ok   T8 conjunto cabe (D: 32701 leit 12150 esc | I: 71857 leit)
+ok   T8: memoria SDRAM == sombra
+Estatisticas D: leit acerto=32701 falha=3050 | esc=12150 acerto=9725
+Estatisticas I: leit acerto=71857 falha=591
+SDRAM: violacoes de temporizacao do modelo = 0
+RESULTADO: TODOS OS TESTES PASSARAM
+tb_cache.v:141: $finish called at 1864535000 (1ps)

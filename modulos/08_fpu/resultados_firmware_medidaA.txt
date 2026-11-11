@@ -1,0 +1,20 @@
+vetores 39000 erros 0
+ADD     n= 3000 mediana=  76 max=  92
+SUB     n= 3000 mediana=  76 max=  92
+MUL     n= 3000 mediana=  61 max=  71
+DIV     n= 3000 mediana= 188 max= 198
+SQRT    n= 3000 mediana= 645 max= 650
+CMP     n= 3000 mediana=  28 max=  48
+FILD    n= 3000 mediana=  20 max=  20
+FIST    n= 3000 mediana=  43 max=  48
+RNDINT  n= 3000 mediana=  49 max=  54
+LD32    n= 3000 mediana=  22 max=  56
+LD64    n= 3000 mediana=  22 max=  56
+ST32    n= 3000 mediana=  43 max=  48
+ST64    n= 3000 mediana=  43 max=  48
+
+Medida A - FPU em firmware (ref/fpu_fw.py): 0 erros em 39.000 vetores (bit a bit contra o hardware/fpref).
+Modelo de custo: ALU 1 clk, MUL 64x64 8 clk, DIV 66 clk (x2 para quociente de 128 bits), tabela de casos especiais 40 clk.
+Comparacao com a FPU em hardware (clocks do pipeline, mediana): ADD 43->76, MUL 43->61, DIV 123->188, SQRT 125->645, CMP 21->28.
+Hardware que resta: pilha ST0-ST7, CW/SW, decodificacao, tags e excecoes (a definir no fpu_top enxuto).
+Limite: casos especiais reutilizam a tabela de decisao do fpref (so ramificacoes), nao portada instrucao a instrucao.

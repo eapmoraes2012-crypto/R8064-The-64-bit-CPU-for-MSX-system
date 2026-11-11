@@ -1,0 +1,3 @@
+read_verilog -sv pnr_mem_top.v ../soc/r8064_memsys.v ../soc/cache_dm.v ../soc/mem_arb4.v ../soc/mmu.v ../soc/sdram_ctrl.v
+synth_gowin -top pnr_mem_top -json gmem.json
+stat

@@ -1,0 +1,7 @@
+// ATENCAO: pino 87 e so um exemplo - troque pelo pino fisico onde voce ligar o oscilador/CLOCK do slot MSX.
+IO_LOC "clk_in" 87;
+IO_PORT "clk_in" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
+IO_LOC "din" 88;
+IO_PORT "din" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC "dout" 15;
+IO_PORT "dout" IO_TYPE=LVCMOS33 DRIVE=8;

@@ -1,0 +1,106 @@
+GANHO DE UM CACHE DE I E D EM BSRAM (nucleos sinteticos; modelo de ciclos da planilha; escrita direta, sem alocar na escrita)
+CPI = clocks por instrucao. sem = sem cache (planilha: HIT_I=HIT_D=0). atual = com o controlador SDRAM do modulo 05 (5 clocks por palavra de 64 bits no preenchimento). rajada = estimativa com leituras sobrepostas (2 clocks por palavra).
+
+== Cache I=2 KB, D=2 KB, linha 32 B, 1 via(s)  (BSRAM de dados: 2 blocos de 18 Kbit; tags em SSRAM/LUT)
+nucleo                                        I/D KB linha vias  HIT_I  HIT_D  CPI sem CPI atual  ganho CPI rajada  ganho
+copia de memoria (streaming)                   2/2      32    1  1.000  0.750     8.52      3.75  2.27x       3.30  2.58x
+matriz 40x40 (loops aninhados)                 2/2      32    1  1.000  0.621     8.89      4.99  1.78x       3.86  2.30x
+ordenacao (bolha, 400 itens)                   2/2      32    1  1.000  0.911     9.19      3.61  2.55x       3.40  2.70x
+lista encadeada (256 KB ... 64 KB de nos)      2/2      32    1  1.000  0.500     8.31      4.97  1.67x       3.69  2.26x
+aplicacao (120 funcoes, chamadas/retornos)     2/2      32    1  0.910  0.884     8.84      5.10  1.73x       4.00  2.21x
+MEDIA GEOMETRICA                                                                  8.75      4.43  1.97x       3.64  2.40x
+
+== Cache I=4 KB, D=4 KB, linha 32 B, 1 via(s)  (BSRAM de dados: 4 blocos de 18 Kbit; tags em SSRAM/LUT)
+nucleo                                        I/D KB linha vias  HIT_I  HIT_D  CPI sem CPI atual  ganho CPI rajada  ganho
+copia de memoria (streaming)                   4/4      32    1  1.000  0.750     8.52      3.75  2.27x       3.30  2.58x
+matriz 40x40 (loops aninhados)                 4/4      32    1  1.000  0.802     8.89      3.81  2.34x       3.22  2.76x
+ordenacao (bolha, 400 itens)                   4/4      32    1  1.000  0.994     9.19      3.19  2.88x       3.17  2.90x
+lista encadeada (256 KB ... 64 KB de nos)      4/4      32    1  1.000  0.500     8.31      4.97  1.67x       3.69  2.26x
+aplicacao (120 funcoes, chamadas/retornos)     4/4      32    1  0.923  0.896     8.84      4.78  1.85x       3.83  2.31x
+MEDIA GEOMETRICA                                                                  8.75      4.04  2.16x       3.43  2.55x
+
+== Cache I=8 KB, D=8 KB, linha 32 B, 2 via(s)  (BSRAM de dados: 8 blocos de 18 Kbit; tags em SSRAM/LUT)
+nucleo                                        I/D KB linha vias  HIT_I  HIT_D  CPI sem CPI atual  ganho CPI rajada  ganho
+copia de memoria (streaming)                   8/8      32    2  1.000  0.750     8.52      3.75  2.27x       3.30  2.58x
+matriz 40x40 (loops aninhados)                 8/8      32    2  1.000  0.871     8.89      3.35  2.65x       2.97  2.99x
+ordenacao (bolha, 400 itens)                   8/8      32    2  1.000  0.994     9.19      3.19  2.88x       3.17  2.90x
+lista encadeada (256 KB ... 64 KB de nos)      8/8      32    2  1.000  0.500     8.31      4.97  1.67x       3.69  2.26x
+aplicacao (120 funcoes, chamadas/retornos)     8/8      32    2  0.940  0.913     8.84      4.36  2.03x       3.60  2.46x
+MEDIA GEOMETRICA                                                                  8.75      3.87  2.26x       3.33  2.62x
+
+== Cache I=8 KB, D=8 KB, linha 64 B, 2 via(s)  (BSRAM de dados: 8 blocos de 18 Kbit; tags em SSRAM/LUT)
+nucleo                                        I/D KB linha vias  HIT_I  HIT_D  CPI sem CPI atual  ganho CPI rajada  ganho
+copia de memoria (streaming)                   8/8      64    2  1.000  0.875     8.52      3.76  2.27x       3.23  2.64x
+matriz 40x40 (loops aninhados)                 8/8      64    2  1.000  0.935     8.89      3.36  2.64x       2.92  3.05x
+ordenacao (bolha, 400 itens)                   8/8      64    2  1.000  0.997     9.19      3.19  2.88x       3.17  2.90x
+lista encadeada (256 KB ... 64 KB de nos)      8/8      64    2  1.000  0.535     8.31      7.43  1.12x       4.64  1.79x
+aplicacao (120 funcoes, chamadas/retornos)     8/8      64    2  0.967  0.913     8.84      4.95  1.79x       3.75  2.36x
+MEDIA GEOMETRICA                                                                  8.75      4.31  2.03x       3.49  2.50x
+
+== Cache I=16 KB, D=16 KB, linha 64 B, 2 via(s)  (BSRAM de dados: 16 blocos de 18 Kbit; tags em SSRAM/LUT)
+nucleo                                        I/D KB linha vias  HIT_I  HIT_D  CPI sem CPI atual  ganho CPI rajada  ganho
+copia de memoria (streaming)                  16/16     64    2  1.000  0.875     8.52      3.76  2.27x       3.23  2.64x
+matriz 40x40 (loops aninhados)                16/16     64    2  1.000  0.984     8.89      2.72  3.27x       2.61  3.41x
+ordenacao (bolha, 400 itens)                  16/16     64    2  1.000  0.997     9.19      3.19  2.88x       3.17  2.90x
+lista encadeada (256 KB ... 64 KB de nos)     16/16     64    2  1.000  0.570     8.31      7.03  1.18x       4.45  1.87x
+aplicacao (120 funcoes, chamadas/retornos)    16/16     64    2  0.976  0.926     8.84      4.42  2.00x       3.51  2.52x
+MEDIA GEOMETRICA                                                                  8.75      3.99  2.19x       3.34  2.62x
+
+
+######## BASE COM FILA DE PREFETCH (modulo 02): busca efetiva = bytes/8 por instrucao (em vez de 1 acesso por instrucao) - ganho do cache SOBRE essa base ########
+
+== Cache I=2 KB, D=2 KB, linha 32 B, 1 via(s)
+nucleo                                        I/D KB linha vias  HIT_I  HIT_D  CPI sem CPI atual  ganho CPI rajada  ganho
+copia de memoria (streaming)                   2/2      32    1  1.000  0.750     5.39      3.50  1.54x       3.05  1.77x
+matriz 40x40 (loops aninhados)                 2/2      32    1  1.000  0.621     5.79      4.78  1.21x       3.65  1.58x
+ordenacao (bolha, 400 itens)                   2/2      32    1  1.000  0.911     6.47      3.37  1.92x       3.16  2.05x
+lista encadeada (256 KB ... 64 KB de nos)      2/2      32    1  1.000  0.500     5.60      4.83  1.16x       3.54  1.58x
+aplicacao (120 funcoes, chamadas/retornos)     2/2      32    1  0.910  0.884     5.86      3.85  1.52x       3.21  1.83x
+MEDIA GEOMETRICA                                                                  5.81      4.02  1.45x       3.31  1.75x
+
+== Cache I=4 KB, D=4 KB, linha 32 B, 1 via(s)
+nucleo                                        I/D KB linha vias  HIT_I  HIT_D  CPI sem CPI atual  ganho CPI rajada  ganho
+copia de memoria (streaming)                   4/4      32    1  1.000  0.750     5.39      3.50  1.54x       3.05  1.77x
+matriz 40x40 (loops aninhados)                 4/4      32    1  1.000  0.802     5.79      3.60  1.61x       3.01  1.92x
+ordenacao (bolha, 400 itens)                   4/4      32    1  1.000  0.994     6.47      2.94  2.20x       2.93  2.21x
+lista encadeada (256 KB ... 64 KB de nos)      4/4      32    1  1.000  0.500     5.60      4.83  1.16x       3.54  1.58x
+aplicacao (120 funcoes, chamadas/retornos)     4/4      32    1  0.923  0.896     5.86      3.67  1.60x       3.11  1.88x
+MEDIA GEOMETRICA                                                                  5.81      3.66  1.59x       3.12  1.86x
+
+== Cache I=8 KB, D=8 KB, linha 32 B, 2 via(s)
+nucleo                                        I/D KB linha vias  HIT_I  HIT_D  CPI sem CPI atual  ganho CPI rajada  ganho
+copia de memoria (streaming)                   8/8      32    2  1.000  0.750     5.39      3.50  1.54x       3.05  1.77x
+matriz 40x40 (loops aninhados)                 8/8      32    2  1.000  0.871     5.79      3.14  1.84x       2.76  2.09x
+ordenacao (bolha, 400 itens)                   8/8      32    2  1.000  0.994     6.47      2.94  2.20x       2.93  2.21x
+lista encadeada (256 KB ... 64 KB de nos)      8/8      32    2  1.000  0.500     5.60      4.83  1.16x       3.54  1.58x
+aplicacao (120 funcoes, chamadas/retornos)     8/8      32    2  0.940  0.913     5.86      3.43  1.71x       2.98  1.97x
+MEDIA GEOMETRICA                                                                  5.81      3.51  1.65x       3.04  1.91x
+
+== Cache I=8 KB, D=8 KB, linha 64 B, 2 via(s)
+nucleo                                        I/D KB linha vias  HIT_I  HIT_D  CPI sem CPI atual  ganho CPI rajada  ganho
+copia de memoria (streaming)                   8/8      64    2  1.000  0.875     5.39      3.51  1.54x       2.98  1.81x
+matriz 40x40 (loops aninhados)                 8/8      64    2  1.000  0.935     5.79      3.16  1.83x       2.71  2.14x
+ordenacao (bolha, 400 itens)                   8/8      64    2  1.000  0.997     6.47      2.94  2.20x       2.93  2.21x
+lista encadeada (256 KB ... 64 KB de nos)      8/8      64    2  1.000  0.535     5.60      7.28  0.77x       4.50  1.25x
+aplicacao (120 funcoes, chamadas/retornos)     8/8      64    2  0.967  0.913     5.86      3.95  1.48x       3.16  1.86x
+MEDIA GEOMETRICA                                                                  5.81      3.93  1.48x       3.20  1.82x
+
+== Cache I=16 KB, D=16 KB, linha 64 B, 2 via(s)
+nucleo                                        I/D KB linha vias  HIT_I  HIT_D  CPI sem CPI atual  ganho CPI rajada  ganho
+copia de memoria (streaming)                  16/16     64    2  1.000  0.875     5.39      3.51  1.54x       2.98  1.81x
+matriz 40x40 (loops aninhados)                16/16     64    2  1.000  0.984     5.79      2.51  2.31x       2.40  2.41x
+ordenacao (bolha, 400 itens)                  16/16     64    2  1.000  0.997     6.47      2.94  2.20x       2.93  2.21x
+lista encadeada (256 KB ... 64 KB de nos)     16/16     64    2  1.000  0.570     5.60      6.89  0.81x       4.31  1.30x
+aplicacao (120 funcoes, chamadas/retornos)    16/16     64    2  0.976  0.926     5.86      3.64  1.61x       3.01  1.95x
+MEDIA GEOMETRICA                                                                  5.81      3.65  1.59x       3.07  1.89x
+
+CONCLUSOES E LIMITES
+- Os nucleos sao sinteticos (copia, matriz 40x40, ordenacao, lista encadeada, aplicacao com 120 funcoes). Nao ha traco de programa real do R8064: as taxas HIT_I/HIT_D valem para esses exemplos, nao para os seus programas.
+- Cache de 8 KB (I) + 8 KB (D), linha de 32 B, 2 vias: ganho medio de 2,26x sobre o modelo atual da planilha e de 1,65x sobre a base com fila de prefetch (controlador SDRAM do modulo 05).
+  Com o controlador de leituras sobrepostas (estimativa, nao simulado): 2,62x e 1,91x. Custo: 8 blocos de BSRAM de dados (+ tags em SSRAM/LUT, ~1-2 blocos): de ~16/46 para ~26/46.
+- Ganho vem sobretudo da instrucao: lacos pequenos cabem inteiros (HIT_I ~1,0) e a busca deixa de pagar 4 clocks por instrucao. No dado, o ganho depende da localidade: ordenacao 0,99, matriz 0,87, copia 0,75 (so localidade espacial), lista encadeada 0,50.
+- Linha de 64 B so ajuda quando ha localidade espacial (copia, matriz) e PIORA a lista encadeada (preenchimento de 64 B para usar 16 B) e a aplicacao; para codigo geral, 32 B com 2 vias.
+- Escrita direta: as escritas continuam custando o wait da planilha. Um buffer de escrita ou cache write-back melhoraria; nao foi modelado. Coerencia com a MMU/Z80/MSX (DMA no mesmo SDRAM) NAO foi tratada: o cache precisa ser invalidado nos acessos do Z80 classico e da interface MSX ou ficar so na regiao do R8064.
+- Premissas: acerto = 0 wait (BSRAM sincrona; endereco em F1/X, dado em F2/M); 80% dos preenchimentos acham a pagina SDRAM aberta; preenchimento da linha inteira antes de reiniciar (sem palavra critica primeiro).
+- Para a planilha: HIT_I e HIT_D sao um unico numero cada; valores razoaveis para 8 KB + 8 KB: HIT_I ~0,95 e HIT_D ~0,85 para codigo geral (aplicacao: 0,94 e 0,91); mas o modelo de ciclos da planilha ainda NAO distingue o custo de falha (preenchimento) do wait atual: seria preciso acrescentar a formula de falha.
+- NAO simulado em RTL: o RTL do cache, seu timing a 100 MHz (compare de tags no estagio F1/M) e a area de LUT. Pode ser o proximo passo.

@@ -1,0 +1,36 @@
+=== freq alvo 100 
+Info: Max frequency for clock 'u.clk': 66.55 MHz (FAIL at 100.00 MHz)
+ERROR: Max frequency for clock 'u.clk': 66.54 MHz (FAIL at 100.00 MHz)
+=== freq alvo 60 
+Info: Max frequency for clock 'u.clk': 66.55 MHz (PASS at 60.00 MHz)
+Info: Max frequency for clock 'u.clk': 66.54 MHz (PASS at 60.00 MHz)
+=== freq alvo 40 
+Info: Max frequency for clock 'u.clk': 66.55 MHz (PASS at 40.00 MHz)
+Info: Max frequency for clock 'u.clk': 66.54 MHz (PASS at 40.00 MHz)
+=== freq alvo 100 
+Info: Max frequency for clock 'u.clk': 66.55 MHz (FAIL at 100.00 MHz)
+ERROR: Max frequency for clock 'u.clk': 66.54 MHz (FAIL at 100.00 MHz)
+=== freq alvo 60 
+Info: Max frequency for clock 'u.clk': 66.55 MHz (PASS at 60.00 MHz)
+Info: Max frequency for clock 'u.clk': 66.54 MHz (PASS at 60.00 MHz)
+=== freq alvo 40 
+Info: Max frequency for clock 'u.clk': 66.55 MHz (PASS at 40.00 MHz)
+Info: Max frequency for clock 'u.clk': 66.54 MHz (PASS at 40.00 MHz)
+=== freq alvo 100 
+Info: Max frequency for clock 'u.clk': 44.26 MHz (FAIL at 100.00 MHz)
+ERROR: Max frequency for clock 'u.clk': 46.87 MHz (FAIL at 100.00 MHz)
+=== freq alvo 60 
+Info: Max frequency for clock 'u.clk': 44.26 MHz (FAIL at 60.00 MHz)
+ERROR: Max frequency for clock 'u.clk': 46.87 MHz (FAIL at 60.00 MHz)
+=== freq alvo 40 
+Info: Max frequency for clock 'u.clk': 44.26 MHz (PASS at 40.00 MHz)
+Info: Max frequency for clock 'u.clk': 46.87 MHz (PASS at 40.00 MHz)
+=== freq alvo 100 
+Info: Max frequency for clock 'u.clk': 51.99 MHz (FAIL at 100.00 MHz)
+ERROR: Max frequency for clock 'u.clk': 51.62 MHz (FAIL at 100.00 MHz)
+=== freq alvo 60 
+Info: Max frequency for clock 'u.clk': 51.99 MHz (FAIL at 60.00 MHz)
+ERROR: Max frequency for clock 'u.clk': 51.62 MHz (FAIL at 60.00 MHz)
+=== freq alvo 40 
+Info: Max frequency for clock 'u.clk': 51.99 MHz (PASS at 40.00 MHz)
+Info: Max frequency for clock 'u.clk': 51.62 MHz (PASS at 40.00 MHz)

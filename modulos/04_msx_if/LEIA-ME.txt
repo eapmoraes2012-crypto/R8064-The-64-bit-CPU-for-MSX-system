@@ -1,0 +1,5 @@
+Modulo 04 - msx_if.v + fifo2k.v. Copie rtl/*.v para uma pasta e rode (Icarus):
+  iverilog -g2012 -o sim tb_msx_if.v msx_if.v fifo2k.v && vvp sim        (cerca de 20 s; deve imprimir PASS)
+  iverilog -g2012 -o sk -Ptb_msx_if.SKEW=60 tb_msx_if.v msx_if.v fifo2k.v && vvp sk     (atraso aleatorio entre linhas)
+  iverilog -g2012 -o tf tb_fifo.v fifo2k.v && vvp tf
+Resultados e desvios em resultados_modulo04.txt; pnr/ tem o invólucro e os logs.

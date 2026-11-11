@@ -1,0 +1,58 @@
+Sintese Gowin GW2AR-18 (yosys + nextpnr, ROMs aleatorias para dimensionamento) - nucleo com uop de 80 bits + blocos + governador + classificador
+LUT4 6053/20736 (29%)  ALU 670  DFF 3403  BSRAM 24/46 (52%)
+Fmax a 100 MHz (3 sementes): 68.7 / 76.0 / 66.9 MHz  (FALHA em 100 MHz; antes dos blocos: 81-92 MHz)
+Caminho critico: leitura do regfile -> write-through -> encaminhamento -> st_x1 (dado de escrita)
+
+Otimizacao: removido o encaminhamento do estagio W (w_data) em fa_a/fa_b (ja coberto pelo write-through do regfile e pelo espacamento do sequenciador).
+Fmax apos: 76.0 / 83.8 / 77.9 (3 sementes em paralelo) e 93.5 (semente 3 isolada). LUT4 6099. Regressao completa OK.
+Caminho critico agora: ALU -> wq_d (dado de escrita do regfile) -> saida.
+
+== Revisao (final) ==
+ATENCAO: o nextpnr imprime varias linhas "Max frequency"; vale a ULTIMA (apos o roteamento). Os valores 76/84/78 e 68/76/67 citados antes eram estimativas pre-roteamento.
+Otimizacoes: indices de registrador (iA/iB/iD) registrados; wsz e valor antigo zerado pre-calculados em M; fim do encaminhamento do estagio W.
+Fmax final (roteado, 100 MHz alvo, execucoes isoladas): semente 1 = 96.57, semente 2 = 93.31, semente 3 = 103.61 MHz. LUT4 6145 (29%).
+ds_last sem governador passou de 3 para 4 (so afeta os testes do nucleo isolado).
+
+== Apos a entrada de interrupcao ==
+Fmax final (roteado, 100 MHz alvo): semente 1 = 90.12, semente 3 = 82.07 MHz (antes da interrupcao: 96.6 / 103.6). LUT4 ~5970-6060.
+Caminho critico: controle do front-end (dv / wq_v) -> decodificador. A condicao irq_take agora usa pipe_empty_q/issue_q registrados.
+Fmax (apos pendencias de IRQ): semente 1 = 91.68, semente 3 = 94.08 MHz; LUT4 6014. Caminho: ldval (M) -> encaminhamento -> opa_x1.
+Apos byte-enable: semente 1 = 83.14 MHz; LUT4 7097 (34%). Caminho: ldval/encaminhamento -> opa_x1.
+Apos xing/addr8 registrados: semente 1 = 93.55, semente 3 = 89.36 MHz; LUT4 7017 (33%).
+
+=== Otimizacao do caminho critico (apos EXINI/FIFO) ===
+Resultado final (nextpnr, ultima linha "Max frequency", --parallel-refine, timeout ~170 s):
+  semente 1: 105,54 MHz (PASS a 100)   semente 3: 101,98 MHz (PASS a 100)   | LUT4 7191 (34%), DFF 3729, ALU 748
+Antes: 86,8 (s1) / 90,7 (s3).
+Mudancas (todas validadas: regressoes do nucleo e do sistema, ALU 148.128 vetores):
+ 1. r8064_decode: ROM de controle lida com os dois candidatos (A/B) em paralelo, escolha depois do registrador.
+ 2. ROM A e ROM de ambiguidade viram logica combinacional (r8064_decode_rom.v, gerado por sim/gen_decode_rom.py, keep_hierarchy):
+    impede o yosys de absorver o registrador b2 na porta de leitura (levava o caminho D->b2 para dentro da ROM).
+ 3. id do decodificador registrado (+1 clock); ds_last 4->5 (sem governador) e 6->7 (governado).
+ 4. clen registrado (clen_r).
+ 5. alu_core_s: cout/rs por selecao explicita (so 64 bits depende da soma alta).
+ 6. Carga/IN nao e mais encaminhada de M (alinhador + extensao de sinal saiam do caminho): seqc passa a 3 bits e vale 4 apos carga/IN
+    (5 clocks entre uops), com encaminhamento de W (res_w). Encaminhamento de M agora usa res_m.
+ 7. dbg_sig e a observacao do wrapper em 2 estagios registrados (arvore XOR deixou de ser caminho critico artificial).
+Observacao: o nextpnr nesta VM so completa em ~170 s com --parallel-refine; sem ele passa de 180 s e o resultado fica truncado.
+
+=== 08/11/2026 - FREQUENCIA ALVO DEFINITIVA: 86 MHz ===
+Nucleo com seletores de forwarding pre-calculados (regfile64 com bypass registrado), nextpnr --freq 86, 3 sementes, rodado no PC do usuario:
+  semente 1 = 82,34 MHz (FALHA)   semente 2 = 92,98 MHz (PASS)   semente 3 = 97,68 MHz (PASS)
+  LUT4 (Yosys/nextpnr) 7300; DFF 3865; BSRAM 23; ALU 772. Dispersao entre sementes ~15 MHz: o resultado de uma semente nao e garantia.
+Caminhos criticos: s1 = adder/mux do invólucro e do rd0 (roteamento 7,6 ns de 12,1); s2 = ROM de microcodigo (uopm) -> iA_q (saida de BSRAM 2,26 ns); s3 = v_m -> flush -> d_m/sw_a.
+Decisao do usuario: 86 MHz e definitivo (antes 100). Consequencias: REF_INT do SDRAM 700 -> 600 clocks (6,98 us; 700 daria 8,1 us > 7,8 us);
+  z80_ce STEP_BASE para 85,92 MHz ja existe (178934226); tempos de SDRAM em clocks continuam validos (clock mais lento).
+
+== Rev22b: PnR a 86 MHz (pos-roteamento) ==
+Rodada 1 (imediato mux no XR):   s1 84.86 / s2 74.45 / s3 94.58 MHz
+Rodada 2 (mux movido p/ X1):     s1 79.96 / s2 72.27 / s3 98.25 MHz
+Mudanca: irq_arm_q (registra irq_pend&&ie&&!ei_cnt; irq_take mais curto). 
+Testes: sc1-8, regressao B e C OK. Yosys: 3320 LUT4. rodar_pnr.bat agora usa sementes 1..6.
+
+Rodada 3 (irq_arm_q, 6 sementes, --freq 86, pos-roteamento):
+ s1 80.22 FAIL | s2 87.77 PASS | s3 100.34 PASS | s4 92.79 PASS | s5 76.39 FAIL | s6 82.56 FAIL
+ => 3 de 6 passam. Semente recomendada para o bitstream: 3 (100.34 MHz).
+ Hold: 68 violacoes (pior -0.12 ns) sempre nos enderecos ADB da BSRAM u_dec.ctrl, em todas as sementes.
+
+=== 08/11/2026 - NOVO ALVO: 57,28 MHz (3,58 x 16) === ver 13_soc/resultado_soc.txt REV23. Core: 3/6 seeds a 86 e melhor 100,34 MHz.

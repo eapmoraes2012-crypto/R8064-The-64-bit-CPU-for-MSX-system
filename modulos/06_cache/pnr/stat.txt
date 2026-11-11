@@ -1,0 +1,37 @@
+
+4. Printing statistics.
+
+=== pnr_cache_top ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     2622 wires
+     5677 wire bits
+     2622 public wires
+     5677 public wire bits
+        3 ports
+        3 port bits
+     3312 cells
+        1   $scopeinfo
+      151   ALU
+      280   DFF
+      160   DFFE
+      137   DFFR
+      145   DFFRE
+       10   DFFS
+        2   DPX9B
+        1   GND
+        2   IBUF
+      135   LUT1
+      111   LUT2
+      422   LUT3
+     1141   LUT4
+      432   MUX2_LUT5
+       64   MUX2_LUT6
+       29   MUX2_LUT7
+       12   MUX2_LUT8
+        1   OBUF
+       71   RAM16SDP4
+        4   SDPX9B
+        1   VCC
+

@@ -1,0 +1,8 @@
+..\rtl\r8064_decode.v:42: error: Unknown module type: r8064_rom_amb
+..\rtl\r8064_decode.v:43: error: Unknown module type: r8064_rom_a
+3 error(s) during elaboration.
+*** These modules were missing:
+        r8064_rom_a referenced 1 times.
+        r8064_rom_amb referenced 1 times.
+***
+seq.vvp: Unable to open input file.

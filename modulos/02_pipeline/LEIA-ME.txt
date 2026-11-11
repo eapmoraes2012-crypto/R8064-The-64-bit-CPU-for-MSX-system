@@ -1,0 +1,37 @@
+MODULO 02 - Pipeline de 7 estagios (modelo de temporizacao dirigido por traco) - 2026-11-02
+Arquivos: rtl/r8064_pipe.v, rtl/tb_pipe.v, ref/gen_trace.py (gera tracos e tabela), ref/run_pipe.py (roda Icarus e compara), resultado_pipeline.txt, sim/*.mem (11 programas).
+Como rodar: copie rom/*.mem e rtl/r8064_decode.v do pacote + rtl/*.v + sim/*.mem para uma pasta; python3 ref/gen_trace.py <pacote> <pasta>; python3 ref/run_pipe.py <pasta>.
+
+O QUE E: um pipeline F1,F2,D,R,X,M,W em RTL que executa o TRACO de instrucoes (b2,b3) e conta clocks: barramento unico (busca x dados, dado tem prioridade),
+wait por acesso (1+W), desvio tomado com busca de caminho errado ate resolver em D/X/M (penalidade 2/4/5 sai da propria estrutura), e o decodificador REAL
+r8064_decode no estagio D (conferido contra a leitura combinacional das ROMs: 500/500 conferencias, 0 erros; um mutante da ROM de controle foi detectado).
+O QUE NAO E: nao executa as instrucoes (nao ha dados/registradores/memoria) e nao modela hazards de dados (RAW, load-uso), desvio nao tomado, interrupcoes, FPU/MMU.
+Nao e sintetizavel (usa traco e ROMs de simulacao); portanto nao ha LUT/Fmax para este modulo.
+
+RESULTADOS (ver resultado_pipeline.txt)
+A/B  D=1, busca sequencial (suposicao da planilha): instrucao isolada, sequencias de ALU e EX longo batem EXATAMENTE com a planilha (+6 de enchimento).
+     Com mistura de memoria e desvios o pipeline e de 0% a 3% mais rapido (A) ou 0,1% a 10% (B), porque a planilha soma penalidade e wait sem sobrepor.
+C    D=2 (decodificador como esta: id +1, controle +2): +1 clock de latencia e BR_D passa de 2 para 3 (JPQ: +5,5%); demais iguais ou ate 16% abaixo da planilha.
+D    busca SERIAL (so busca a proxima instrucao depois de conhecer o comprimento, len em 2 clocks): 5% a 60% PIOR que a planilha.
+CONCLUSOES
+1) A planilha so se sustenta se a busca for antecipada (fila de prefetch + decodificador de comprimento fora do caminho critico). O R8064 tem instrucoes de 2 a 13 bytes e
+   o comprimento depende de b2/b3 (ROM). Sem prefetch, CPI sobe de 5,06 para 8,04 em codigo ALU com wait. Falta projetar a fila de prefetch (modulo futuro).
+2) Resposta a "duas leituras em serie no D": funciona se D ocupar 2 clocks (custo: +1 latencia, BR_D=3). Alternativa: ler a ROM de controle no estagio R (D=1) e manter
+   BR_D=2 apenas se a classe de desvio puder ser obtida da ROM_A/B (hoje esta so na ROM de controle). Nao testado.
+3) Penalidades de desvio ficam parcialmente escondidas atras do barramento ocupado; a soma da planilha e conservadora.
+PREMISSAS: W_RD=4,W_WR=2,W_IO=1, HIT=0 (as da planilha); desvios sempre tomados (condicionais "falsas" nao simuladas); 1 acesso de busca de 8 bytes por instrucao (sem reuso).
+
+=== FILA DE PREFETCH (rtl/r8064_pipe2.v, rtl/tb_pipe2.v, ref/run_pipe2.py, resultado_prefetch.txt) ===
+Front-end: busca de palavras de 8 bytes alinhadas (1+WRD clocks, disputa o barramento com M) -> fila de QCAP bytes -> F1 (comprimento, LEN_LAT clocks) -> F2 (extrai LEN bytes) -> D.
+Desvio: a instrucao de desvio trava o front-end ao entrar em F1; a fila segue enchendo com bytes do caminho errado ate a resolucao (D/X/M); depois e esvaziada e a busca recomeca
+no alvo (deslocamento pseudoaleatorio dentro da palavra). Nao modela hazards de dados nem desvio nao tomado. Decodificador real no D conferido: 500/500, 0 erros.
+Como rodar: python3 ref/run_pipe2.py <pasta de trabalho>  (a mesma pasta do modulo 02, com as ROMs; argumentos opcionais = indices das configuracoes).
+RESULTADOS (CPI = clocks por instrucao; planilha = busca de 1 palavra por instrucao, sem reaproveitamento)
+- Com wait da planilha e fila de 32 B: 10% a 61% MENOS clocks que a planilha (ex.: ALU 5,06 -> 2,13 CPI; mistura aleatoria 13,99 -> 10,76). A planilha SUPERESTIMA a busca,
+  porque uma palavra de 8 bytes serve varias instrucoes de 2-5 bytes. Chamadas/retornos (CALL/RET) ficam iguais a planilha (+0,3%): a penalidade de desvio domina.
+- Tamanho da fila: 18 e 19 B travam (deadlock: instrucao de 13 bytes + palavra de 8 nao cabem); minimo funcional = 20 B (13+8-1); 24 B tem o mesmo desempenho de 32 e 64 B
+  (diferenca < 0,1% em 500 instrucoes; 16 B trava em varios programas). Recomendado: 32 B (2 BSRAM nao precisam; cabe em registradores/SSRAM). 
+- Desvios: wait de 4 deixa cerca de 14 palavras buscadas ate resolver; o desvio no D custa 1 clock a mais com D=2 (JPQ BR_D 3).
+- SEM wait (cache/memoria rapida): o decodificador de comprimento com LEN_LAT=2 NAO e pipelinado e limita a 1 instrucao a cada 2 clocks (ALU: CPI 2,08 contra 1,06 da planilha, +96%).
+  Para sustentar 1 instrucao/clock o decodificador de comprimento precisa de 1 clock por instrucao (ou ser pipelinado/duplicado). Com wait de 4 isso nao aparece.
+PREMISSAS A CONFIRMAR: palavra de busca de 8 bytes (barramento de 64 bits), W_RD=4, nenhum acerto de cache, alvo de desvio com deslocamento aleatorio, F1 le o comprimento em LEN_LAT clocks.

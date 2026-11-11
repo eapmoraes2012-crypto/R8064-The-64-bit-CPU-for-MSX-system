@@ -1,0 +1,2 @@
+Info: Max frequency for clock 'u.clk': 39.92 MHz (FAIL at 60.00 MHz)
+ERROR: Max frequency for clock 'u.clk': 41.55 MHz (FAIL at 60.00 MHz)

@@ -1,0 +1,35 @@
+# Ferramentas (baixe do projeto OSS CAD Suite; nao versionar)
+oss-cad-suite*/
+*.tgz
+*.zip
+*.7z
+
+# Simulacao (gerados por iverilog/vvp)
+*.vvp
+*.vcd
+*.fst
+
+# Resultados de teste gerados pelos .bat (os resultado_*.txt documentam o projeto e SOBEM)
+teste_*.txt
+
+# Sintese / place-and-route e bitstreams (gerados; reproduziveis com rodar_pnr_board.bat)
+*.log
+*.fs
+*.bit
+**/pnr/*.json
+!**/pnr/pins*.json
+**/pnr/*_run.ys
+
+# Backups e copias antigas
+bak/
+bak_*/
+**/bak/
+**/bak_*/
+*.bak
+*~
+
+# Sistema
+Thumbs.db
+.DS_Store
+__pycache__/
+*.pyc

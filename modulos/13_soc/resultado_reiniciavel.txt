@@ -1,0 +1,22 @@
+REV22 - PUSH, CALL e entrada de interrupcao reiniciaveis apos falta de dados (simulacao Icarus Verilog 14, SoC completo: nucleo + MMU + caches + SDRAM)
+
+Mudanca: a uop de gravacao de PUSH/CALL/entrada de INT (IM1/IM2) enderaca [SP-2] com um imediato constante (bit 79 da uop, 'immc' = -(1<<isz)) e SP so e atualizado
+depois (SP := SP + immc). Antes: DEC SP, DEC SP, gravacao; uma falta deixava SP ja decrementado e o reinicio decrementava de novo.
+IM2: o vetor [I:FF] e lido em TMP antes de empilhar. Falta durante a entrada de INT: IFF2 := 1 e irq_pend := 1 (o RETN reabilita e a INT e aceita de novo).
+LDIR/LDDR/CPIR/CPDR/OTIR/OTDR, POP e RET ja eram reiniciaveis (o acesso e a primeira uop com efeito visivel; TMP nao e visivel); agora ha teste. INI/INIR/IND/INDR NAO sao (a leitura da porta ja ocorreu).
+
+Testes novos em 13_soc/sim/tb_soc_exc.v (+sc=N); a pagina 1000h-1FFFh comeca nao mapeada, o testbench a mapeia na primeira falta e o tratador volta a instrucao:
+  +sc=4  PUSH BC / POP DE com a pilha em 1FFEh        -> SP final 2000h, DE=BC
+  +sc=5  CALL 0030h com a pilha em 1FFEh              -> SP final 2000h, retorna ao CALL+3
+  +sc=6  LDIR com leitura em 1000h no 3o byte (HL=0FFEh, BC=4)   -> copia correta, HL=1002h, 1 falta
+  +sc=7  LDIR com escrita em 1000h no 3o byte (DE=0FFEh, BC=4)   -> copia correta, HL=0104h, 1 falta
+  +sc=8  EI com INT ativa e IM1; a entrada empilha em 1FFEh (falta) -> o tratador da INT roda depois do reinicio, PC empilhado correto
+Resultado com o RTL ANTERIOR: sc=4 ERRO (SP=1FFEh, decremento duplo), sc=5 ERRO (SP=1FFEh), sc=8 ERRO (SP=1FFEh apos o POP); sc=6 e sc=7 OK.
+Resultado com o RTL NOVO: sc=1..8 todos OK, 0 violacoes de SDRAM.
+
+Regressao (mesmos testbenches, RTL anterior x novo, mems regenerados com o gen_roms de cada um): tb_cpu_gov (4 modos), tb_sys, tb_sys_seq, tb_sys_ldir, tb_sys_irq (Z80 e R800),
+tb_xing, tb_exini, tb_blk, tb_io, tb_irq, tb_irq2 (IM1 e IM2), tb_irq3, tb_ldai, tb_seq, tb_soc e tb_soc +mmu: todos OK nos dois; saidas identicas (os tempos governados nao mudam),
+unica diferenca textual: o PC impresso no fim de tb_seq (8 -> A), porque PUSH/CALL em modo nativo agora usam 2 e 3 uops em vez de 3 e 4 (4 clocks a menos cada).
+Sintese Yosys (synth_gowin, pnr_gov_top): 3276 LUT4 (antes 3355 no yosys.log da ultima execucao), 700 ALU, 18 SPX9. Fmax NAO remedida: rode 10_mode_gov/pnr/rodar_pnr.bat (86 MHz, 3 sementes);
+o unico caminho novo e o mux do imediato (imm_xr <= u[63] ? 0 : u[79] ? constante : immv).
+Arquivos alterados: r8064_core_min.v (09_core_min e 10_mode_gov), gen_roms.py e uop.mem (09_core_min, 10_mode_gov, 13_soc, pnr), tb_soc_exc.v, rodar_exc.bat, LEIA-ME.txt. Copias anteriores em bak/antes_reiniciavel.

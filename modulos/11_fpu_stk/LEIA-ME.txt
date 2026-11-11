@@ -1,0 +1,6 @@
+MODULO 11 - Hardware residual da FPU (fpu_stk): pilha ST0-ST7 (80 b), tags, CW, SW, FXAM. A aritmetica e firmware (modulo 08, ref/fpu_fw.py).
+Simulado: 20.000 vetores contra modelo Python independente (sim/fpu_stk_ref.py): PASS 0 erros (Icarus). Sintese: 705 LUT1-4 + 19 ALU + 40 RAM16SDP4 (~884 LUT4 eq.), 267 FF, 98,1 MHz com invólucro.
+Rodar: rodar_stk.bat dentro do terminal OSS CAD Suite (gera resultado_stk.txt).
+Interface: comandos 0 NOP 1 INIT 2 PUSH 3 POP 4 XCH(ST(ra_idx)<->ST(rb_idx)) 5 WRST 6 INCSTP 7 DECSTP 8 SETCW 9 CLREX 10 ORFLG 11 SETCC 12 SETSW 13 SETTW 14 FREE.
+Decisoes: POP em pilha vazia com IM mascarado incrementa TOP; formatos nao suportados = tag especial e FXAM sem bits; FINIT nao apaga dados; FXAM usa a porta A.
+Nao coberto: excecoes nao mascaradas (so sinalizacao ES/B), FSAVE/FRSTOR completos (firmware com WRST/SETSW/SETTW), registradores de endereco da FPU (FIP/FDP/FOP).

@@ -1,0 +1,12 @@
+INIT concluida no ciclo 2025: refreshes de inicializacao=2 modo programado=1
+ACESSOS: 71434 | divergencias de dado=0 | violacoes do modelo=0 | refreshes=837, maior intervalo entre refreshes=708 clocks | comandos ACT=52359 RD=51829 WR=19605 PRE=50080
+LATENCIA (clocks do clock de aceitacao ate rvalid/wdone), sem refresh no meio:
+  pagina aberta (acerto) leitura  n= 10754 min= 5 media= 5.00 max=  5 (com refresh: 96)
+  pagina aberta (acerto) escrita  n=  8321 min= 1 media= 1.00 max=  1 (com refresh: 37)
+  banco fechado          leitura  n=  1747 min= 7 media= 7.00 max=  7 (com refresh: 0)
+  banco fechado          escrita  n=   539 min= 3 media= 3.00 max=  3 (com refresh: 0)
+  outra linha (conflito) leitura  n= 38668 min= 9 media= 9.00 max=  9 (com refresh: 564)
+  outra linha (conflito) escrita  n= 10576 min= 5 media= 5.00 max=  5 (com refresh: 132)
+  pior latencia de um acesso atrasado por refresh: 13 clocks
+PASS
+tb_sdram.v:76: $finish called at 5867115000 (1ps)

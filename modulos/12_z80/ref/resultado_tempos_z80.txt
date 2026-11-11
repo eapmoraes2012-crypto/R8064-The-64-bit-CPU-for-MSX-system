@@ -1,0 +1,7 @@
+VERIFICACAO DOS T-STATES DO Z80 (05/11/2026)
+Fonte: tabela [Z80_00] [Z80_CB] [Z80_ED] [Z80_DD] [Z80_FD] [Z80_DDCB] [Z80_FDCB] de R8064_Z80_instrucoes_fpga.txt (mesma da aba Z80 da planilha).
+Metodo: verifica_tempos_z80.py deriva os T-states por REGRAS de decodificacao (campos x,y,z,p,q do opcode) a partir do Zilog Z80 CPU User Manual (UM0080), sem ler a tabela; depois compara T e T_ALT.
+Resultado: 1.270 linhas (00:252 CB:256 ED:80 DD:85 FD:85 DDCB:256 FDCB:256), 0 diferencas.
+Limites: (1) confere T-states TOTAIS, nao a sequencia de ciclos de maquina (M1/MR/MW/IO) nem a pagina de enderecos em cada T; (2) o MSX insere 1 estado de espera em cada ciclo M1 e em cada ciclo de E/S
+(hardware do slot), entao o tempo no MSX e maior que o da tabela: M1 = 5 T no MSX; (3) a regra foi escrita por mim a partir da minha leitura do manual, mesma fonte de conhecimento que gerou a tabela; um erro comum aos dois nao seria detectado.
+Instrucoes nao documentadas conferidas pelas mesmas regras (ED espelhos, DD/FD com IXH/IXL, DDCB/FDCB com copia para registrador).

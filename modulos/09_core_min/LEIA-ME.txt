@@ -1,0 +1,1 @@
+Modulo 09 - nucleo minimo (esqueleto de area). Veja resultados_modulo09.txt. rtl/ = RTL (r8064_core_min.v + modulos 01 + decodificador ED), sim/ = testbench e gerador de ROMs, pnr/ = invólucro e logs de P&R.

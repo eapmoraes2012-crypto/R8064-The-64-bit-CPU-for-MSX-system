@@ -1,0 +1,10 @@
+INTEGRACAO Z80 + MEMORIA MSX (12_z80, arquivos z80_msx_sys.v, z80_msx_top.v, sdram_byte_if.v)
+==================================================================================
+z80_msx_sys.v   Z80 (z80_top) + msx_mem (modulo 10) + ponte de bytes. Acessos que caem no mapper/MegaRAM (hit) vao para a porta fisica mp_*;
+                o resto (BIOS ROM, outros slots, perifericos) sai por xm_* (memoria) e xio_* (E/S), com x_wait_n. xio_ack=1 no reconhecimento de INT (xio_rdata = vetor).
+sdram_byte_if.v  mp_* (1 byte, endereco fisico de 24 bits) -> sdram_ctrl (palavra de 64 bits + byte-enable). Enderecos fisicos limitados a 4 MB (mapper 1 MB em 0, MegaRAM 1 MB em 100000h).
+z80_msx_top.v   sys + adaptador + sdram_ctrl; o Z80 fica em reset ate init_done da SDRAM (sdram_ok).
+WAIT e DADOS sao registrados (1 clock): exige pulsos ce do Z80 separados por >= 3 clocks (vale a 57,27 MHz com turbo 0-2 (3,58/7,16/14,3 MHz); turbo 3 e limitado a 14,3 MHz por z80_ce [antes: 4 turbos a 100 MHz: 3,58/7,16/14,3/28,6 MHz; com use_ext, ce_ext idem).
+Teste: sim_msx\rodar_z80_msx.bat (turbo 0..3). Programa ref\t_msx.z80 (montado por zasm.py com ZASM_ORG0=1): mapper (remapear paginas, alias, leitura de porta com bits 1),
+LDIR entre segmentos, MegaRAM ASCII8 (modo escrita via IN 8Eh, ROM via OUT 8Eh, bancos por janela). Esperado: "PASS: integracao ..." em cada turbo.
+LIMITES: slots expandidos (FFFFh) nao implementados; o Z80 le/escreve a SDRAM em ~10-20 clocks por byte (wait states): em turbo alto o ganho de velocidade e limitado pela SDRAM.

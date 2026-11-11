@@ -1,0 +1,34 @@
+
+3. Printing statistics.
+
+=== sdram_ctrl ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1695 wires
+     3054 wire bits
+     1695 public wires
+     3054 public wire bits
+       23 ports
+      250 port bits
+     2138 cells
+      128   ALU
+       18   DFF
+      228   DFFE
+      101   DFFR
+       85   DFFRE
+        3   DFFS
+        4   DFFSE
+        1   GND
+      127   IBUF
+      272   LUT1
+      153   LUT2
+      246   LUT3
+      224   LUT4
+      285   MUX2_LUT5
+       92   MUX2_LUT6
+       37   MUX2_LUT7
+       10   MUX2_LUT8
+      123   OBUF
+        1   VCC
+

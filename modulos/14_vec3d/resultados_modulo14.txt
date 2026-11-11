@@ -1,0 +1,49 @@
+MODULO 14 - vec3d_unit (manipulacao 3D, prototipo de medicao) - 09/11/2026
+=======================================================================
+FORMATO: vetor = 4 lanes int16 (x,y,z,w) em um registrador de 64 bits; ponto fixo com deslocamento de saida sh (0-31) e arredondamento ao mais proximo.
+OPERACOES (11): VMUL, VDOT4, VDOT3, VCROSS3, VADD, VSUB, VMIN, VMAX, VSHUF (swizzle por imm8), VNEG, VABS. VMUL/VCROSS3/VADD/VSUB/VNEG saturam em int16;
+  VDOT4/VDOT3 devolvem escalar de 64 bits (soma de produtos de 32 bits, sem estouro) deslocado por sh. 1 operacao por clock, latencia 5.
+VERIFICADO (simulacao, Icarus): 30.000 vetores aleatorios+cantos (op, sh 0-16, imm), modelo de referencia em inteiros do Python (semente 8064), 0 erros, saidas 1 por clock.
+MEDIDO (Yosys synth_gowin, unidade isolada):
+  completa (LANE_ALU=1): 863 LUT4 + 452 ALU (= 1.315 LUT4 eq.), 935 FF, 6 MULT18X18, 0 BSRAM
+  minima   (LANE_ALU=0, sem VADD/VSUB/VMIN/VMAX/VNEG/VABS): 762 LUT4 + 309 ALU (= 1.071), 855 FF, 6 MULT18X18
+MEDIDO (nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, invólucro LFSR, alvo 100 MHz): 100,75 / 88,61 MHz (sementes 1/2) -> PASSA a 57,28 MHz com folga.
+  Historico: v1 (somadores e comparadores separados por op, saturacao por comparador) 4.436 LUT4 + 922 ALU; v2/v3 (somador compartilhado, saturacao por extensao de sinal) 894+442 a 67 MHz (FALHA 100);
+  versao final (S4 dividido em deslocamento | soma+saturacao): 863+452 a 89-101 MHz. Versoes antigas em rtl/*_v?.v.
+NAO FEITO: integracao no nucleo (decodificacao, leitura de 2 registradores 64 b, escrita, hazards, precisao de excecoes), reciproco/raiz recíproca (rsqrt) por tabela em BSRAM,
+  MATVEC4 microcodificado com acumulador interno, lanes de 32 bits (Q16.16), PnR dentro do SoC.
+IMPACTO NO ORCAMENTO (rev20: total 16.330 LUT4 eq. = 78,8 %; meta 85 % = 17.600; folga 1.270): +1.315 -> 17.645 (85,1 %) ; versao minima +1.071 -> 17.401 (83,9 %). A linha 11 da planilha
+  (Midia nivel 1: SIMD, mult 4x16, recip/rsqrt, ~960 LUT4, adiada) e substituida por esta unidade (+ ~100-150 LUT4 e 1-2 BSRAM do rsqrt). DSP: 6 de 48 (mul/div usa 4: sobram 38).
+  O SoC medido hoje (board top: 10.982 LUT4 + 1.064 ALU = 12.046 = 58 %) ainda nao inclui o mul/div, a FPU residual nem perifericos.
+
+
+===== REVISAO 10/11/2026: CORRECAO DA MEDIDA DE AREA + INTEGRACAO + OTIMIZACAO =====
+ERRO NA MEDIDA ANTERIOR: acima, "LUT4" era so a celula LUT4 do Yosys. O nextpnr conta como LUT4 TODAS as LUT (LUT1+LUT2+LUT3+LUT4) e os MUX2_LUT5..8; a ALU e a parte.
+Medida correta da v5 (completa): LUT1-4 2.064 + MUX2_LUT 311 + ALU 452 = ~2.830 LUT4-eq (nextpnr, com o invólucro de teste: LUT4 2.638 + ALU 512).
+  (os "1.315" e "1.071" dados antes estavam ERRADOS por subestimar ~2x; a versao minima tambem.)
+INTEGRADA ao nucleo (ver ISA_3D.txt): uop[80]=vec (uop de 81 bits, continua em 9 BSRAM), ED F8/FA/FB (ids 294-296), regressao antiga identica (21 testes), SoC e excecoes OK,
+  tb_vec (09_core_min/sim): programas aleatorios de ~3.000 operacoes 3D com/sem prefixos de banco, 0 erros.
+OTIMIZADA (v6, sem perda de funcao; verificada com os mesmos 30.000 vetores): 
+  (1) VNEG/VABS passam a usar os multiplicadores (a*-1, a*sinal(a)) - some a troca de operandos do somador de lanes;
+  (2) VCROSS3 com 6 multiplicadores proprios (10 DSP no total): some o multiplexador de entrada dos DSP;
+  (3) DOT3 zera a lane w na entrada do multiplicador (uma arvore de soma em vez de duas); (4) sh de 4 bits (ISA: 0..15), larguras exatas (34/33 bits),
+  (5) entradas direto nos DSP (latencia 5 -> 4, 128 FF a menos).
+  Resultado: Yosys LUT1-4 1.659 + MUX2 267 + ALU 409 = ~2.335 LUT4-eq (-17%); nextpnr isolado 2.080 LUT4 + 466 ALU (-19% vs 3.150), 10 DSP, Fmax 114,9 MHz (alvo 70).
+  Variante sem VADD/VSUB/VMIN/VMAX (LANE_ALU=0): -250 LUT4-eq (nao adotada: perde funcao).
+  No SoC (board top, ROMs aleatorias, Yosys): +1.419 LUT(1-4+MUX2) +441 ALU = ~+1.860 LUT4-eq, +10 DSP, BSRAM igual (referencia sem a unidade: 11.807 LUT + 919 ALU).
+CUSTO POR FUNCAO na v6 (experimentos de eliminacao, LUT4-eq): deslocador+arredondamento 676 | VSHUF 228 | VDOT 237 | VCROSS3 166 | VADD/VSUB 174 | VMIN/VMAX 109.
+TENTADO E DESCARTADO: v7 (deslocador de janela de 16 bits + teste de saturacao por termometro nas lanes 1-3): +120..+180 (o ABC ja otimiza melhor a versao ingenua).
+NAO FEITO (ideias com estimativa, nao medidas): DOT/CROSS nos blocos MULTADDALU18X18 do DSP (~-200 ALU, requer primitivas Gowin + modelo de simulacao);
+  unidade multiciclo (1-2 lanes/clock: ~-180..-300 LUT4-eq, vazao 1 op por 2-4 clocks; o front-end atual so emite 1 instrucao a cada >=6 clocks).
+ORCAMENTO: rev20 16.330 (78,8 %) + ~1.860..2.335 = ~18.200..18.700 (87,7..90 %) - ACIMA da meta de 85 % (17.600). Medido no board top (nextpnr, sem a unidade): 12.046 (58 %).
+RISCO DE FMAX: o 'hold' do nucleo ganhou o termo (vec_m && !vo_valid); precisa de PnR do board top (rodar_pnr_board.bat, 4 sementes) para confirmar 57,28 MHz.
+
+===== 10/11/2026 (2): UNIDADE MULTICICLO TESTADA E DESCARTADA =====
+v8: S3/S4 compartilhados por pares de lanes (2 passadas, 1 operacao a cada >= 2 clocks, latencia 5), verificada (30.000 vetores, intervalos de 2 e 3 clocks; tb_vec3d.v tem o parametro GAP).
+Yosys: LUT1-4 1.669 + MUX2 443 + ALU 341 = 2.453 LUT4-eq contra 2.335 da v6: PIOR (os multiplexadores de entrada/saida das fendas custam mais que os dois deslocadores economizados).
+Mantida a v6. Resta, sem estar testado, usar blocos MULTADDALU18X18 para DOT/CROSS (~-200 ALU, requer primitivas Gowin).
+
+===== 10/11/2026 (3): VERSAO MINIMA ADOTADA NO NUCLEO =====
+r8064_core_min: parametro VEC_LANE_ALU (padrao 0) -> vec3d_unit sem VADD/VSUB/VMIN/VMAX. Verificada: tb_vec (programas aleatorios so com OP 0-3, FA, FB) OK; regressao de 21 testes identica; tb_soc e tb_soc_exc OK.
+Area: unidade isolada v6 minima = LUT1-4 1.540 + ALU 274 (completa 1.659 + 409): -250 LUT4-eq. No board top (Yosys, ROMs aleatorias) a diferenca NAO apareceu: completa 13.226 LUT+MUX2 / 1.360 ALU,
+minima 13.514 / 1.225 (soma +153, dentro do ruido do ABC ~300). O valor real so sai do nextpnr no seu PC (rodar_pnr_board.bat).

@@ -1,0 +1,9 @@
+=== freq alvo 100 
+Info: Max frequency for clock 'u.clk': 39.92 MHz (FAIL at 100.00 MHz)
+ERROR: Max frequency for clock 'u.clk': 41.55 MHz (FAIL at 100.00 MHz)
+=== freq alvo 60 
+Info: Max frequency for clock 'u.clk': 39.92 MHz (FAIL at 60.00 MHz)
+ERROR: Max frequency for clock 'u.clk': 41.55 MHz (FAIL at 60.00 MHz)
+=== freq alvo 40 
+Info: Max frequency for clock 'u.clk': 39.92 MHz (FAIL at 40.00 MHz)
+Info: Max frequency for clock 'u.clk': 41.55 MHz (PASS at 40.00 MHz)
