@@ -1,5 +1,6 @@
-# gera gov_rom.mem (1792 x 32): tabela de tempo por (pagina, opcode) para o governador de tempo do R8064
-# indice = pagina*256 + opcode ; pagina: 0 principal, 1 CB, 2 ED, 3 DD, 4 FD, 5 DDCB, 6 FDCB
+# gera gov_rom.mem (2048 x 32): tabela de tempo por (pagina, opcode) para o governador de tempo do R8064
+# uso: python3 gen_gov_rom.py <ref/z80_classico_tstates.csv>   (grava gov_rom.mem na pasta atual)
+# indice = pagina*256 + opcode ; pagina: 0 principal, 1 CB, 2 ED, 3 DD, 4 FD, 5 DDCB, 6 FDCB, 7 aceitacao de interrupcao
 # palavra: [5:0] Z80 T-states | [11:6] Z80 T alt | [17:12] R800 ciclos (total DRAM) | [23:18] R800 alt | [24] 2 ciclos M1 | [25] E/S
 import re,sys,csv
 from r800cls import classify
@@ -40,5 +41,11 @@ for p in range(7):
         else: z,za,rt,ra,m1,io=8,0,2,0,1,0
         assert z<64 and za<64 and rt<64 and ra<64,(p,o,z,za,rt,ra)
         rom[p*256+o]=z|za<<6|rt<<12|ra<<18|m1<<24|io<<25
+# pagina 7 (aceitacao de interrupcao; antes acrescentada a parte por gov_irq_page.py): Z80 = 13 T (INTA com 2 waits automaticos; o M1_WAIT
+# do MSX soma +1 no governador), R800 = tempo do RST 38h (a confirmar). As 256 entradas sao iguais (o nucleo usa op 0).
+rst=rom[0*256+0xFF]
+e=13 | 0<<6 | (rst>>12&63)<<12 | (rst>>12&63)<<18 | 0<<24
+rom+=[e]*256
+assert len(rom)==2048
 open('gov_rom.mem','w').write('\n'.join('%08x'%w for w in rom)+'\n')
 print('entradas',len(tab),'sem classe R800:',len(miss),miss[:5])

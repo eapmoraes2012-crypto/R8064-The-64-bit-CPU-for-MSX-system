@@ -5,3 +5,5 @@ Revisao 10/11/2026: rtl/vec3d_unit.v = v6 (otimizada, sh 4 bits, latencia 4, 10 
 Medir area: ./ys_unit.sh rtl/vec3d_unit.v (soma LUT1-4 + ALU; o nextpnr tambem conta os MUX2_LUT). ISA e encodificacao: ISA_3D.txt. Teste no nucleo: 09_core_min/sim/tb_vec.v.
 
 [10/11/2026] A unidade 3D foi REMOVIDA do nucleo (ver 13_soc/resultado_soc.txt REV30). Este modulo fica como arquivo de projeto: nada o instancia. Estado do nucleo com a 3D: 09_core_min/bak/com_vec3d/.
+NOTA 14/11/2026: as pastas bak/ nao sao versionadas (.gitignore), entao 09_core_min/bak/com_vec3d/ NAO esta no repositorio. O teste no nucleo
+ (tb_vec.v, gen_prog_vec.py) esta em 14_vec3d/sim/teste_no_nucleo/ e so roda contra o nucleo COM a unidade 3D (estado da REV29).

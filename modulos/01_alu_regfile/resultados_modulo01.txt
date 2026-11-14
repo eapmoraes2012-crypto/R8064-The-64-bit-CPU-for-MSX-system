@@ -9,3 +9,6 @@ Sintese/P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, alvo 100 MHz,
 Consequencia: a ALU precisa de registrador entre R e X (ja previsto no pipeline de 7 estagios); verificar no modulo 02.
 PREMISSAS A CONFIRMAR: semantica dos flags (H, PV, X/Y, CPL, shifts em 1 bit, INC/DEC mantem C) e ordem dos tamanhos.
 Ressalva: Fmax do nextpnr e estimativa pre-silicio, sem restricoes de E/S reais.
+ATUALIZACAO 14/11/2026: o regfile64 ganhou repasse da escrita (bypass registrado, 08/11) e o testbench ainda esperava o valor antigo na leitura do endereco
+  escrito no mesmo clock: dava FAIL com 597 erros no banco. tb_alu_regfile.v corrigido (modelo com repasse): ALU 148128 / regmap / regmerge / regfile = 0 erros, PASS
+  (Icarus 12, com a alu_core deste modulo e com a de 09_core_min).

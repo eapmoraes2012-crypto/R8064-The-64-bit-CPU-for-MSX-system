@@ -1,5 +1,5 @@
 @echo off
-rem Rode no terminal do OSS CAD Suite. Falta de MMU como excecao no nucleo (tb_soc_exc, cenarios 1-8).
+rem Rode no terminal do OSS CAD Suite. Falta de MMU como excecao no nucleo (tb_soc_exc, cenarios 1-8), SoC basico (tb_soc, bypass e +mmu) e gerador de clock (tb_clkgen).
 cd /d "%~dp0sim"
 set R=..\..\10_mode_gov\rtl
 set C=..\..\09_core_min\rtl
@@ -13,3 +13,10 @@ vvp exc.vvp +sc=5
 vvp exc.vvp +sc=6
 vvp exc.vvp +sc=7
 vvp exc.vvp +sc=8
+rem SoC: programa de sequencias a partir da SDRAM, MMU em bypass e ligada
+iverilog -g2012 -o soc.vvp tb_soc.v ..\rtl\r8064_soc.v ..\rtl\r8064_memsys.v ..\rtl\mem_arb4.v ..\rtl\cache_dm.v ..\rtl\mmu.v ..\rtl\sdram_ctrl.v sdram_model.v %CORE%
+vvp soc.vvp
+vvp soc.vvp +mmu
+rem gerador de clock (modelo de simulacao do rPLL: precisa de -DSIM)
+iverilog -g2012 -DSIM -o ck.vvp tb_clkgen.v ..\rtl\r8064_clkgen.v
+vvp ck.vvp

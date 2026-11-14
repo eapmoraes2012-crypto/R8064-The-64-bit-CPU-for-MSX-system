@@ -21,7 +21,7 @@ module tb_mode;
         // chave errada
         wr(8'h3D, 8'h5A); wr(8'h3E, 8'h01); repeat (2) @(posedge clk); ck("chave errada: nativo 0", nat, 0);
         // chave certa
-        bnd = 0; wr(8'h3D, 8'hA5); wr(8'h3E, 8'h05);          // NATIVE64 + CLK=10 (reservado -> 85,92 MHz)
+        bnd = 0; wr(8'h3D, 8'hA5); wr(8'h3E, 8'h05);          // NATIVE64 + CLK=10 (campo reservado: so guarda o bit)
         rdp(8'h3E, v); ck("busy ate a fronteira", v[3], 1); ck("ainda nao nativo", nat, 0);
         bnd = 1; repeat (2) @(posedge clk); bnd = 0;
         ck("nativo apos fronteira", nat, 1); ck("clk_sel (1x -> B)", csel, 1);

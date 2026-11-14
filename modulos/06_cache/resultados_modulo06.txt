@@ -13,3 +13,7 @@ RESSALVAS: coerencia com Z80/MSX/MMU so via inv (varredura); I-cache nao ve as e
 CACHE DE INSTRUCOES 4 KB (cache_dm WR=0 IDX=7 STATS=0) - medido pelo usuario 04/11/2026 (Yosys 0.70 + nextpnr, GW2AR-LV18QN88C8/I7):
   LUT1 69 + LUT2 53 + LUT3 75 + LUT4 196 = 393; ALU 11; RAM16SDP4 24 (~96 LUT4 eq.); FF 341; BSRAM 3 (1 DPX9B + 2 SDPX9B). Total ~500 LUT4 eq. (inclui ~50-100 do involucro LFSR).
   Fmax 115,6 MHz (PASS a 100). Obs.: o involucro antigo sumia na sintese porque m_wdata/m_be ficam sem driver com WR=0 e entravam na paridade de saida.
+
+ATUALIZACAO 14/11/2026 - cache_dm (a cache usada no SoC): sim/tb_cache_dm.v terminava com 2 FALHAS porque o T4b ainda era o teste de LRU da cache8k de 2 vias.
+  T4b reescrito para o mapeamento direto (A e C na mesma linha: 4 falhas; B preservada; C expulsa). Resultado: TODOS OS TESTES PASSARAM, 0 violacoes de SDRAM
+  (B2B=1 e B2B=0). rtl/cache_dm.v e sim/cache_dm.v agora sao a mesma versao de 13_soc/rtl (com o parametro B2B). Saida: sim/saida_sim_dm.txt.

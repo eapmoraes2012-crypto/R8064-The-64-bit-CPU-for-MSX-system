@@ -1,6 +1,6 @@
 // r8064_mode.v - registradores de modo do R8064.
 //   Porta 3DH: leitura = 64H (ID); escrita 0A5H arma UMA escrita em 3EH (qualquer outro valor desarma).
-//   Porta 3EH: R8064_MODE  bit0 NATIVE64 | bits2:1 CLK (00 = 114,56 MHz, 01 e 1x = 85,92 MHz) | bit3 BUSY (somente leitura).
+//   Porta 3EH: R8064_MODE  bit0 NATIVE64 | bits2:1 CLK (RESERVADO desde a REV23: clock unico de 57,27 MHz; o bit e guardado e lido de volta, sem efeito no governador) | bit3 BUSY (somente leitura).
 //   Portas E4H/E5H: S1990 emulada so no registrador 6 (bit5 0 = R800 / 1 = Z80; bit6 0 = DRAM / 1 = ROM). Reset = 60H (Z80 ROM).
 //   Outros registradores da S1990 NAO sao tratados aqui (so passam: s1990_idx / s1990_other_we).
 // A troca de modo e aplicada na fronteira de instrucao (boundary = 1 quando o pipeline esta vazio / instrucao emitida).

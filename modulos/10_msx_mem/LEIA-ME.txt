@@ -8,3 +8,6 @@ SUPOSICOES A CONFIRMAR: (1) portas FC,FD,FE,FF (o pedido dizia FC,FC,FE,FF); (2)
  tambem grava na RAM; (3) tamanhos padrao: mapper 1 MB (base 0), MegaRAM 1 MB (base 100000h); cabe ate 4 MB / 2 MB por parametro.
 Custo estimado (nao medido): ~120 LUT4 e ~75 FF por instancia, ~240 LUT4 para dois nucleos.
 Pendente: ligar ao arbitro/SDRAM (modulo 05), instanciar no Z80 classico (ainda nao escrito) e no R8064, expansao de slot.
+ATUALIZACAO 14/11/2026: os itens "sintese ainda nao feita" e "Z80 classico (ainda nao escrito)" acima ficaram velhos: msx_mem ja e instanciado e sintetizado
+ no Z80 classico (12_z80/rtl/z80_msx_sys.v) e no R8064 (10_mode_gov/rtl/r8064_msx_sys.v -> 13_soc). Continua pendente: slots expandidos (FFFFh).
+ Este modulo divide o numero 10 com 10_mode_gov (pastas diferentes; os scripts usam os dois caminhos, por isso nao foi renumerado).

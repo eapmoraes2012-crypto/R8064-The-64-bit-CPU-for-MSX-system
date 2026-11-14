@@ -4,7 +4,7 @@
 //   escrita: postada no buffer (WBD entradas), 1 bolha apos cada escrita. Falha de leitura: preenche a linha (4 leituras de 64 bits) e repete o acesso.
 // Interface com a memoria (via arbitro): m_req mantido ate m_accept; depois espera m_done (rvalid ou wdone).
 // Endereco: indice de palavra de 64 bits (19 bits = 4 MB): tag [18:9], conjunto [8:2], palavra na linha [1:0].
-module cache_dm #(parameter WR = 1, parameter WBD = 4, parameter IDX = 8, parameter STATS = 1)(
+module cache_dm #(parameter WR = 1, parameter WBD = 4, parameter IDX = 8, parameter STATS = 1, parameter B2B = 1)(
     input  wire        clk, rst, inv,
     input  wire        req, we,
     input  wire [18:0] addr,
@@ -55,7 +55,10 @@ module cache_dm #(parameter WR = 1, parameter WBD = 4, parameter IDX = 8, parame
     wire rd_hit  = evalu && !s1_we && hit;
     wire rd_miss = evalu && !s1_we && !hit;
     wire wr_done = evalu && s1_we && wb_space;
-    assign ready  = !sweeping && (!s1_valid || rd_hit);
+    // B2B=1: aceita um novo acesso no mesmo clock em que o acerto de leitura do estagio 1 termina (1 acesso/clock).
+    // B2B=0: so aceita com o estagio 1 vazio; tira hit0 (e toda a logica de acerto) do caminho ready -> accept -> endereco das BSRAM.
+    //        Valido quando o cliente nunca apresenta req enquanto a leitura anterior ainda nao foi respondida (memsys: dst/ist so voltam a S_CREQ >= 3 clocks depois de rvalid).
+    assign ready  = !sweeping && (!s1_valid || (B2B != 0 && rd_hit));
     assign accept = req && ready;
     assign rvalid = rd_hit;
     assign rdata  = hword;

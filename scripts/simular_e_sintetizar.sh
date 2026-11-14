@@ -10,6 +10,6 @@ SIMLIB=$(find "$(dirname "$(which yosys)")/../share/yosys/gowin" -name cells_sim
 yosys -q -p "read_verilog -sv r8064_decode.v; synth_gowin -top r8064_decode -nobram; write_verilog -noattr net.v"
 iverilog -g2012 -o simnet tb_r8064_decode.v net.v "$SIMLIB" && vvp simnet | grep -E "Vetores|PASS|FAIL"
 echo "== Sintese com BSRAM";  yosys -q -p "read_verilog -sv r8064_decode.v; synth_gowin -top r8064_decode; tee -o stat.txt stat" && grep -E "SPX9|LUT[1-4]|DFF" stat.txt
-echo "== Place-and-route (GW2AR-LV18QN88C8/I7, 100 MHz; pinos so do invólucro de teste)"
+echo "== Place-and-route (GW2AR-LV18QN88C8/I7, 57,28 MHz = alvo atual; pinos so do invólucro de teste)"
 yosys -q -p "read_verilog -sv r8064_decode.v pnr_top.v; synth_gowin -top pnr_top -json pt.json"
-nextpnr-himbaechel --json pt.json --write pt_pnr.json --device GW2AR-LV18QN88C8/I7 --vopt family=GW2A-18C --vopt cst=pnr_top.cst --freq 86 --timing-allow-fail 2>&1 | grep -E "Max frequency|BSRAM:|LUT4:"
+nextpnr-himbaechel --json pt.json --write pt_pnr.json --device GW2AR-LV18QN88C8/I7 --vopt family=GW2A-18C --vopt cst=pnr_top.cst --freq 57.28 --timing-allow-fail 2>&1 | grep -E "Max frequency|BSRAM:|LUT4:"

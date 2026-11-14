@@ -41,7 +41,7 @@ module tb_sys_irq;
         repeat (8000) @(posedge clk);
         for (ki = 0; ki < 20; ki = ki + 1) if (ie_c[ki] === 1'b1 && kx < 0) kx = ki;
         $display("commit da entrada de interrupcao = #%0d ; tempo ate o proximo commit = %0d clocks", kx, tc[kx+1]-tc[kx]);
-        chk("tempo da interrupcao", tc[kx+1]-tc[kx], $test$plusargs("r800") ? 96 : 448);
+        chk("tempo da interrupcao", tc[kx+1]-tc[kx], $test$plusargs("r800") ? 48 : 224);
         $display("modo nativo=%0d z80=%0d rom=%0d | laco final em %0d clocks | dbg_pc=%h", nat, z80, rom, tw, dbg_pc);
         if (errs == 0) $display("RESULTADO: TEMPO IRQ OK"); else $display("RESULTADO: %0d ERROS", errs);
         $finish;

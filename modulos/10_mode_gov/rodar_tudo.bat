@@ -12,7 +12,10 @@ set PY=
 py -3 -c "import sys" >nul 2>&1 && set PY=py -3
 if not defined PY python3 -c "import sys" >nul 2>&1 && set PY=python3
 if not defined PY python -c "import sys" >nul 2>&1 && set PY=python
-rem if defined PY (%PY% gen_gov_rom.py ..\..\..\ref\z80_classico_tstates.csv) else echo AVISO: Python nao encontrado - usando o gov_rom.mem que ja existe em sim
+rem gen_gov_rom.py agora gera as 2048 palavras (inclui a pagina 7 = IRQ) e reproduz o gov_rom.mem versionado
+if defined PY (%PY% gen_gov_rom.py ..\..\..\ref\z80_classico_tstates.csv) else echo AVISO: Python nao encontrado - usando o gov_rom.mem que ja existe em sim
+rem o RTL do nucleo existe em 09_core_min\rtl (usado aqui) e em 10_mode_gov\rtl (usado pelos .ys de sintese): as copias TEM de ser iguais
+for %%F in (r8064_core_min.v r8064_decode.v r8064_decode_rom.v alu_core_s.v) do fc /b %C%\rtl\%%F %R%\%%F >nul || echo ERRO: %%F difere entre 09_core_min\rtl e 10_mode_gov\rtl
 iverilog -g2012 -o mode.vvp tb_mode.v %R%\r8064_mode.v && vvp mode.vvp > ..\teste_modo.txt 2>&1
 iverilog -g2012 -o mem.vvp tb_mem.v %R%\mem_class.v && vvp mem.vvp > ..\teste_classificador.txt 2>&1
 iverilog -g2012 -o gov.vvp tb_gov.v %R%\timing_gov.v && vvp gov.vvp > ..\teste_governador.txt 2>&1
@@ -30,6 +33,10 @@ iverilog -g2012 -o t.vvp tb_sys_fifo.v %SYS% && vvp t.vvp > ..\teste_sys_fifo.tx
 rem EXINI: volta o grupo principal e AF para o estado de reset
 iverilog -g2012 -o t.vvp tb_exini.v %CORE% && vvp t.vvp > ..\teste_exini.txt 2>&1
 iverilog -g2012 -o cn.vvp tb_cplneg.v %CORE% && vvp cn.vvp > ..\teste_cplneg.txt 2>&1
+rem testes do nucleo que estavam fora da regressao: blocos, E/S (C), interrupcoes (legado, IM1, IM2, atraso do EI), LD A,I e sequenciador
+del ..\teste_nucleo.txt 2>nul
+for %%T in (blk io irq irq3 ldai seq) do (iverilog -g2012 -o t.vvp tb_%%T.v %CORE% && vvp t.vvp >> ..\teste_nucleo.txt 2>&1)
+iverilog -g2012 -o t.vvp tb_irq2.v %CORE% && (vvp t.vvp & vvp t.vvp +im2) >> ..\teste_nucleo.txt 2>&1
 type ..\teste_fifo.txt ..\teste_sys_fifo.txt ..\teste_exini.txt | findstr /i "RESULTADO OK ERRO erro"
 echo ===== resumo dos testes =====
-findstr /i "RESULTADO ERRO" ..\teste_modo.txt ..\teste_classificador.txt ..\teste_governador.txt ..\teste_cpu_gov.txt ..\teste_sistema.txt ..\teste_sistema_seq.txt ..\teste_tempo_ldir.txt ..\teste_tempo_irq.txt ..\teste_cruzamento.txt ..\teste_fifo.txt ..\teste_sys_fifo.txt ..\teste_exini.txt ..\teste_cplneg.txt
+findstr /i "RESULTADO ERRO" ..\teste_modo.txt ..\teste_classificador.txt ..\teste_governador.txt ..\teste_cpu_gov.txt ..\teste_sistema.txt ..\teste_sistema_seq.txt ..\teste_tempo_ldir.txt ..\teste_tempo_irq.txt ..\teste_cruzamento.txt ..\teste_fifo.txt ..\teste_sys_fifo.txt ..\teste_exini.txt ..\teste_cplneg.txt ..\teste_nucleo.txt

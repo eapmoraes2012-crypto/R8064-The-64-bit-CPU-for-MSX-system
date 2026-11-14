@@ -1,6 +1,8 @@
-import re
+import re,sys
+# uso: python3 cmpt.py <R8064_Z80_instrucoes_fpga.txt>   (a tabela de instrucoes NAO esta neste repositorio; rode na pasta de tdump.txt)
+if len(sys.argv)<2: sys.exit('uso: python3 cmpt.py <R8064_Z80_instrucoes_fpga.txt>')
 pages={}; cur=None
-for ln in open('/mnt/user-data/outputs/R8064_Z80_instrucoes_fpga.txt',encoding='latin-1'):
+for ln in open(sys.argv[1],encoding='latin-1'):
     m=re.match(r'^\[(Z80_\w+)\]',ln)
     if m: cur=m.group(1); pages[cur]={}; continue
     if ln.startswith('['): cur=None; continue

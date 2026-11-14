@@ -41,7 +41,7 @@ module tb_alu_regfile;
             old_v = mo[i]; new_v = mn[i]; wsz = mcw[i][2:0]; #1;
             if (mout !== me[i]) begin e_mrg = e_mrg + 1; if (e_mrg <= 5) $display("ERRO merge #%0d wsz=%0d", i, wsz); end
         end
-        // banco de registradores: escritas/leituras aleatorias contra modelo (leitura sincrona, read-first)
+        // banco de registradores: escritas/leituras aleatorias contra modelo (leitura sincrona com repasse da escrita)
         for (i = 0; i < 64; i = i + 1) model[i] = 64'd0;
         we = 0; wa = 0; ra = 0; rb = 0; wd = 0; lf = 64'h1234_5678_9ABC_DEF1; exp_a = 0; exp_b = 0;
         repeat (3) @(posedge clk);
@@ -49,8 +49,9 @@ module tb_alu_regfile;
             lf = nxt(lf);
             we = lf[0]; wa = lf[6:1]; ra = lf[12:7]; rb = lf[18:13]; wd = nxt(lf);
             @(negedge clk);
-            // valores esperados na borda seguinte: leitura devolve o valor ANTIGO
-            exp_a = model[ra]; exp_b = model[rb];
+            // valores esperados na borda seguinte: a memoria e read-first, mas o regfile64 repassa a escrita do mesmo clock
+            // (bypass registrado wq_d/byp_*): ler o endereco que esta sendo escrito devolve o valor NOVO; senao, o valor guardado.
+            exp_a = (we && wa == ra) ? wd : model[ra]; exp_b = (we && wa == rb) ? wd : model[rb];
             @(posedge clk); #1;
             if (we) model[wa] = wd;
             if (qa !== exp_a || qb !== exp_b) begin e_rf = e_rf + 1; if (e_rf <= 5) $display("ERRO regfile i=%0d ra=%0d: %h/%h rb=%0d: %h/%h", i, ra, qa, exp_a, rb, qb, exp_b); end

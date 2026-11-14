@@ -1,32 +1,63 @@
 # R8064 - CPU de 64 bits derivada do Z80, em FPGA (Tang Nano 20K, GW2AR-18)
 
-CPU de 64 bits compativel com o Z80 (e com modos R800 e nativo), construida modulo a modulo para um slot de MSX.
+CPU de 64 bits derivada do Z80 (com modos de tempo Z80/R800 e modo nativo), construida modulo a modulo para um slot de MSX.
 Alvo de clock: 57,28 MHz (3,58 MHz x 16).
 
+## Estado atual (leia antes de usar)
+- O nucleo do SoC e o **nucleo minimo** (`09_core_min`): executa a pagina principal do Z80 (menos CALL cc, RST, ALU com imediato e PUSH AF),
+  50 das 80 instrucoes ED do Z80 e 13 instrucoes R8064. As paginas CB, DD e FD ainda nao sao executadas. Nao e, ainda, um Z80 completo.
+- O SoC (`13_soc`) reune nucleo + governador + memoria MSX + MMU + caches + SDRAM. Nao instancia mul/div (03), `msx_if` (04), FPU (08/11) nem o Z80 classico (12).
+- O Z80 classico (`12_z80`) passa no ZEXDOC, mas a ultima Fmax medida (44-52 MHz) esta abaixo do clock de 57,28 MHz.
+- Nada foi verificado em hardware. O topo de placa ainda nao liga o barramento do MSX.
+- Pendencias e historico: `modulos/13_soc/resultado_soc.txt` (a REV33 lista o que esta aberto).
+
 ## Modulos (`modulos/`)
-| Pasta | Conteudo |
-|---|---|
-| `01_alu_regfile` ... `07_mmu` | ALU, pipeline, mul/div, interface MSX, SDRAM, caches, MMU |
-| `08_fpu`, `11_fpu_stk` | FPU em hardware (substituida por firmware) e pilha de FPU |
-| `09_core_min` | nucleo minimo (decodificador por ROM de uops) |
-| `10_mode_gov` | governador de tempo + modos (Z80 ROM, R800 DRAM, nativo) + sistema MSX |
-| `12_z80` | Z80 para MSX (referencia) |
-| `13_soc` | SoC completo: core + MMU + caches + SDRAM; top de placa e fluxo de PnR |
-| `14_vec3d` | unidade 3D (arquivada; fora do core) |
+| Pasta | Conteudo | Usado no SoC |
+|---|---|---|
+| `01_alu_regfile` | ALU de 64 bits e banco de registradores | sim (via 09) |
+| `02_pipeline` | modelo de temporizacao do pipeline (estudo, nao sintetizavel) | nao |
+| `03_muldiv` | multiplicador e divisor | nao |
+| `04_msx_if` | interface MSX + FIFO (primeira versao) | nao |
+| `05_sdram` | controlador de SDRAM e modelo de simulacao | sim |
+| `05b_cache` | estudo de dimensionamento das caches (Python) | - |
+| `06_cache` | `cache8k` (2 vias, estudo) e `cache_dm` (mapeamento direto, a usada) | `cache_dm` |
+| `07_mmu` | MMU Sv39 | sim |
+| `08_fpu`, `11_fpu_stk` | FPU em hardware (substituida por firmware) e pilha de FPU | nao |
+| `09_core_min` | nucleo minimo (decodificador por ROM de uops) e geradores de ROM | sim |
+| `10_mode_gov` | governador de tempo + modos (Z80 ROM, R800 DRAM, nativo) + sistema MSX | sim |
+| `10_msx_mem` | mapper de memoria MSX + MegaRAM | sim |
+| `12_z80` | Z80 classico independente (referencia) | nao |
+| `13_soc` | SoC: core + MMU + caches + SDRAM; top de placa e fluxo de PnR | - |
+| `14_vec3d` | unidade 3D (arquivada; fora do core) | nao |
 
 ## Como rodar
 No terminal do OSS CAD Suite:
 - Regressao do core/governador/sistema: `modulos\10_mode_gov\rodar_tudo.bat`
-- Excecoes do SoC: `modulos\13_soc\rodar_exc.bat`
+- SoC (excecoes, SoC basico, gerador de clock): `modulos\13_soc\rodar_exc.bat`
 - Place-and-route do top da placa (4 sementes): `modulos\13_soc\pnr\rodar_pnr_board.bat`
 - Bitstream: `modulos\13_soc\pnr\gerar_bitstream_board.bat 0 <semente>`
 
-Os resultados e o historico de revisoes estao em `modulos/13_soc/resultado_soc.txt`.
-Os `.mem` (uop, ctrl, rom_ed_b, gov_rom) sao FONTE do projeto: regenere-os com `gen_roms.py` e mantenha as copias de `sim/` e `pnr/` iguais.
+## Arquivos `.mem` (sao FONTE do projeto)
+Mantenha iguais as copias de `sim/` e `pnr/` dos modulos 09, 10 e 13.
+| Arquivo | De onde vem |
+|---|---|
+| `uop.mem`, `mainctrl.mem`, `prog*.mem` | `09_core_min/sim/gen_roms.py` |
+| `ctrl_b.mem` | `09_core_min/sim/gen_bank.py instr_ids.csv ctrl.mem` |
+| `r8064_decode_rom.v` | `09_core_min/sim/gen_decode_rom.py` (a partir de `rom_ed_a.mem` e `amb_idx.mem`) |
+| `gov_rom.mem` | `10_mode_gov/sim/gen_gov_rom.py ref/z80_classico_tstates.csv` |
+| `ctrl.mem`, `rom_ed_a.mem`, `rom_ed_b.mem`, `amb_idx.mem` | **sem gerador no repositorio**: vieram da planilha de instrucoes e foram editados a mao depois (ids 291-295) |
+
+O RTL do nucleo existe em duas copias (`09_core_min/rtl` para simulacao, `10_mode_gov/rtl` para sintese): mantenha-as iguais (`rodar_tudo.bat` avisa se divergirem).
+
+Nao versionados (`.gitignore`): pastas `bak/` e logs de PnR (`*.log`) citados nos textos de resultado, e as planilhas de instrucoes.
 
 ---
 
-# Pacote RTL do R8064: ROM de decodificação, testbench e ciclos esperados
+# Pacote historico (pastas `rom/`, `rtl/`, `sim/`, `ref/`, `pnr/`, `gowin_mi/` da raiz): ROM de decodificação, testbench e ciclos esperados
+
+> Este e o primeiro pacote do projeto (decodificador ED isolado, planilha rev5, 290 instrucoes, meta de 100 MHz na epoca).
+> As ROMs e o `r8064_decode.v` daqui sao **anteriores** aos dos modulos 09/10/13 (que tem os ids 291-295 e a familia ED 26 recodificada): nao misture.
+> O texto abaixo descreve o estado daquela epoca; o testbench daqui continua passando com as ROMs daqui.
 
 Gerado a partir de `Planilha_instrucoes_R8064_rev5.xlsx`. Cobre SOMENTE a página do prefixo ED:
 as 210 instruções do R8064 (todas começam em ED) e as 80 instruções ED do Z80 (modo Z80 do R8064).

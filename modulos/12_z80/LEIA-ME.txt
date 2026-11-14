@@ -2,12 +2,14 @@ MODULO 12 - Z80 CLASSICO INDEPENDENTE (R8064)                                   
 ==========================================================================================================
 STATUS: RTL escrito e VERIFICADO em simulacao (Icarus, pelo usuario): ZEXDOC (67 testes), 12 programas aleatorios (prefixos DD/FD/ED/CB/DDCB misturados),
         rodadas com WAIT aleatorio e ce lento, tudo identico ao modelo em C instrucao a instrucao (PC, registradores, sombra, I/R, IFF, IM, MEMPTR e T-states).
-AREA MEDIDA (Yosys, z80_top com turbo, v2): 2.300 LUT4 + 231 ALU = 2.531; 471 FF; 0 BSRAM.   Fmax (nextpnr): 44-47 MHz (basta: ce a cada >= 3 clocks).
+AREA MEDIDA (Yosys, z80_top com turbo, v2): 2.300 LUT4 + 231 ALU = 2.531; 471 FF; 0 BSRAM.   Fmax (nextpnr): 44-47 MHz.
+        ATENCAO (14/11/2026): isso e MENOS que o clock do sistema (57,28 MHz, REV23). "ce a cada >= 3 clocks" so vale com restricao multiciclo, que o nextpnr nao recebe,
+        e o conjunto Z80+MSX+SDRAM mediu 40-42 MHz (pnr/resumo_z80_msx.txt). PENDENTE: rodar pnr\medir_z80.bat e medir_z80_msx.bat (agora medem a 57,28 MHz).
         A v1 paralela (rtl/z80_core_v1_paralelo.v) media 4.940 LUT4 e 66,5 MHz; a v2 compartilha uma ULA de 8 bits e um somador de 16 bits entre as instrucoes.
 
 ARQUIVOS
  rtl/z80_core.v   nucleo (v2, area reduzida). Um pulso 'ce' = um T-state. Barramento com convencao Z80 (mreq/rd/wr/iorq/m1/rfsh ativos em 1 dentro do nucleo; z80_top inverte).
- rtl/z80_ce.v     gerador de clock-enable por acumulador de fase: turbo 0/1/2/3 = 3,58 / 7,16 / 14,3 / 28,6 MHz (parametro STEP_BASE para o clock da placa; padrao 100 MHz).
+ rtl/z80_ce.v     gerador de clock-enable por acumulador de fase: turbo 0/1/2/3 = 3,58 / 7,16 / 14,3 / 28,6 MHz (parametro STEP_BASE para o clock da placa; padrao 2^28 = clock de 57,2727 MHz; a 57,27 MHz o turbo 3 e limitado a 14,3 MHz).
                   use_ext=1: usa ce_ext (sincronia com o clock de slot do MSX). Pulsos de ce sempre separados por >= 3 clocks.
  rtl/z80_top.v    ce + nucleo, portas no estilo Z80 (a, dout, din, mreq_n, iorq_n, rd_n, wr_n, m1_n, rfsh_n, halt_n, busak_n, wait_n, int_n, nmi_n, busrq_n).
                   msx_w=1 acrescenta 1 wait em M1 e em E/S (comportamento MSX). instr_done pulsa ao fim de cada instrucao.

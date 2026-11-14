@@ -1,5 +1,5 @@
 // r8064_core_min.v - NUCLEO MINIMO SINTETIZAVEL do R8064 (esqueleto para medir area/Fmax do orcamento enxuto).
-// NAO e o nucleo final: executa um subconjunto de microoperacoes dirigido por ROM de microoperacoes (uop.mem, 48 bits).
+// NAO e o nucleo final: executa um subconjunto de microoperacoes dirigido por ROM de microoperacoes (uop.mem, 80 bits).
 // O que e REAL (estrutura e largura): fila de prefetch 32 B + alinhador de 13 bytes, decodificador ED real (ROM_A/ROM_B/ctrl), ROM de pagina principal,
 //   ROM de uops em BSRAM, banco de 64x64 (BSRAM, 3 leituras), mapeamento de registradores (EXX/EX AF), extracao de imediato, forwarding (X2/M/W) com
 //   interlock de carga-uso, ALU de 2 estagios (alu_prep/alu_core do modulo 01), somador de enderecos, somador de alvo de desvio, LSU de 64 bits com

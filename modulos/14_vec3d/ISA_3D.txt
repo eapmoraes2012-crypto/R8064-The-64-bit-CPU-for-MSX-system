@@ -13,3 +13,5 @@ Pendente: tempo dessas instrucoes nos modos Z80/R800 (a tabela do governador nao
 
 REVISAO 10/11/2026 (2): o nucleo instancia a unidade MINIMA (parametro VEC_LANE_ALU = 0 em r8064_core_min): OP 4 VADD, 5 VSUB, 6 VMIN, 7 VMAX ficam RESERVADOS (devolvem 0).
   Continuam: VMUL, VDOT4, VDOT3, VCROSS3 (ED F8, OP 0-3), VSHUF (ED FA), VNEG/VABS (ED FB, OP 9/10). Para a completa: VEC_LANE_ALU=1 (gen_prog_vec.py ... full gera programas com OP 4-7).
+NOTA 14/11/2026: as pastas bak/ nao sao versionadas (.gitignore), entao 09_core_min/bak/com_vec3d/ NAO esta no repositorio. O teste no nucleo
+ (tb_vec.v, gen_prog_vec.py) esta em 14_vec3d/sim/teste_no_nucleo/ e so roda contra o nucleo COM a unidade 3D (estado da REV29).

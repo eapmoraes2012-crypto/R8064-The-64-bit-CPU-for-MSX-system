@@ -108,16 +108,19 @@ module tb_cache_dm;
         dd.push(1, 19'h20050, 64'hDEADBEEFCAFEF00D, 8'hF0); dd.push(0, 19'h20050, 0, 0);   // escrita sem alocar + leitura (falha)
         dd.push(1, 19'h20051, 64'h1111111111111111, 8'hFF); dd.push(0, 19'h20051, 0, 0);   // mesma linha agora presente
         waitq; rep("T3"); drain; check_mem("T3");
-        // T4: conflito no conjunto (3 enderecos, 2 vias) e LRU
+        // T4: conflito de linha (3 enderecos; no mapeamento direto 2 deles disputam a mesma linha)
         for (n = 0; n < 40; n = n + 1) begin dd.push(0, 19'h00080 | ((n % 3) << 9), 0, 0); end
         dd.push(0, 19'h00080, 0, 0); dd.push(0, 19'h00280, 0, 0); dd.push(0, 19'h00080, 0, 0); dd.push(0, 19'h00480, 0, 0); dd.push(0, 19'h00280, 0, 0);
         waitq; rep("T4");
-        // T4b: LRU exato (A B A C A -> 3 falhas; depois B -> falha)
+        // T4b: mapeamento direto exato (IDX=8: A=1490h e C=1890h caem na mesma linha, B=1690h em outra):
+        //      A B A C A -> 4 falhas (C expulsa A e A expulsa C); depois B -> acerto (linha propria); depois C -> falha (expulsa por A)
         n = dc.st_rd_miss;
         dd.push(0, 19'h01490, 0, 0); dd.push(0, 19'h01690, 0, 0); dd.push(0, 19'h01490, 0, 0); dd.push(0, 19'h01890, 0, 0); dd.push(0, 19'h01490, 0, 0); waitq;
-        if (dc.st_rd_miss - n != 3) begin errs = errs + 1; $display("FALHA T4b LRU: %0d falhas (esperado 3)", dc.st_rd_miss - n); end else $display("ok   T4b LRU mantem A (3 falhas)");
+        if (dc.st_rd_miss - n != 4) begin errs = errs + 1; $display("FALHA T4b DM: %0d falhas (esperado 4)", dc.st_rd_miss - n); end else $display("ok   T4b DM: A e C disputam a linha (4 falhas)");
         n = dc.st_rd_miss; dd.push(0, 19'h01690, 0, 0); waitq;
-        if (dc.st_rd_miss - n != 1) begin errs = errs + 1; $display("FALHA T4b LRU: B deveria ter sido expulsa"); end else $display("ok   T4b LRU expulsou B");
+        if (dc.st_rd_miss - n != 0) begin errs = errs + 1; $display("FALHA T4b DM: B deveria continuar na cache"); end else $display("ok   T4b DM: B preservada (outra linha)");
+        n = dc.st_rd_miss; dd.push(0, 19'h01890, 0, 0); waitq;
+        if (dc.st_rd_miss - n != 1) begin errs = errs + 1; $display("FALHA T4b DM: C deveria ter sido expulsa por A"); end else $display("ok   T4b DM: C expulsa por A");
         // T5: coerencia - alteracao externa + inv
         dd.push(0, 19'h00300, 0, 0); waitq; bk_write(19'h00300, 64'h5555AAAA5555AAAA); dd.push(0, 19'h00300, 0, 0); waitq;
         $display("T5 sem inv: leitura devolveu valor antigo da cache (esperado: erro de coerencia deliberado: %0d)", dd.errs);

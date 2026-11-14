@@ -106,3 +106,20 @@ REV32 (10/11/2026): CPLB/NEGB adicionados; familia ED 26 recodificada (3o byte: 
   ids novos: CPLB 294, NEGB 295 (ctrl: len 3, 1 clock; sem prefixo de banco). W/E/Q (ids 169-174) agora tem uops. NEGB s: A <- 0 - s (destino fixo AX, fonte s).
   CPLB/NEGB nao aceitam o registrador A (codigo 111): o Z80 ja tem CPL e NEG. Registradores validos: BC,DE,HL (B/W/E/Q); W/E/Q tambem aceitam AX. 001 e 110 nao sao registradores (resolve a colisao CPL x / NEG x).
   Operam no byte baixo do registrador (sz=0). NAO simulado (sem iverilog na nuvem): rodar 10_mode_gov\rodar_tudo.bat (novo tb_cplneg), 13_soc\rodar_exc.bat e rodar_pnr_board.bat.
+
+REV33 (14/11/2026): REVISAO DE CONSISTENCIA (simulado com Icarus Verilog 12; SEM Yosys/nextpnr nesta rodada: Fmax nao remedida).
+  1) GOVERNADOR A 57,27 MHz: timing_gov ainda usava 32/24 clocks por T-state (114,56 / 85,92 MHz); a 57,28 MHz o modo Z80 rodava a 1,79 MHz. Agora parametro CPT = 16
+     (Z80: 16 clocks/T; R800: 8 clocks/ciclo; pausa do VDP 458 clocks; refresh 1680/200 clocks; fase a cada 8). clk_sel (bits CLK da porta 3EH) ficou reservado.
+     Testbenches atualizados: tb_gov (27 conferencias), tb_sys_ldir (1760 / 280 clocks), tb_sys_irq (224 / 48 clocks).
+     LIMITACAO MEDIDA: no modo R800 o nucleo governado nao emite a cada 8 clocks; o menor espaco entre emissoes e 10 clocks (tb_cpu_gov +r800), entao instrucoes de
+     1 ciclo seguidas saem 25 % lentas (programa de teste: 990 clocks contra 964 ideais, +2,7 %). No modo Z80 o menor espaco e 80 clocks = 5 T, exato. PENDENTE.
+     Caminho novo na sintese: multiplicacao por constante (x16 / x8 = deslocamento); rodar rodar_pnr_board.bat para confirmar a Fmax.
+  2) Modulo 01: tb_alu_regfile esperava leitura read-first, mas o regfile64 repassa a escrita desde 08/11 (597 erros). Testbench corrigido: PASS.
+  3) Modulo 06: tb_cache_dm (cache do SoC) tinha o teste de LRU da cache8k (2 FALHAS). T4b reescrito para mapeamento direto: passa. cache_dm.v unificado com o do SoC.
+  4) Scripts: ys_mem_top.ys apontava para ../soc (inexistente) -> ../rtl. gen_gov_rom.py gera as 2048 palavras (pagina 7 embutida) e reproduz o gov_rom.mem versionado;
+     chamada reativada em rodar_tudo.bat, que agora tambem roda tb_blk/io/irq/irq2(+im2)/irq3/ldai/seq e avisa se o RTL de 09_core_min/rtl e 10_mode_gov/rtl divergir.
+     rodar_exc.bat tambem roda tb_soc (bypass e +mmu) e tb_clkgen. medir_z80*.bat medem a 57,28 MHz. instr_ids.csv (09) ganhou os ids 291-295
+     (EXINI, MFCR, MTCR, CPLB, NEGB); ctrl_b.mem regenerado = identico.
+  5) REV32 (CPLB/NEGB) estava "nao simulado": tb_cplneg OK. Regressao completa: 10_mode_gov (todos), tb_soc_exc sc1-8, tb_soc, tb_soc +mmu, tb_clkgen: OK.
+  PENDENTE (decisao do usuario / PnR no PC): (a) ED 08-0F: instr_ids.csv e a ROM A ainda mapeiam JP USER,(uu) (id 175, sem uop) em ED 08/0B/0D/0E/0F, mas o nucleo usa
+     ED 0B/0D/0E como prefixos de banco, ED 09 EXINI, ED 0A MFCR, ED 0C MTCR; (b) Z80 classico: Fmax 44-52 MHz (40-42 com MSX+SDRAM) < 57,28 MHz.
