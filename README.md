@@ -10,7 +10,7 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
   Da pagina ED dessa ROM: 50 das 80 instrucoes do Z80 e 13 instrucoes R8064.
 - **Z80 completo no nucleo (REV35):** `09_core_min/sim/gen_z80_rom.py` gera `uop_z80.mem` / `mainctrl_z80.mem` com o Z80 de verdade: pagina principal,
   CB, DD/FD (IX/IY, inclusive IXH/IXL), DDCB/FDCB e toda a pagina ED do Z80. Conferido instrucao a instrucao contra o modelo `12_z80/ref/z80ref.c`
-  (`09_core_min/sim_z80`, mais de 1,2 milhao de instrucoes, flags X/Y incluidas, e o inicio do ZEXDOC). **O SoC e os testes antigos ainda carregam
+  (`09_core_min/sim_z80`, mais de 1,1 milhao de instrucoes, flags X/Y incluidas, e o inicio do ZEXDOC). **O SoC e os testes antigos ainda carregam
   `uop.mem`** (codificacao de teste): trocar para a ROM do Z80 exige reescrever os programas desses testes. Sintese e Fmax ainda nao medidos com as mudancas.
 - O SoC (`13_soc`) reune nucleo + governador + memoria MSX + MMU + caches + SDRAM. Nao instancia mul/div (03), `msx_if` (04), FPU (08/11) nem o Z80 classico (12).
 - O Z80 classico (`12_z80`) passa no ZEXDOC, mas a ultima Fmax medida (44-52 MHz) esta abaixo do clock de 57,28 MHz.
