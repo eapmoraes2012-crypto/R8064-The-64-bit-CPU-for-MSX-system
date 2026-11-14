@@ -159,3 +159,14 @@ REV35 (14/11/2026): Z80 COMPLETO NO NUCLEO (microcodigo novo + mudancas no RTL).
     f) ED que nao e do Z80: no nucleo e instrucao R8064 ou ilegal (com comprimento 0!), nao o NOP de 2 bytes do Z80. DD/FD seguidos de outro prefixo: NOP de 1 byte.
     g) Codigo automodificavel: um byte escrito e executado logo em seguida sem desvio tomado no meio ja esta na fila de busca (o ZEXDOC, que escreve e depois chama, passa).
     h) Instrucoes R8064 de 16/32/64 bits (etapa seguinte): ainda so as 13 que ja existiam.
+
+REV36 (14/11/2026): SoC E TESTES ANTIGOS PASSADOS PARA A ROM DO Z80. uop.mem / mainctrl.mem agora SAO o microcodigo do Z80 (96 bits); uop_z80.mem deixou de existir.
+  gen_roms.py: a pagina principal de teste foi removida; importa gen_z80_rom.py (modulo) e grava uop.mem. A pagina ED do R8064, blocos, E/S e interrupcoes continuam nele.
+  Programas reescritos em Z80 real: prog.mem (LD rr,nn / EX DE,HL / ADD HL,BC / LD (HL),E / ADD A,n / DEC C / JR NZ / LD A,(nn): mesmos resultados, laco final em 17h);
+    nos demais, as cargas de teste (00/02/04/07 n) viraram LD C/E/L/A,n, de mesmo comprimento (enderecos e PCs iguais).
+  Testbenches: tb_core, tb_cpu_gov e tb_sys gravam a memoria por byte (d_be), porque o Z80 escreve bytes; PC do laco final 13h -> 17h.
+  RESULTADO (Icarus 12, tudo com a ROM do Z80): regressao 10_mode_gov completa (28 execucoes: modos nativo, Z80 e R800, tempos de LDIR e de interrupcao, IM1/IM2,
+    atraso do EI, LD A,I, blocos, E/S, cruzamento de palavra, EXINI, CPL/NEG, FIFO), tb_core, tb_bank, tb_soc (bypass e +mmu), tb_soc_exc sc1-8, sim_z80: OK.
+  Tempo no modo Z80 conferido a mao em tb_cpu_gov: 5752 clocks ate o laco final = 358 T-states (programa + 1 espera de M1 por instrucao) + latencia do pipeline;
+    menor espaco entre emissoes = 80 clocks (5 T). Modo R800: menor espaco continua 10 clocks (limitacao da REV33).
+  Resolve os itens (a) e (c) da REV35. Continuam abertos: (b) sintese/Fmax, (d)-(g) diferencas para o Z80 real, (h) instrucoes R8064 de 16/32/64 bits.

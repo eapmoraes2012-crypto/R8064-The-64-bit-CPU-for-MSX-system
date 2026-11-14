@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// tb_z80core.v - nucleo R8064 (r8064_core_min com uop_z80.mem) contra o modelo de referencia do Z80, instrucao a instrucao.
+// tb_z80core.v - nucleo R8064 (r8064_core_min, uop.mem) contra o modelo de referencia do Z80, instrucao a instrucao.
 // O testbench libera UMA instrucao por vez (gov_go), espera o pipeline esvaziar e compara PC, AF, BC, DE, HL, IX, IY, SP e o grupo alternativo
 // com a linha correspondente do traco (z80trace). No fim compara os 64 KB de memoria. A ultima coluna do traco e a mascara de F daquela instrucao.
 // Plusargs: +hex=<mem.hex> +trace=<trace.txt> +fim=<mem.bin.fim> [+fmask=<hex>: bits de F comparados, padrao FF] [+v: imprime cada instrucao]
@@ -8,7 +8,7 @@ module tb_z80core;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f, d_be; wire dbg_sig;
     reg i_ack = 0, d_ack = 0; reg [63:0] i_rdata = 0, d_rdata = 0; reg [7:0] mem [0:65535]; reg [7:0] fim [0:65535];
     wire io_we, io_re; wire [7:0] io_a, io_wd;
-    r8064_core_min #(.UOP_FILE("uop_z80.mem"), .MAINC_FILE("mainctrl_z80.mem")) dut(.i_flt(1'b0), .d_flt(1'b0), .i_cs(3'd0), .d_cs(3'd0), .clk(clk), .rst(rst), .irq(1'b0),
+    r8064_core_min dut(.i_flt(1'b0), .d_flt(1'b0), .i_cs(3'd0), .d_cs(3'd0), .clk(clk), .rst(rst), .irq(1'b0),
         .i_req(i_req), .i_addr(i_addr), .i_ack(i_ack), .i_rdata(i_rdata),
         .d_req(d_req), .d_we(d_we), .d_addr(d_addr), .d_size(d_size), .d_wdata(d_wdata), .d_be(d_be), .d_ack(d_ack), .d_rdata(d_rdata),
         .dbg_pc(dbg_pc), .dbg_f(dbg_f), .dbg_sig(dbg_sig), .gov_go(go), .gov_wait(1'b0), .port_c(8'd0), .gov_page(), .gov_op(), .gov_port(), .gov_cv(), .gov_alt_ev(), .gov_boundary(),

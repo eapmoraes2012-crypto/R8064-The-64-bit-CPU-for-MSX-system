@@ -7,6 +7,7 @@ set CORE=%R%\r8064_cpu_gov.v %R%\r8064_mode.v %R%\timing_gov.v %R%\mem_class.v %
 rem arquivos .mem do nucleo (uop, mainctrl, ctrl_b, rom_ed_*, amb_idx, prog) ficam em 09_core_min\sim
 copy /y %C%\sim\*.mem . >nul
 copy /y %C%\sim\gen_roms.py . >nul
+copy /y %C%\sim\gen_z80_rom.py . >nul
 rem Python: tenta o lancador 'py', depois python3, depois python (o 'python' do Windows pode ser so o atalho da Microsoft Store, que da erro)
 set PY=
 py -3 -c "import sys" >nul 2>&1 && set PY=py -3

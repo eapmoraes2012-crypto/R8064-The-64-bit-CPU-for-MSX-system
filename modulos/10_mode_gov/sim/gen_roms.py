@@ -1,9 +1,9 @@
-# gera uop.mem (2048 x 80 bits), mainctrl.mem (256 x 32) e prog*.mem para o nucleo minimo
-# ATENCAO: a pagina principal daqui e uma codificacao de TESTE (LDI, ADD de 3 operandos, LD, ST, ADDI, JR, JRNZ + alguns opcodes reais do Z80).
-# O microcodigo do Z80 de verdade e gerado por gen_z80_rom.py (uop_z80.mem / mainctrl_z80.mem, uops de 96 bits), a partir da saida deste script.
-# formato do uop (80 bits): [4:0] alu [6:5] sz(0..3 = 8/16/32/64) [7] use_imm [8] rd [9] wr [10] wren [11] br [14:12] cond [15] rel [16] fwe
+# gera uop.mem (2048 x 96 bits), mainctrl.mem (256 x 32) e prog*.mem para o nucleo R8064 (precisa de gen_z80_rom.py na mesma pasta)
+# formato da uop, bits 0-79: [4:0] alu [6:5] sz(0..3 = 8/16/32/64) [7] use_imm [8] rd [9] wr [10] wren [11] br [14:12] cond [15] rel [16] fwe
 #   [17] dF [18] aF [19] bF [20] fpos [26:21] dI [32:27] aI [38:33] bI [41:39] ioff [43:42] isz [44] sext [45] exx [46] exaf [47] aD
-#   [48] hb (escreve byte alto) [49] more [50] io_rd [51] io_wr [62:52] nxt [63] immz [64] bsrc [65] bpcn [66] tabs [67] zx [69:68] fmode (flags de bloco) [70] tself (alvo = PC da propria instrucao) [71] cmix (cond = PV e nao-Z) [72] ashr8 (operando A = A>>8, para B) [79] immc (imediato constante = -(1<<isz): -1,-2,-4,-8; usado por PUSH/CALL para endereçar [SP-n] ANTES de alterar SP)
+#   [48] hb (escreve byte alto) [49] more [50] io_rd [51] io_wr [62:52] nxt [63] immz [64] bsrc [65] bpcn [66] tabs [67] zx [69:68] fmode (flags de bloco)
+#   [70] tself (alvo = PC da propria instrucao) [71] cmix (cond = PV e nao-Z) [72] ashr8 (operando A = A>>8, para B) [73] keepc [76:74] misc [77] crd [78] cra
+#   [79] immc (imediato constante = -(1<<isz): usado por PUSH/CALL para enderecar [SP-n] ANTES de alterar SP).   Bits 80-94: ver gen_z80_rom.py.
 import sys
 F=dict(alu=0,sz=3,use_imm=0,rd=0,wr=0,wren=0,br=0,cond=0,rel=0,fwe=0,dF=0,aF=0,bF=0,fpos=0,dI=0,aI=0,bI=0,ioff=0,isz=0,sext=0,exx=0,exaf=0,aD=0,
        hb=0,more=0,crd=0,cra=0,iord=0,iowr=0,nxt=0,immz=0,bsrc=0,bpcn=0,tabs=0,zx=0,fmode=0,tself=0,cmix=0,ashr8=0,keepc=0,misc=0,immc=0)
@@ -25,31 +25,9 @@ def chain(base,ulist):
         k=dict(k)
         if i<len(ulist)-1: k['more']=1; k['nxt']=addrs[i+1]
         put(addrs[i],uop(**k))
-for b in range(256):
-    c=b>>6; lo=b&7
-    if c==0: uops[b]=uop(use_imm=1,wren=1,dF=1,aI=63,ioff=1,sext=1); lens[b]=2
-    elif c==1: uops[b]=uop(wren=1,fwe=1,dF=1,aF=1,bF=1); lens[b]=2
-    elif c==2: uops[b]=uop(rd=1,wren=1,dF=1,aF=1,ioff=1,sext=1); lens[b]=2
-    else:
-        if lo==0: uops[b]=uop(wr=1,aF=1,bF=1,ioff=2,sext=1); lens[b]=3
-        elif lo==1: uops[b]=uop(br=1,cond=0,rel=1,ioff=1,sext=1); lens[b]=2
-        elif lo==2: uops[b]=uop(br=1,cond=2,rel=1,ioff=1,sext=1); lens[b]=2
-        elif lo==3: uops[b]=uop(use_imm=1,wren=1,fwe=1,dF=1,fpos=1,aD=1,ioff=1,sext=1); lens[b]=2
-# ---- instrucoes Z80 de verdade implementadas com sequencias de uops ----
-put(0x18,uop(br=1,cond=0,rel=1,ioff=1,sext=1)); lens[0x18]=2                                  # JR e
-put(0x31,uop(use_imm=1,wren=1,dI=SP,aI=63,ioff=1,isz=1,sz=3,zx=1)); lens[0x31]=3               # LD SP,nn (zero-estende)
-# PUSH/CALL REINICIAVEIS: a gravacao em [SP-n] vem ANTES da atualizacao de SP (imediato constante immc = -n), entao uma falta no acesso deixa SP intacto e a instrucao
-# pode ser reexecutada inteira (EPC = PC da instrucao). Antes: DEC SP, DEC SP, store (a falta deixava SP ja decrementado).
+# A pagina principal (0-255), a pagina CB e DD/FD vem de gen_z80_rom.py (Z80 real); aqui ficam a pagina ED, os blocos, E/S e as cadeias de interrupcao.
+# (Ate a REV35 a pagina principal era uma codificacao de TESTE: LDI, ADD de 3 operandos, LD, ST, ADDI, JR, JRNZ.)
 SPDEC=lambda: dict(alu=ALU['ADD'],use_imm=1,immc=1,isz=1,wren=1,dI=SP,aI=SP,sz=3)                  # SP := SP - 2
-for op in (0xC5,0xD5,0xE5):                                                                     # PUSH rr (BC, DE, HL)
-    chain(op,[dict(wr=1,aI=SP,immc=1,isz=1,bF=1,bsrc=1,sz=1),SPDEC()]); lens[op]=1
-for op in (0xC1,0xD1,0xE1):                                                                     # POP rr
-    chain(op,[dict(rd=1,wren=1,dF=1,fpos=1,aI=SP,immz=1,sz=1),dict(alu=ALU['INC'],wren=1,dI=SP,aI=SP,aD=1,sz=3),dict(alu=ALU['INC'],wren=1,dI=SP,aI=SP,aD=1,sz=3)]); lens[op]=1
-chain(0xCD,[dict(wr=1,aI=SP,immc=1,isz=1,bpcn=1,sz=1),SPDEC(),dict(br=1,cond=0,aI=63,tabs=1,ioff=1,isz=1)]); lens[0xCD]=3   # CALL nn (store em [SP-2], depois SP, depois salto)
-chain(0xC9,[dict(rd=1,wren=1,dI=TMP,aI=SP,immz=1,sz=1,zx=1),dict(alu=ALU['INC'],wren=1,dI=SP,aI=SP,aD=1,sz=3),dict(alu=ALU['INC'],wren=1,dI=SP,aI=SP,aD=1,sz=3),
-            dict(br=1,cond=0,aI=TMP,immz=1)]); lens[0xC9]=1                                      # RET
-put(0xD3,uop(iowr=1,aI=63,ioff=1,bI=0)); lens[0xD3]=2                                          # OUT (n),A
-put(0xDB,uop(iord=1,wren=1,dI=0,aI=63,ioff=1,sz=0)); lens[0xDB]=2                              # IN A,(n)
 
 # ---- instrucoes de bloco do Z80 (ED A0..BB): indice 256+id, ids 275..290 ----
 HL,DE,BC,AX=3,2,1,0
@@ -83,8 +61,6 @@ for n,(rg,hi,eid) in REGS.items():
     else:  chain(256+eid+1,[dict(iowr=1,aI=BC,immz=1,bI=rg)])
 
 # ---- interrupcoes: EI/DI, IM 0/1/2, RETI/RETN, LD I,A / LD A,I, entrada de interrupcao (cadeias 600/601) ----
-put(0xFB,uop(misc=1)); lens[0xFB]=1
-put(0xF3,uop(misc=2)); lens[0xF3]=1
 for eid,m in ((217,0),(225,0),(249,0),(257,0),(233,1),(265,1),(241,2),(273,2)): put(256+eid,uop(misc=4+m))
 for eid in (216,224,232,240,248,256,264,272):
     chain(256+eid,[dict(rd=1,wren=1,dI=TMP,aI=SP,immz=1,sz=1,zx=1),dict(alu=ALU['INC'],wren=1,dI=SP,aI=SP,aD=1,sz=3),dict(alu=ALU['INC'],wren=1,dI=SP,aI=SP,aD=1,sz=3),
@@ -92,9 +68,7 @@ for eid in (216,224,232,240,248,256,264,272):
 put(256+218,uop(alu=ALU['ADD'],use_imm=1,immz=1,wren=1,dI=14,aI=0,sz=0,zx=1))     # LD I,A
 chain(256+234,[dict(alu=ALU['ADD'],use_imm=1,immz=1,wren=1,dI=0,aI=14,sz=0),dict(alu=5,use_imm=1,immz=1,aI=14,sz=0,fwe=1,keepc=1,misc=7)])   # LD A,I: dado + flags (S,Z de I; H=N=0; PV=IFF2; C mantido)
 
-# ---- grupo EXX: EXX (D9), EX AF,AF' (08) e EXINI (ED 09, id 291: desfaz EXX e EX AF,AF') ----
-put(0xD9,uop(exx=1)); lens[0xD9]=1
-put(0x08,uop(exaf=1)); lens[0x08]=1
+# ---- EXINI (ED 09, id 291: desfaz EXX e EX AF,AF'); EXX (D9) e EX AF,AF' (08) estao em gen_z80_rom.py ----
 put(256+291,uop(exx=1,exaf=1))     # EXINI: sw_main <= 0 (grupo principal ativo, como apos o reset)
 # ---- MFCR (ED 0A n: AX <- CR[n]) e MTCR (ED 0C n: CR[n] <- AX); CR n = indice 32+n do banco: 8 tcmp, 9 vec, 10 ie, 11 causa, 12 endereco, 13 EPC, 14 MMU, 15 raiz, 16 TLB-VA, 17 controle ----
 put(256+292,uop(alu=ALU['ADD'],use_imm=1,immz=1,wren=1,dI=0,cra=1,sz=3))
@@ -109,22 +83,26 @@ for szc,(ci,ni) in enumerate(((294,295),(169,172),(170,173),(171,174))):
     uops[256+ci]=uop(alu=11,dF=1,aD=1,wren=1,fwe=1,sz=szc,fpos=0)                          # s <- NOT s (rr em b3[2:0])
     if szc: uops[256+ni]=uop(alu=10,dF=1,aD=1,wren=1,fwe=1,sz=szc,fpos=1)                  # rr <- 0 - rr (rr em b3[5:3])
     else:   uops[256+ni]=uop(alu=10,aF=1,dI=0,wren=1,fwe=1,sz=0,fpos=0)                    # A <- 0 - s  (s em b3[5:3])
+import gen_z80_rom
+gen_z80_rom.aplica(uops,lens)     # Z80 real: pagina principal, CB (768+), DDCB/FDCB (1792+) e os ED do Z80 que faltavam
 if len(sys.argv)>1 and sys.argv[1]=='rand':    # conteudo pseudo-aleatorio para a sintese (nada vira constante)
     import random; random.seed(1)
-    for i in range(2048): uops[i]=random.getrandbits(80)
+    for i in range(2048): uops[i]=random.getrandbits(95)
     for i in range(256): lens[i]=random.randint(1,13)
-open('uop.mem','w').write('\n'.join('%020x'%u for u in uops)+'\n')
+open('uop.mem','w').write('\n'.join('%024x'%u for u in uops)+'\n')
 open('mainctrl.mem','w').write('\n'.join('%08x'%l for l in lens)+'\n')
 def words(prog,name):
     mem=prog+[0]*(4096-len(prog)); w=[sum(mem[i*8+k]<<(8*k) for k in range(8)) for i in range(512)]
     open(name,'w').write('\n'.join('%016x'%x for x in w)+'\n')
-# programa antigo (JR e agora e o opcode real 18)
-words([0x00,5, 0x02,0, 0x04,0x40, 0x52,0x00, 0xE0,0x02,0x00, 0xE3,0x08, 0xC3,0xFF, 0xC2,0xF5, 0xA7,0xF8, 0x18,0xFE],'prog.mem')
+# programa principal (tb_core, tb_cpu_gov, tb_sys), agora em Z80 real: soma 5+4+3+2+1 em DE, grava E em 40h,48h,...,60h; no fim A = (60h) = 15
+#   0000 LD BC,5 / LD DE,0 / LD HL,40h   0009 EX DE,HL / ADD HL,BC / EX DE,HL / LD (HL),E / LD A,L / ADD A,8 / LD L,A / DEC C / JR NZ,0009
+#   0014 LD A,(0060h)   0017 JR $
+words([0x01,0x05,0x00, 0x11,0x00,0x00, 0x21,0x40,0x00, 0xEB, 0x09, 0xEB, 0x73, 0x7D, 0xC6,0x08, 0x6F, 0x0D, 0x20,0xF5, 0x3A,0x60,0x00, 0x18,0xFE],'prog.mem')
 # programa de sequencias: LD SP,0F00h ; CALL 20h ; JR $ ; sub-rotina em 20h
 P=[0]*0x40
 def at(a,b): P[a:a+len(b)]=b
-at(0x00,[0x31,0x00,0x0F, 0x00,0x11, 0xCD,0x20,0x00, 0x18,0xFE])      # SP, BC=0x11, CALL 20h, laco em 8
-at(0x20,[0x02,0x22, 0xD5, 0x04,0x33, 0xE5, 0xC1, 0xE1, 0x07,0x41, 0xD3,0x77, 0xDB,0x78, 0xC9])
+at(0x00,[0x31,0x00,0x0F, 0x0E,0x11, 0xCD,0x20,0x00, 0x18,0xFE])      # LD SP,0F00h ; LD C,11h ; CALL 20h ; laco em 8
+at(0x20,[0x1E,0x22, 0xD5, 0x2E,0x33, 0xE5, 0xC1, 0xE1, 0x3E,0x41, 0xD3,0x77, 0xDB,0x78, 0xC9])   # LD E,22h ; PUSH DE ; LD L,33h ; PUSH HL ; POP BC ; POP HL ; LD A,41h ; OUT (77h),A ; IN A,(78h) ; RET
 words(P,'prog_seq.mem')
 # programa dos prefixos de banco (tb_bank): LDW/LDQ ED-page com ED 0B / 0E / 0D
 P2=[]
@@ -166,7 +144,7 @@ def ldrr(rr,val): P3.extend([0xED,0x3B,0x40|(rr<<3)|1,val&255,val>>8])
 def mark(n): pcs[n]=len(P3)
 ldrr(4,0x0100); ldrr(2,0x0200); ldrr(0,5); mark('ldir'); P3.extend([0xED,0xB0]); mark('after_ldir')
 ldrr(4,0x0124); ldrr(2,0x0224); ldrr(0,3); mark('lddr'); P3.extend([0xED,0xB8]); mark('after_lddr')
-P3.extend([0x07,0x43]); ldrr(4,0x0100); ldrr(0,5); mark('cpir'); P3.extend([0xED,0xB1]); mark('after_cpir')
+P3.extend([0x3E,0x43]); ldrr(4,0x0100); ldrr(0,5); mark('cpir'); P3.extend([0xED,0xB1]); mark('after_cpir')
 ldrr(4,0x0300); ldrr(0,0x0378); mark('inir'); P3.extend([0xED,0xB2]); mark('after_inir')
 ldrr(4,0x0100); ldrr(0,0x0377); mark('otir'); P3.extend([0xED,0xB3]); mark('after_otir')
 mark('end'); P3.extend([0x18,0xFE])
@@ -178,7 +156,7 @@ open('prog_blk_pcs.vh','w').write(''.join("localparam PC_%s = 16'h%04x;\n"%(n.up
 # programa de IN/OUT (C),r (tb_io)
 P4=[]
 def ldrr4(rr,val): P4.extend([0xED,0x3B,0x40|(rr<<3)|1,val&255,val>>8])
-ldrr4(0,0x0378); ldrr4(2,0xABCD); ldrr4(4,0x1234); P4.extend([0x07,0x41])
+ldrr4(0,0x0378); ldrr4(2,0xABCD); ldrr4(4,0x1234); P4.extend([0x3E,0x41])
 for o in (0x61,0x69,0x51,0x59,0x79): P4.extend([0xED,o])
 for o in (0x50,0x78,0x58,0x40,0x70,0x71): P4.extend([0xED,o])
 P4.extend([0x18,0xFE]); words(P4,'prog_io.mem')
@@ -194,12 +172,12 @@ open('prog_irq.mem','w').write('\n'.join('%016x'%sum(mem5[i*8+k]<<(8*k) for k in
 # programas de interrupcao real (tb_irq2): SP, IM 1 ou IM 2, EI, LDIR; tratador: LD A,41 / OUT (77),A / EI / RETI
 def mk_irq(name,im2):
     P=[0x31,0x00,0x0F]
-    if im2: P+= [0x07,0x02, 0xED,0x47, 0xED,0x5E]
+    if im2: P+= [0x3E,0x02, 0xED,0x47, 0xED,0x5E]
     else:   P+= [0xED,0x56]
     P+=[0xFB]
     for rr,v in ((4,0x0100),(2,0x0200),(0,5)): P+=[0xED,0x3B,0x40|(rr<<3)|1,v&255,v>>8]
     pc=len(P); P+=[0xED,0xB0,0x18,0xFE]
-    m=P+[0]*(4096-len(P)); h=[0x07,0x41,0xD3,0x77,0xFB,0xED,0x4D]
+    m=P+[0]*(4096-len(P)); h=[0x3E,0x41,0xD3,0x77,0xFB,0xED,0x4D]
     m[0x38:0x38+len(h)]=h; m[0x50:0x50+len(h)]=h; m[0x100:0x105]=[0x41,0x42,0x43,0x44,0x45]; m[0x2FF]=0x50; m[0x300]=0x00
     open(name,'w').write('\n'.join('%016x'%sum(m[i*8+k]<<(8*k) for k in range(8)) for i in range(512))+'\n')
     return pc
@@ -211,8 +189,8 @@ def wmem(name,P,handler=None):
     m=P+[0]*(4096-len(P))
     if handler: m[0x38:0x38+len(handler)]=handler
     open(name,'w').write('\n'.join('%016x'%sum(m[i*8+k]<<(8*k) for k in range(8)) for i in range(512))+'\n')
-wmem('prog_irq3.mem',[0x31,0x00,0x0F, 0xED,0x56, 0xFB, 0x07,0x55, 0x18,0xFE],[0xD3,0x77,0xED,0x4D])
-wmem('prog_ldai.mem',[0xFB, 0x07,0x80, 0xED,0x47, 0x07,0x00, 0xED,0x57, 0xF3, 0x07,0x00, 0xED,0x57, 0x18,0xFE])
+wmem('prog_irq3.mem',[0x31,0x00,0x0F, 0xED,0x56, 0xFB, 0x3E,0x55, 0x18,0xFE],[0xD3,0x77,0xED,0x4D])
+wmem('prog_ldai.mem',[0xFB, 0x3E,0x80, 0xED,0x47, 0x3E,0x00, 0xED,0x57, 0xF3, 0x3E,0x00, 0xED,0x57, 0x18,0xFE])
 
 # tb_xing: acessos que cruzam a palavra de 8 bytes (SP impar): PUSH/POP/CALL/RET
 P6=[0x31,0x01,0x0F, 0xED,0x3B,0x41,0x34,0x12, 0xC5, 0xD1, 0xCD,0x20,0x00, 0x18,0xFE]
