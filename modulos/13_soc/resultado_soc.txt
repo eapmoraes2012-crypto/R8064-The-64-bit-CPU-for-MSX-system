@@ -123,3 +123,11 @@ REV33 (14/11/2026): REVISAO DE CONSISTENCIA (simulado com Icarus Verilog 12; SEM
   5) REV32 (CPLB/NEGB) estava "nao simulado": tb_cplneg OK. Regressao completa: 10_mode_gov (todos), tb_soc_exc sc1-8, tb_soc, tb_soc +mmu, tb_clkgen: OK.
   PENDENTE (decisao do usuario / PnR no PC): (a) ED 08-0F: instr_ids.csv e a ROM A definem JP USER,(uu) (id 175, sem uop) em "ED 08~0F"; a ROM A hoje so o decodifica em ED 08 e ED 0F (antes tambem em 0A e 0C), e o nucleo usa
      ED 0B/0D/0E como prefixos de banco, ED 09 EXINI, ED 0A MFCR, ED 0C MTCR; (b) Z80 classico: Fmax 44-52 MHz (40-42 com MSX+SDRAM) < 57,28 MHz.
+
+REV34 (14/11/2026): JP USER,(uu) MOVIDA para opcodes livres (decisao do usuario): ED 08~0F -> ED B4~B7 (id 175 inalterado).
+  Correspondencia com as 4 codificacoes da ROM original: ED 08 -> ED B4, ED 0A -> ED B5, ED 0C -> ED B6, ED 0F -> ED B7 (variante = b2[1:0]).
+  ED 08 e ED 0F passam a id 0 (ilegais / livres). A faixa ED 08-0F fica: 08 livre, 09 EXINI, 0A MFCR, 0B prefixo de sombra, 0C MTCR, 0D/0E prefixos de banco, 0F livre.
+  Alterados: rom_ed_a.mem (09, 10 e 13, sim e pnr), r8064_decode_rom.v (09 e 10, regenerado por gen_decode_rom.py), instr_ids.csv (09). ctrl.mem/ctrl_b.mem iguais.
+  Resolve a pendencia (a) da REV33. JP USER continua SEM microcodigo (id 175 sem uop: executa como NOP); nos modos Z80/R800 o governador conta ED B4-B7 como NOP de 8 T.
+  NAO alterado: o pacote historico da raiz (rom/, ref/expected_*.mem, ref/expected_cycles.csv, ref/instr_ids.csv) e 02_pipeline/sim, que continuam com a codificacao da planilha rev5.
+  Verificado: decodificador (ED B4-B7 -> id 175; ED 08/0F -> ilegal), regressao 10_mode_gov, tb_soc_exc sc1-8, tb_soc e tb_soc +mmu: OK (Icarus 12).
