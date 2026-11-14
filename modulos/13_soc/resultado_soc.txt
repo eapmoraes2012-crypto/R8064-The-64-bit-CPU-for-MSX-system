@@ -121,5 +121,5 @@ REV33 (14/11/2026): REVISAO DE CONSISTENCIA (simulado com Icarus Verilog 12; SEM
      rodar_exc.bat tambem roda tb_soc (bypass e +mmu) e tb_clkgen. medir_z80*.bat medem a 57,28 MHz. instr_ids.csv (09) ganhou os ids 291-295
      (EXINI, MFCR, MTCR, CPLB, NEGB); ctrl_b.mem regenerado = identico.
   5) REV32 (CPLB/NEGB) estava "nao simulado": tb_cplneg OK. Regressao completa: 10_mode_gov (todos), tb_soc_exc sc1-8, tb_soc, tb_soc +mmu, tb_clkgen: OK.
-  PENDENTE (decisao do usuario / PnR no PC): (a) ED 08-0F: instr_ids.csv e a ROM A ainda mapeiam JP USER,(uu) (id 175, sem uop) em ED 08/0B/0D/0E/0F, mas o nucleo usa
+  PENDENTE (decisao do usuario / PnR no PC): (a) ED 08-0F: instr_ids.csv e a ROM A definem JP USER,(uu) (id 175, sem uop) em "ED 08~0F"; a ROM A hoje so o decodifica em ED 08 e ED 0F (antes tambem em 0A e 0C), e o nucleo usa
      ED 0B/0D/0E como prefixos de banco, ED 09 EXINI, ED 0A MFCR, ED 0C MTCR; (b) Z80 classico: Fmax 44-52 MHz (40-42 com MSX+SDRAM) < 57,28 MHz.
