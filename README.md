@@ -4,8 +4,10 @@ CPU de 64 bits derivada do Z80 (com modos de tempo Z80/R800 e modo nativo), cons
 Alvo de clock: 57,28 MHz (3,58 MHz x 16).
 
 ## Estado atual (leia antes de usar)
-- O nucleo do SoC e o **nucleo minimo** (`09_core_min`): executa a pagina principal do Z80 (menos CALL cc, RST, ALU com imediato e PUSH AF),
-  50 das 80 instrucoes ED do Z80 e 13 instrucoes R8064. As paginas CB, DD e FD ainda nao sao executadas. Nao e, ainda, um Z80 completo.
+- O nucleo do SoC e o **nucleo minimo** (`09_core_min`), um esqueleto para medir area e tempo. A pagina principal ainda usa uma **codificacao de teste**
+  (LDI, ADD de 3 operandos, LD, ST, ADDI, JR, JRNZ; ver o inicio de `gen_roms.py`), que NAO e a do Z80: o opcode 00, por exemplo, e um LDI de 2 bytes.
+  Por cima dela ha 16 opcodes reais do Z80 (JR, LD SP,nn, PUSH/POP BC/DE/HL, CALL, RET, OUT (n),A, IN A,(n), EI, DI, EXX, EX AF,AF').
+  Da pagina ED: 50 das 80 instrucoes do Z80 e 13 instrucoes R8064. As paginas CB, DD e FD nao sao executadas. Nao e, ainda, um Z80.
 - O SoC (`13_soc`) reune nucleo + governador + memoria MSX + MMU + caches + SDRAM. Nao instancia mul/div (03), `msx_if` (04), FPU (08/11) nem o Z80 classico (12).
 - O Z80 classico (`12_z80`) passa no ZEXDOC, mas a ultima Fmax medida (44-52 MHz) esta abaixo do clock de 57,28 MHz.
 - Nada foi verificado em hardware. O topo de placa ainda nao liga o barramento do MSX.
