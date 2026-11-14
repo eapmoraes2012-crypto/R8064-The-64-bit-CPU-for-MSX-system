@@ -9,7 +9,7 @@ module alu64(
     output wire [63:0] res,
     output wire [7:0]  fout
 );
-    wire [63:0] xa, yb, yy; wire ci; wire [16:0] ctl;
-    alu_prep p(.a(a), .b(b), .op(op), .sz(sz), .fin(fin), .xa(xa), .yb(yb), .yy(yy), .ci(ci), .ctl(ctl));
+    wire [63:0] xa, yb, yy; wire ci; wire [21:0] ctl0; wire [16:0] ctl = ctl0[16:0];   // alu_core (1 estagio) so conhece as operacoes originais
+    alu_prep p(.a(a), .b(b), .op(op), .sz(sz), .fin(fin), .xa(xa), .yb(yb), .yy(yy), .ci(ci), .ctl(ctl0));
     alu_core c(.xa(xa), .yb(yb), .yy(yy), .ci(ci), .ctl(ctl), .sz(sz), .ctl_n(~ctl), .sz_n(~sz), .fin(fin), .res(res), .fout(fout));
 endmodule

@@ -7,7 +7,11 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
 - O nucleo do SoC e o **nucleo minimo** (`09_core_min`), um esqueleto para medir area e tempo. A pagina principal ainda usa uma **codificacao de teste**
   (LDI, ADD de 3 operandos, LD, ST, ADDI, JR, JRNZ; ver o inicio de `gen_roms.py`), que NAO e a do Z80: o opcode 00, por exemplo, e um LDI de 2 bytes.
   Por cima dela ha 16 opcodes reais do Z80 (JR, LD SP,nn, PUSH/POP BC/DE/HL, CALL, RET, OUT (n),A, IN A,(n), EI, DI, EXX, EX AF,AF').
-  Da pagina ED: 50 das 80 instrucoes do Z80 e 13 instrucoes R8064. As paginas CB, DD e FD nao sao executadas. Nao e, ainda, um Z80.
+  Da pagina ED dessa ROM: 50 das 80 instrucoes do Z80 e 13 instrucoes R8064.
+- **Z80 completo no nucleo (REV35):** `09_core_min/sim/gen_z80_rom.py` gera `uop_z80.mem` / `mainctrl_z80.mem` com o Z80 de verdade: pagina principal,
+  CB, DD/FD (IX/IY, inclusive IXH/IXL), DDCB/FDCB e toda a pagina ED do Z80. Conferido instrucao a instrucao contra o modelo `12_z80/ref/z80ref.c`
+  (`09_core_min/sim_z80`, mais de 1,2 milhao de instrucoes, flags X/Y incluidas, e o inicio do ZEXDOC). **O SoC e os testes antigos ainda carregam
+  `uop.mem`** (codificacao de teste): trocar para a ROM do Z80 exige reescrever os programas desses testes. Sintese e Fmax ainda nao medidos com as mudancas.
 - O SoC (`13_soc`) reune nucleo + governador + memoria MSX + MMU + caches + SDRAM. Nao instancia mul/div (03), `msx_if` (04), FPU (08/11) nem o Z80 classico (12).
 - O Z80 classico (`12_z80`) passa no ZEXDOC, mas a ultima Fmax medida (44-52 MHz) esta abaixo do clock de 57,28 MHz.
 - Nada foi verificado em hardware. O topo de placa ainda nao liga o barramento do MSX.
@@ -36,6 +40,7 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
 No terminal do OSS CAD Suite:
 - Regressao do core/governador/sistema: `modulos\10_mode_gov\rodar_tudo.bat`
 - SoC (excecoes, SoC basico, gerador de clock): `modulos\13_soc\rodar_exc.bat`
+- Nucleo em modo Z80 contra o modelo de referencia: `modulos\09_core_min\sim_z80\rodar_z80core.bat`
 - Place-and-route do top da placa (4 sementes): `modulos\13_soc\pnr\rodar_pnr_board.bat`
 - Bitstream: `modulos\13_soc\pnr\gerar_bitstream_board.bat 0 <semente>`
 
@@ -44,6 +49,7 @@ Mantenha iguais as copias de `sim/` e `pnr/` dos modulos 09, 10 e 13.
 | Arquivo | De onde vem |
 |---|---|
 | `uop.mem`, `mainctrl.mem`, `prog*.mem` | `09_core_min/sim/gen_roms.py` |
+| `uop_z80.mem`, `mainctrl_z80.mem` | `09_core_min/sim/gen_z80_rom.py` (depois de `gen_roms.py`) |
 | `ctrl_b.mem` | `09_core_min/sim/gen_bank.py instr_ids.csv ctrl.mem` |
 | `r8064_decode_rom.v` | `09_core_min/sim/gen_decode_rom.py` (a partir de `rom_ed_a.mem` e `amb_idx.mem`) |
 | `gov_rom.mem` | `10_mode_gov/sim/gen_gov_rom.py ref/z80_classico_tstates.csv` |

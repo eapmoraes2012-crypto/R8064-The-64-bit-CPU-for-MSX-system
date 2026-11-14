@@ -131,3 +131,31 @@ REV34 (14/11/2026): JP USER,(uu) MOVIDA para opcodes livres (decisao do usuario)
   Resolve a pendencia (a) da REV33. JP USER continua SEM microcodigo (id 175 sem uop: executa como NOP); nos modos Z80/R800 o governador conta ED B4-B7 como NOP de 8 T.
   NAO alterado: o pacote historico da raiz (rom/, ref/expected_*.mem, ref/expected_cycles.csv, ref/instr_ids.csv) e 02_pipeline/sim, que continuam com a codificacao da planilha rev5.
   Verificado: decodificador (ED B4-B7 -> id 175; ED 08/0F -> ilegal), regressao 10_mode_gov, tb_soc_exc sc1-8, tb_soc e tb_soc +mmu: OK (Icarus 12).
+
+REV35 (14/11/2026): Z80 COMPLETO NO NUCLEO (microcodigo novo + mudancas no RTL). Simulado com Icarus 12; NAO sintetizado (area e Fmax a medir no PC).
+  ACHADO: a pagina principal de uop.mem e uma codificacao de TESTE (LDI, ADD 3 operandos, LD, ST, ADDI, JR, JRNZ), nao a do Z80; so 16 opcodes reais estavam por cima dela.
+  NOVO: 09_core_min/sim/gen_z80_rom.py gera uop_z80.mem / mainctrl_z80.mem com o Z80 real: pagina principal (252 opcodes + prefixos), CB (256), DD/FD (IX, IY, IXH/IXL,
+        (IX+d)), DDCB/FDCB (256, com copia para registrador) e os ED do Z80 que faltavam (ADC/SBC HL, LD (nn),rr / LD rr,(nn), NEG, RRD, RLD, LD R,A, LD A,R).
+        1114 das 2048 entradas da ROM de uops (caudas de cadeia iguais sao compartilhadas). A pagina ED que ja existia e as cadeias de interrupcao foram mantidas.
+  RTL (r8064_core_min, alu_prep, alu_core_s; copias de 09 e 10 iguais):
+    - uop de 80 -> 96 bits (ROM de uops: 9 -> 11 BSRAM). uop.mem de 80 bits continua valido (bits novos = 0).
+    - indices EXPLICITOS da uop (AX/BC/DE/HL) agora obedecem a EXX e EX AF,AF' (antes so os campos rr; LDIR depois de EXX usava o grupo errado).
+    - F' (EX AF,AF' troca as flags; EXINI volta ao F principal).
+    - ALU: RL, RR, SLL, DAA, SHL4/SHR4 (RLD/RRD), meio-vai-um do bit 11 (ADD/ADC/SBC HL) e X/Y do operando (BIT).
+    - flags: regras do Z80 para rotacoes de A, ADD HL, ADC/SBC HL, SCF, CCF, POP AF, BIT; condicao P; flag interna tz (DJNZ nao toca em F).
+    - operando B = byte alto do registrador ou F (PUSH AF); imediato derivado do opcode (vetor de RST, mascara de bit).
+    - prefixo CB (regiao 768+), prefixo DD/FD removido na captura (HL -> IX/IY, deslocamento d, +1/+2 bytes), DD CB d op (regiao 1792+).
+    - CALL cc / RET cc: um desvio de 'pulo' com a condicao contraria salta o resto da cadeia; gov_alt_ev tem a polaridade certa para esses desvios (u[94]).
+  VERIFICACAO (09_core_min/sim_z80, nucleo x modelo z80ref.c, uma instrucao por vez, F inteiro incl. X/Y, memoria final):
+    pagina principal 220.691 instrucoes | +CB 41.094 | +CB+ED 100.222 | +DD/FD 75.397 | todas as paginas 303.165 | ZEXDOC: primeiras 400.000 instrucoes. 0 divergencias.
+    Regressao antiga (uop.mem): 10_mode_gov (28 execucoes), tb_soc_exc sc1-8, tb_soc, tb_soc +mmu, tb_core, tb_bank, alu_core_s 148.128 vetores: OK.
+  LIMITES / PENDENTE:
+    a) O SoC e os testes antigos ainda usam uop.mem (pagina de teste). Para o SoC rodar Z80: apontar UOP_FILE/MAINC_FILE para a ROM nova e reescrever os programas
+       de teste (prog*.mem usam os opcodes de teste) e os tempos esperados do governador.
+    b) Sintese: +2 BSRAM, muxes novos no caminho de decodificacao (xsw com IX/IY, imediato com deslocamento). Fmax NAO medida.
+    c) Modos governados (Z80/R800) com a ROM nova NAO foram simulados; interrupcoes com a ROM nova tambem nao (as cadeias 600/601 sao as antigas).
+    d) R nao conta buscas (LD A,R devolve o ultimo valor escrito). HALT = desvio para si mesma. IN/OUT nao comparados (o modelo so tem stub).
+    e) X/Y nao documentados de BIT n,(HL)/(IX+d) (dependem de WZ) e de LDI/CPI e repetidos nao sao reproduzidos (o teste os mascara).
+    f) ED que nao e do Z80: no nucleo e instrucao R8064 ou ilegal (com comprimento 0!), nao o NOP de 2 bytes do Z80. DD/FD seguidos de outro prefixo: NOP de 1 byte.
+    g) Codigo automodificavel: um byte escrito e executado logo em seguida sem desvio tomado no meio ja esta na fila de busca (o ZEXDOC, que escreve e depois chama, passa).
+    h) Instrucoes R8064 de 16/32/64 bits (etapa seguinte): ainda so as 13 que ja existiam.

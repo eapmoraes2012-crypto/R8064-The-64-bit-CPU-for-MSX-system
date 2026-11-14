@@ -1,4 +1,6 @@
 # gera uop.mem (2048 x 80 bits), mainctrl.mem (256 x 32) e prog*.mem para o nucleo minimo
+# ATENCAO: a pagina principal daqui e uma codificacao de TESTE (LDI, ADD de 3 operandos, LD, ST, ADDI, JR, JRNZ + alguns opcodes reais do Z80).
+# O microcodigo do Z80 de verdade e gerado por gen_z80_rom.py (uop_z80.mem / mainctrl_z80.mem, uops de 96 bits), a partir da saida deste script.
 # formato do uop (80 bits): [4:0] alu [6:5] sz(0..3 = 8/16/32/64) [7] use_imm [8] rd [9] wr [10] wren [11] br [14:12] cond [15] rel [16] fwe
 #   [17] dF [18] aF [19] bF [20] fpos [26:21] dI [32:27] aI [38:33] bI [41:39] ioff [43:42] isz [44] sext [45] exx [46] exaf [47] aD
 #   [48] hb (escreve byte alto) [49] more [50] io_rd [51] io_wr [62:52] nxt [63] immz [64] bsrc [65] bpcn [66] tabs [67] zx [69:68] fmode (flags de bloco) [70] tself (alvo = PC da propria instrucao) [71] cmix (cond = PV e nao-Z) [72] ashr8 (operando A = A>>8, para B) [79] immc (imediato constante = -(1<<isz): -1,-2,-4,-8; usado por PUSH/CALL para endereçar [SP-n] ANTES de alterar SP)

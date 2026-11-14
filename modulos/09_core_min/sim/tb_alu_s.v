@@ -5,9 +5,9 @@ module tb_alu_s;
     reg clk = 0; always #5 clk = ~clk;
     reg [63:0] va [0:NV-1]; reg [63:0] vb [0:NV-1]; reg [15:0] vc [0:NV-1]; reg [63:0] vr [0:NV-1]; reg [7:0] vf [0:NV-1];
     reg [63:0] a, b; reg [4:0] op; reg [1:0] sz; reg [7:0] fin;
-    wire [63:0] xa, yb, yy; wire ci; wire [16:0] ctl;
+    wire [63:0] xa, yb, yy; wire ci; wire [21:0] ctl;
     alu_prep p(.a(a), .b(b), .op(op), .sz(sz), .fin(fin), .xa(xa), .yb(yb), .yy(yy), .ci(ci), .ctl(ctl));
-    reg [63:0] xa_r, yb_r, yy_r; reg ci_r; reg [16:0] ctl_r; reg [1:0] sz_r; reg [7:0] fin_r;
+    reg [63:0] xa_r, yb_r, yy_r; reg ci_r; reg [21:0] ctl_r; reg [1:0] sz_r; reg [7:0] fin_r;
     always @(posedge clk) begin xa_r <= xa; yb_r <= yb; yy_r <= yy; ci_r <= ci; ctl_r <= ctl; sz_r <= sz; fin_r <= fin; end
     wire [63:0] res; wire [7:0] fout;
     alu_core_s c(.clk(clk), .en(1'b1), .xa(xa_r), .yb(yb_r), .yy(yy_r), .ci(ci_r), .ctl(ctl_r), .sz(sz_r), .fin(fin_r), .res(res), .fout(fout));

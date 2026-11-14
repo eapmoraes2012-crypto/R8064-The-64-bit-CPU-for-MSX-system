@@ -33,3 +33,8 @@ Thumbs.db
 .DS_Store
 __pycache__/
 *.pyc
+
+# Teste do nucleo em modo Z80: binario do gerador de traco e copias temporarias
+modulos/09_core_min/sim_z80/z80trace
+modulos/09_core_min/sim_z80/*.mem
+modulos/09_core_min/sim_z80/*.exe

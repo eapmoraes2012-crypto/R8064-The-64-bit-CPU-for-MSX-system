@@ -1,1 +1,10 @@
 Modulo 09 - nucleo minimo (esqueleto de area). Veja resultados_modulo09.txt. rtl/ = RTL (r8064_core_min.v + modulos 01 + decodificador ED), sim/ = testbench e gerador de ROMs, pnr/ = invólucro e logs de P&R.
+
+Z80 NO NUCLEO (14/11/2026, REV35)
+sim/gen_z80_rom.py  -> sim/uop_z80.mem, sim/mainctrl_z80.mem: microcodigo do Z80 real (pagina principal, CB, DD/FD, DDCB/FDCB e os ED do Z80). Rode depois de gen_roms.py.
+                       O cabecalho do script descreve os bits novos da uop (80-94). O nucleo escolhe a ROM pelos parametros UOP_FILE / MAINC_FILE; o padrao continua uop.mem.
+sim_z80/            -> teste contra o modelo de referencia (12_z80/ref/z80ref.c), instrucao a instrucao: PC, AF, BC, DE, HL, IX, IY, SP, grupo alternativo e memoria final.
+   rodar_z80core.bat  roda os vetores prontos de vec/ (2 programas aleatorios com todas as paginas + 20.000 instrucoes do ZEXDOC). Esperado: "RESULTADO: Z80 NO NUCLEO OK" nos tres.
+   gerar_vetores.sh   gera programas novos e roda (Linux/WSL: gcc, python3, iverilog):  ./gerar_vetores.sh 7 20000 1 2 3
+   z80trace.c         gera o traco de referencia; gen_z80_prog.py gera o programa aleatorio; tb_z80core.v compara.
+O que o teste NAO cobre / limites conhecidos: ver 13_soc/resultado_soc.txt, REV35.
