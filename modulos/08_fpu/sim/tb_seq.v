@@ -1,14 +1,10 @@
 `timescale 1ns/1ps
-// Testbench do nucleo aritmetico COMPACTO da FPU (fpu_seq.v, com mul_unit/div_unit do modulo 03): le vetores (op rc pc A B res flags up cc) gerados pelo modelo exato em Python e confere bit a bit.
+// Testbench do nucleo aritmetico COMPACTO da FPU (fpu_seq.v): le vetores (op rc pc A B res flags up cc) gerados pelo modelo exato em Python e confere bit a bit.
 module tb_seq;
     reg clk = 0, rst = 1; always #5 clk = ~clk;
     reg start = 0; reg [3:0] op = 0; reg [1:0] rc = 0, pc = 0; reg [79:0] a = 0, b = 0;
     wire busy, done; wire [79:0] res; wire [5:0] flags; wire up; wire [2:0] cc;
-    wire mgo, mdn, dgo, ddn; wire [63:0] m_a, m_b, d_hi, d_lo, d_d, d_q, d_r; wire [127:0] m_p;
-    fpu_seq dut(.clk(clk), .rst(rst), .start(start), .op(op), .rc(rc), .pc(pc), .a(a), .b(b), .busy(busy), .done(done), .res(res), .flags(flags), .up(up), .cc(cc),
-        .mul_go(mgo), .mul_a(m_a), .mul_b(m_b), .mul_dn(mdn), .mul_p(m_p), .div_go(dgo), .div_hi(d_hi), .div_lo(d_lo), .div_d(d_d), .div_dn(ddn), .div_q(d_q), .div_r(d_r));
-    mul_unit u_mul(.clk(clk), .rst(rst), .in_valid(mgo), .sz(2'd3), .sgn(1'b0), .a(m_a), .b(m_b), .ready(), .out_valid(mdn), .prod(m_p));
-    div_unit u_div(.clk(clk), .rst(rst), .start(dgo), .sz(2'd3), .sgn(1'b0), .hi(d_hi), .lo(d_lo), .d(d_d), .busy(), .done(ddn), .q(d_q), .r(d_r), .err());
+    fpu_seq dut(.clk(clk), .rst(rst), .start(start), .op(op), .rc(rc), .pc(pc), .a(a), .b(b), .busy(busy), .done(done), .res(res), .flags(flags), .up(up), .cc(cc));
     integer fd, n, errs = 0, tot = 0, lat, k, r;
     reg [3:0] vop; reg [3:0] vrc, vpc, vcc; reg [79:0] vA, vB, vR; reg [7:0] vfl; reg vup;
     integer lmin [0:15], lmax [0:15], lsum [0:15], lcnt [0:15], eop [0:15];

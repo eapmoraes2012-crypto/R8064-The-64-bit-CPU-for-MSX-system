@@ -501,15 +501,14 @@ module r8064_core_min #(
     reg  [63:0] mdu_a, mdu_b, mdu_hi, mdu_r0, mdu_r1; reg [1:0] mdu_sz; reg mdu_sgn, mdu_isdiv, mul_go, div_go;
     wire mul_rdy, mul_ov, div_busy, div_dn, div_err; wire [127:0] mul_p; wire [63:0] div_q, div_r;
     // FPU (u[106], sempre junto com u[98]: usa a mesma espera em M e os mesmos seletores de leitura). A unidade (08_fpu/rtl/fpu_unit.v) tem a pilha ST0-ST7 e
-    // o nucleo aritmetico compacto, que usa ESTE multiplicador e ESTE divisor (mdu_fp = 1 enquanto a operacao em curso e da FPU). Ver MODELO_FPU.txt.
+    // o nucleo aritmetico compacto (mdu_fp = 1 enquanto a operacao em curso e da FPU). Ver MODELO_FPU.txt.
     //   alu[4] = 1: guarda os 16 bits altos de um valor de 80 bits (operando A) | alu[3] = 1: le o resultado (0 = r0, 1 = r1) | senao DISPARA: comando = campo dI
     //   da uop, n = 3 bits baixos do operando B (byte da instrucao), dado de memoria = operando A.
     reg mdu_fp, fp_go; reg [5:0] fp_op; reg [2:0] fp_n; reg [63:0] fp_din; reg [15:0] fp_dhi;
-    wire fp_done, fp_mgo, fp_dgo; wire [63:0] fp_r0, fp_ma, fp_mb, fp_dh, fp_dl, fp_dd; wire [15:0] fp_r1, fp_sw; wire [7:0] fp_emp;
-    fpu_unit u_fpu(.clk(clk), .rst(rst), .go(fp_go), .fop(fp_op), .n(fp_n), .din(fp_din), .dhi(fp_dhi), .done(fp_done), .r0(fp_r0), .r1(fp_r1), .sw(fp_sw), .empty(fp_emp),
-        .mul_go(fp_mgo), .div_go(fp_dgo), .mul_a(fp_ma), .mul_b(fp_mb), .div_hi(fp_dh), .div_lo(fp_dl), .div_d(fp_dd), .mul_dn(mul_ov), .div_dn(div_dn), .mul_p(mul_p), .div_q(div_q), .div_r(div_r));
-    mul_unit u_mul(.clk(clk), .rst(rst), .in_valid(mdu_fp ? fp_mgo : mul_go), .sz(mdu_fp ? 2'd3 : mdu_sz), .sgn(!mdu_fp && mdu_sgn), .a(mdu_fp ? fp_ma : mdu_a), .b(mdu_fp ? fp_mb : mdu_b), .ready(mul_rdy), .out_valid(mul_ov), .prod(mul_p));
-    div_unit u_div(.clk(clk), .rst(rst), .start(mdu_fp ? fp_dgo : div_go), .sz(mdu_fp ? 2'd3 : mdu_sz), .sgn(!mdu_fp && mdu_sgn), .hi(mdu_fp ? fp_dh : mdu_hi), .lo(mdu_fp ? fp_dl : mdu_a), .d(mdu_fp ? fp_dd : mdu_b), .busy(div_busy), .done(div_dn), .q(div_q), .r(div_r), .err(div_err));
+    wire fp_done; wire [63:0] fp_r0; wire [15:0] fp_r1, fp_sw; wire [7:0] fp_emp;
+    fpu_unit u_fpu(.clk(clk), .rst(rst), .go(fp_go), .fop(fp_op), .n(fp_n), .din(fp_din), .dhi(fp_dhi), .done(fp_done), .r0(fp_r0), .r1(fp_r1), .sw(fp_sw), .empty(fp_emp));
+    mul_unit u_mul(.clk(clk), .rst(rst), .in_valid(mul_go), .sz(mdu_sz), .sgn(mdu_sgn), .a(mdu_a), .b(mdu_b), .ready(mul_rdy), .out_valid(mul_ov), .prod(mul_p));
+    div_unit u_div(.clk(clk), .rst(rst), .start(div_go), .sz(mdu_sz), .sgn(mdu_sgn), .hi(mdu_hi), .lo(mdu_a), .d(mdu_b), .busy(div_busy), .done(div_dn), .q(div_q), .r(div_r), .err(div_err));
     always @(posedge clk) begin
         mul_go <= 1'b0; div_go <= 1'b0; fp_go <= 1'b0;
         if (rst) begin mdu_done <= 1'b0; mdu_fp <= 1'b0; end

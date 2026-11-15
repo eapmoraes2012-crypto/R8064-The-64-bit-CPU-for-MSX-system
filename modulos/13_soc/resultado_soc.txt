@@ -242,3 +242,25 @@ REV40 (15/11/2026): FLAGS E ERRO DE MLT/DIV, DJNZW COM BC, MODELO DE PRIVILEGIO 
         rodar rodar_pnr_board.bat no PC (os logs enviados em 15/11 sao do RTL da REV35/36: LUT4 52 %, BSRAM 36).
   NAO CONFERIDO: excecoes novas nos modos governados (Z80 / R800); LDCTX com falta de pagina no meio; RESET e STDBY so no SoC (cenarios dirigidos).
   PENDENTE: FPU (45) e E/S de 16/32/64 bits; tempos de MLT/DIV nos modos governados.
+
+REV41 (15/11/2026): FPU NO NUCLEO (pilha ST0-ST7 + 34 instrucoes). Simulado (Icarus 12). NAO COUBE na ferramenta da nuvem: ver AREA.
+  PEDIDO: lista de instrucoes enviada pelo autor + 4 decisoes dele (unidade aritmetica nova no nucleo; transcendentais depois; FSTSW em F; FIST de 64 bits).
+  DOCUMENTO: 09_core_min/MODELO_FPU.txt (formato, pilha, codigos, o que foi escolha minha, o que falta).
+  NOVO: 08_fpu/rtl/fpu_seq.v (aritmetica de 80 bits sequencial, um somador de 68 bits; soma, subtracao, multiplicacao, divisao, raiz, comparacao,
+        FILD/FIST/FRINT, FLD32/64, FST32/64) e fpu_unit.v (pilha, marcas, palavra de estado, comandos). No nucleo: uop de 107 bits ([106] fpu), a uop
+        de FPU espera em M como MLT/DIV. Microcodigo: FLD/FXCH/FSTP STn, FADD/FSUB/FMUL/FDIV, FSQRT, FRINT, FCHS, FABS, FCOM, FCOPP, FSTSW, FINIT,
+        FLD1/FLDZ/FLDPI/FLDL2/FLDLG/FLDLN, FILD, FLD32/64/80, FST32/64/80, FSP32/FSP64/FSTP8, FIST/FISTP e FLUSH (TLB inteira + pipeline, privilegiada).
+        ROM de uops: 1461 de 2048 entradas.
+  SEM MICROCODIGO: FCOS FLN FREM FREM1 FSIN FSINC FTAN FYL2P FYL2X (outra etapa), FSAVE/FRSTR, E/S larga.
+  TESTE: fpu_seq x modelo exato fpref.py: 39.000 vetores do repositorio + 78.000 novos, todos os modos de arredondamento/precisao: 0 erros.
+        Nucleo x modelo em Python (a conta da FPU vem do fpref.py; palavra de estado e vazios conferidos a CADA instrucao, registradores de 80 bits e
+        memoria no fim): passo a passo 14 programas / 56.046 instrucoes, nucleo solto 10 programas / 40.023: 0 divergencias (metade desses programas com
+        cerca de metade das instrucoes de FPU). Regressao: 10_mode_gov (28), tb_soc, tb_soc_exc 1-12, sim_z80, fumaca: OK.
+  ERRO ACHADO: so um, no meu gerador de teste (apontava o HL antes de montar o dado). O hardware passou os vetores na primeira execucao.
+  AREA (o problema desta revisao): a FPU sozinha da ~4.900 LUT + 400 ALU. Nucleo + governador na nuvem: 11.293 -> 17.071 LUT4 e 2.114 ALU, e o
+        posicionador NAO achou lugar (GW2AR-18 no limite). Os numeros da nuvem sao mais altos que os do PC do autor (a placa inteira da REV40 deu 12.003
+        LUT4 la), entao pode caber na placa real, mas apertado. Chave para tirar a FPU sem mexer no resto: macro R8064_SEM_FPU (MODELO_FPU.txt, item 7).
+  LOGS DO AUTOR (REV40, placa, 4 sementes): LUT4 12.003 (57 %), BSRAM 38; Fmax 81,59 / 41,16 (falhou) / 73,36 / 71,33 MHz. A semente 2 falhou por
+        posicionamento (22 dos 24 ns do caminho sao roteamento; um fio de 11,5 ns saindo do contador da entrada de excecao). 3 de 4 sementes passam com folga.
+  PENDENTE: reduzir a area da FPU (reorganizar o caminho de dados para poucas fontes: estimativa de cortar perto da metade, com operacoes 2-3x mais
+        lentas); transcendentais e restos; FSAVE/FRSTR; rodar rodar_pnr_board.bat com e sem a FPU.

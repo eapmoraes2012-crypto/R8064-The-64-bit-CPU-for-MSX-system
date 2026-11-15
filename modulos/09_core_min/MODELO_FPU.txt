@@ -4,13 +4,15 @@ Feita a partir da lista de instrucoes enviada pelo autor do projeto + quatro dec
 transcendentais e restos em outra etapa; FSTSW grava em F; FIST/FISTP gravam inteiro de 64 bits. O que a lista nao dizia esta marcado [ESCOLHA].
 
 1. HARDWARE
-   08_fpu/rtl/fpu_seq.v   nucleo aritmetico compacto de 80 bits (soma, subtracao, multiplicacao, divisao, raiz, comparacao, conversoes). Mesma interface e mesmos
-                          resultados, bit a bit, do fpu_alu.v antigo, mas sequencial (um registrador de 68 bits, deslocamentos de 16/4/1, raiz bit a bit) e
-                          SEM multiplicador nem divisor proprios: usa o mul_unit e o div_unit do modulo 03 que o nucleo ja tem para MLT/DIV.
+   08_fpu/rtl/fpu_seq.v   nucleo aritmetico de 80 bits (soma, subtracao, multiplicacao, divisao, raiz, comparacao, conversoes). Mesma interface e mesmos
+                          resultados, bit a bit, do fpu_alu.v antigo, mas sequencial: UM somador de 68 bits, tres registradores, deslocamentos de 4/1 bits
+                          por clock, e multiplicacao, divisao e raiz bit a bit nesse somador (nao usa multiplicador nem divisor).
    08_fpu/rtl/fpu_unit.v  pilha ST0-ST7 (80 bits), marcas de vazio, palavra de estado e os comandos que o microcodigo dispara.
    No nucleo a FPU entra pelo mesmo caminho de MLT/DIV (a uop espera no estagio M ate a unidade terminar). Uop de 107 bits: [106] fpu.
-   Latencia medida do nucleo aritmetico (clocks, min/media/max): soma 3/16/44, multiplicacao 3/18/43, divisao 3/56/95, raiz 3/57/86, comparacao 3,
-   inteiro 3/11/24, FLD32/64 3/4/8, FST32/64 3/12/27. A instrucao inteira gasta mais alguns clocks de pipeline.
+   Latencia medida do nucleo aritmetico (clocks, min/media/max): soma 5/23/73, multiplicacao 5/61/126, divisao 5/58/117, raiz 5/58/96, comparacao 5,
+   FILD 5/12/24, FIST 5/18/48, FRINT 5/25/66, FLD32/64 5/5/9, FST32/64 5/15/49. A instrucao inteira gasta mais alguns clocks de pipeline.
+   AREA: a unidade inteira sintetizada sozinha da ~4.900 LUT (4.150 sem "wide LUT"), 400 ALU, 540 flip-flops e 40 RAM16; o nucleo aritmetico e ~3.300 disso.
+   E MAIS do que eu pretendia para uma unidade "compacta" (ver PENDENCIAS no fim).
 
 2. FORMATO E ARREDONDAMENTO
    Registradores de 80 bits no formato estendido do x87 (sinal, expoente de 15 bits, significando de 64 bits com o bit inteiro explicito).
@@ -54,3 +56,16 @@ transcendentais e restos em outra etapa; FSTSW grava em F; FIST/FISTP gravam int
    09_core_min/sim_r64: o gerador ganhou um modelo da pilha e das 33 instrucoes de FPU (a conta vem do fpref.py); o traco agora leva a palavra de estado e os
    vazios da FPU, conferidos a cada instrucao, e no fim sao conferidos os 8 registradores de 80 bits e a memoria. Passo a passo e com o nucleo solto (+livre).
    NAO testado: FLUSH no SoC (so que nao muda o estado da CPU e que e privilegiada); FPU junto com faltas de pagina; FPU nos modos de temporizacao Z80 / R800.
+
+7. AREA E A CHAVE PARA TIRAR A FPU
+   Na ferramenta da nuvem o nucleo + governador COM a FPU nao coube no GW2AR-18 (17.071 LUT4 + 2.114 ALU: o posicionador desistiu); sem a FPU sao 11.293.
+   Os numeros da nuvem sao mais altos que os do OSS CAD Suite do autor (la a PLACA inteira da REV40 deu 12.003 LUT4), entao o resultado real so sai
+   rodando rodar_pnr_board.bat. Se nao couber ou nao fechar o tempo, a FPU sai com uma macro, sem mexer em mais nada:
+       nos .ys (13_soc/pnr/ys_board.ys etc.) troque   read_verilog -sv ...   por   read_verilog -sv -DR8064_SEM_FPU ...
+   Com a macro, as instrucoes de FPU terminam na hora, devolvem zero e nao guardam nada (o resto do nucleo fica igual).
+
+8. PENDENCIAS
+   - AREA: o grosso sao os multiplexadores de 68 bits do registrador de trabalho (cerca de 25 fontes diferentes). Reorganizar o caminho de dados para
+     poucas fontes (um deslocador, o somador e uma carga), com multiplicacao/divisao/raiz em 2-3 clocks por bit, deve cortar perto da metade, ao custo de
+     operacoes 2 a 3 vezes mais lentas. Nao foi feito nesta revisao.
+   - Transcendentais e restos, FSAVE/FRSTR, palavra de controle programavel.

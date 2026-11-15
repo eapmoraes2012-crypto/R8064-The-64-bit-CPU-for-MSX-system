@@ -7,6 +7,7 @@
 //   2  sem aritmetica: 0 FLD STn, 1 FXCH n, 2 FSTP STn, 3 FCHS, 4 FABS, 5 FINIT, 6 FLD80 ({dhi, din}), 7 FST80 ({r1, r0} := ST0), 8 desempilha, 9 FSTSW (r0 := byte para F),
 //      10 FLD1, 11 FLDZ, 12 FLDPI, 13 FLDL2 (log2 10), 14 FLDLG (log10 2), 15 FLDLN (ln 2)
 // Palavra de controle FIXA: arredondamento para o mais proximo, precisao de 64 bits, todas as excecoes mascaradas (resposta padrao do x87; so as marcas ficam).
+// Para sintetizar sem a FPU (economiza ~5.000 LUT): defina R8064_SEM_FPU (ver o fim de 09_core_min/MODELO_FPU.txt).
 // Pilha: ler registrador vazio ou empilhar sobre ST7 ocupado = IE + SF e o valor vira o INDEFINIDO (C1 = 1 no estouro, 0 na falta).
 module fpu_unit(
     input  wire        clk, rst, go,
@@ -18,14 +19,15 @@ module fpu_unit(
     output reg  [63:0] r0,
     output reg  [15:0] r1,
     output wire [15:0] sw,            // palavra de estado no formato do x87: {B, C3, TOP, C2, C1, C0, ES, SF, PE, UE, OE, ZE, DE, IE}
-    output wire [7:0]  empty,
-    output wire        mul_go, div_go,
-    output wire [63:0] mul_a, mul_b, div_hi, div_lo, div_d,
-    input  wire        mul_dn, div_dn,
-    input  wire [127:0] mul_p,
-    input  wire [63:0] div_q, div_r
+    output wire [7:0]  empty
 );
     localparam [79:0] INDEF = {1'b1, 15'h7FFF, 64'hC000_0000_0000_0000};
+`ifdef R8064_SEM_FPU
+    // Sintese SEM a FPU (read_verilog -DR8064_SEM_FPU): a unidade some; toda instrucao de FPU termina na hora, devolve zero e nao guarda nada.
+    reg [79:0] stk [0:7]; reg [2:0] top; reg [7:0] emp;       // so para os testbenches compilarem
+    assign sw = 16'd0; assign empty = 8'hFF;
+    always @(posedge clk) begin done <= !rst && go; r0 <= 64'd0; r1 <= 16'd0; end
+`else
     reg [79:0] stk [0:7];
     reg [2:0] top; reg [7:0] emp; reg [5:0] exc; reg sf, c3, c2, c1, c0;
     reg [5:0] fr; reg [2:0] nn; reg [63:0] dq;
@@ -38,8 +40,7 @@ module fpu_unit(
     wire needb = (code <= 4'd3) || (code == 4'd5);
     wire wr0 = (code <= 4'd4) || (code == 4'd8);
     reg astart; wire adone; wire [79:0] ares; wire [5:0] afl; wire aup; wire [2:0] acc;
-    fpu_seq u_seq(.clk(clk), .rst(rst), .start(astart), .op(code), .rc(2'd0), .pc(2'd3), .a(memsrc ? {16'd0, dq} : ra), .b(rb), .busy(), .done(adone), .res(ares), .flags(afl), .up(aup), .cc(acc),
-        .mul_go(mul_go), .mul_a(mul_a), .mul_b(mul_b), .mul_dn(mul_dn), .mul_p(mul_p), .div_go(div_go), .div_hi(div_hi), .div_lo(div_lo), .div_d(div_d), .div_dn(div_dn), .div_q(div_q), .div_r(div_r));
+    fpu_seq u_seq(.clk(clk), .rst(rst), .start(astart), .op(code), .rc(2'd0), .pc(2'd3), .a(memsrc ? {16'd0, dq} : ra), .b(rb), .busy(), .done(adone), .res(ares), .flags(afl), .up(aup), .cc(acc));
     reg we; reg [2:0] wi; reg [79:0] wd;
     always @(posedge clk) if (we) stk[wi] <= wd;
     assign sw = {1'b0, c3, top, c2, c1, c0, 1'b0, sf, exc[5], exc[4], exc[3], exc[2], exc[1], exc[0]};
@@ -91,4 +92,5 @@ module fpu_unit(
             U_X2: begin we <= 1'b1; wi <= ib; wd <= {r1, r0}; emp[ib] <= 1'b0; us <= U_IDLE; done <= 1'b1; end
         endcase
     end
+`endif
 endmodule

@@ -15,7 +15,7 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
   com causa / auxiliar / EPC em CR11 / CR12 / CR13, retorno por SYSRT. E uma DEFINICAO feita nesta revisao, nao algo que ja existia no projeto: revise.
   O software MSX roda sempre em supervisor e nao e afetado.
 - FPU (REV41, `09_core_min/MODELO_FPU.txt`): pilha ST0-ST7 de 80 bits e 34 instrucoes no nucleo (cargas, constantes, soma, subtracao, multiplicacao, divisao,
-  raiz, comparacao, conversoes, FSTSW), com um nucleo aritmetico compacto novo (`08_fpu/rtl/fpu_seq.v`) que usa o multiplicador e o divisor do modulo 03.
+  raiz, comparacao, conversoes, FSTSW), com um nucleo aritmetico sequencial novo (`08_fpu/rtl/fpu_seq.v`). Custa cerca de 5.000 LUT: conferir a ocupacao da placa.
   Faltam: transcendentais e restos (FSIN, FCOS, FSINC, FTAN, FLN, FYL2X, FYL2P, FREM, FREM1), FSAVE/FRSTR e a E/S de 16/32/64 bits
   (sem microcodigo: NOP, ou excecao se CR14 bit 2 = 1, o que permite emular por software).
 - Diferencas conhecidas para um Z80 real: R nao conta buscas; HALT e um salto para si mesmo; X/Y nao documentados de BIT n,(HL) e dos blocos; um opcode ED
