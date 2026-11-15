@@ -88,6 +88,7 @@ def t_incdec():
     inc = rnd.random() < .5; s = rnd.choice('WEQ'); n = BITS[s]; d = rnd.choice(R6)
     res, f = arith(r[REG[d]], 1, n, not inc, 0, keepc=True)
     wr_reg(REG[d], res, n); st['f'] = f; seq([0xED, 0x3E if inc else 0x3C, 'WEQ'.index(s) << 6 | d << 3 | 1])
+LDB2 = {'W': 0x3B, 'E': 0x3A, 'Q': 0x39}
 R8 = {0: ('BC', 8), 1: ('BC', 0), 2: ('DE', 8), 3: ('DE', 0), 4: ('HL', 8), 5: ('HL', 0), 7: ('AX', 0)}
 def t_shift():
     op = rnd.choice(['SHL', 'SHR', 'SAR', 'RLC', 'RRC']); s = rnd.choice('BWEQ' if op in ('SHL', 'SHR', 'SAR') else 'WEQ'); n = BITS[s]; tt = 'BWEQ'.index(s)
@@ -108,7 +109,6 @@ def t_bit():
     else: wr_reg(REG[t], v | (1 << b), n)
     if s == 'W': seq([0xED, 0x2F if op == 'SET' else 0x30, (0x80 if op == 'RES' else 0) | b << 3 | t])
     else: seq([0xED, {'BIT': 0x33, 'RES': 0x32, 'SET': 0x31}[op], b << 3 | t])
-LDB2 = {'W': 0x3B, 'E': 0x3A, 'Q': 0x39}
 def t_ldrr():
     s = rnd.choice('WEQ'); n = BITS[s]; d, sc = rnd.choice(R6), rnd.choice(R6)
     wr_reg(REG[d], r[REG[sc]], n); seq([0xED, LDB2[s], 0x40 | d << 3 | sc])
@@ -187,7 +187,75 @@ def t_ret():
     if tk: r['SP'] = (r['SP'] + n // 8) & M64
     bs = [0xED, 0x04 + q] if cc == 8 else [0xED, 0x03, (0x80 if q else 0x40) | cc << 3]
     branch(bs, tk, k)                                                                                        # o alvo lido da pilha = t (32 bits baixos em RETE)
-TESTS = [(t_alu, 22), (t_incdec, 6), (t_shift, 10), (t_bit, 8), (t_ldrr, 5), (t_ldimm, 8), (t_ldmem, 8), (t_ldabs, 6), (t_ldidx, 8), (t_stack, 6),
+def sgn(v, n): v &= msk(n); return v - (1 << n) if v >> (n - 1) else v
+def r8get(u): name, sh = R8[u]; return (r[name] >> sh) & 0xFF
+def ldx(code_r, val, s):                        # LDW/LDE/LDQ rr, imediato
+    n = BITS[s]; wr_reg(REG[code_r], val, n); seq([0xED, LDB2[s], 0x40 | code_r << 3 | 1] + le(val & msk(n), n // 8))
+def t_mul():
+    k = rnd.randrange(7)
+    if k == 0:                                                                                               # MLTUB A,u (R800): HL = A * u
+        u = rnd.choice(list(R8)); wr_reg('HL', (r['AX'] & 0xFF) * r8get(u), 16); seq([0xED, 0xC1 | u << 3])
+    elif k == 1:                                                                                             # MLTUW HL,BC / HL,SP (R800): DE:HL = HL * rr
+        nm, b2 = rnd.choice([('BC', 0xC3), ('SP', 0xF3)]); p = (r['HL'] & 0xFFFF) * (r[nm] & 0xFFFF)
+        wr_reg('HL', p, 16); wr_reg('DE', p >> 16, 16); seq([0xED, b2])
+    elif k == 2:                                                                                             # MLTSB AL,u: AX (16 bits) = AL * u
+        u = rnd.choice(list(R8)); wr_reg('AX', sgn(r['AX'], 8) * sgn(r8get(u), 8), 16); seq([0xED, 0x3F, 0x08 | u])
+    else:
+        sg = rnd.random() < .5; s = 'WEQ'[k % 3]; n = BITS[s]; c = rnd.choice(R6); b2 = 0x3F if sg else 0x3E
+        a, b = (r['HL'] if s == 'W' else r['AX']), r[REG[c]]
+        p = (sgn(a, n) * sgn(b, n)) if sg else ((a & msk(n)) * (b & msk(n)))
+        if s == 'W': wr_reg('HL', p, 16); wr_reg('DE', p >> 16, 16)                                          # MLTxW HL,rr: DE:HL
+        elif s == 'E': r['AX'] = p & M64                                                                     # MLTxE: QA
+        else:
+            r['AX'] = p & M64                                                                                # MLTUQ: QA ; MLTSQ: QDE:QA
+            if sg: r['DE'] = (p >> 64) & M64
+        seq([0xED, b2, 'BWEQ'.index(s) << 6 | 1 << 3 | c])
+def t_div():                                    # operandos preparados para NAO dar erro (divisor zero / quociente fora da faixa)
+    sg = rnd.random() < .5; s = rnd.choice('BWEQ'); n = BITS[s]; b2 = 0x3D if sg else 0x3C
+    if s == 'B': c = rnd.randrange(6); dname = None
+    else: c = rnd.choice([0, 3, 4, 5]); dname = REG[c]                                                       # divisor: BC, IY, HL ou IX
+    while True:
+        d = rnd.getrandbits(n) if rnd.random() < .7 else rnd.getrandbits(rnd.randrange(1, n))
+        if sg:
+            dv = sgn(d, n)
+            if dv == 0: continue
+            q = rnd.randrange(-(1 << (n - 1)), 1 << (n - 1)); rem = rnd.randrange(abs(dv)); dd = q * dv
+            dd += rem if dd >= 0 else -rem
+            if dd == 0 and q != 0: continue
+            q = abs(dd) // abs(dv) * (1 if (dd < 0) == (dv < 0) else -1); rem = dd - q * dv
+            if not -(1 << (n - 1)) <= q < (1 << (n - 1)): continue
+        else:
+            if d == 0: continue
+            dd = rnd.randrange(d << n) if rnd.random() < .7 else rnd.getrandbits(n); q, rem = dd // d, dd % d
+        break
+    lo, hi = dd & msk(n), (dd >> n) & msk(n)
+    if s == 'B':
+        name, sh = R8[c]; ldx({'BC': 0, 'DE': 2, 'HL': 4}[name], (rnd.getrandbits(8) << (8 - sh)) | (d << sh), 'W')   # divisor num registrador de 8 bits
+        ldx(7, hi << 8 | lo, 'W'); wr_reg('AX', (rem & 0xFF) << 8 | (q & 0xFF), 16)                          # AL = quociente, AH = resto
+    elif s == 'E':
+        ldx(c, d, 'E'); ldx(7, hi << 32 | lo, 'Q'); r['AX'] = (rem & msk(32)) << 32 | (q & msk(32))          # QA = {resto, quociente}
+    else:
+        ldx(c, d, s); ldx(2, hi, s); ldx(7, lo, s); wr_reg('AX', q, n); wr_reg('DE', rem, n)                 # AX = quociente, DE = resto
+    seq([0xED, b2, 'BWEQ'.index(s) << 6 | 1 << 3 | c])
+def t_xchg():
+    s = rnd.choice('EQ'); n = BITS[s]; p, o = rnd.choice(R6), rnd.choice(R6); q = 1 if s == 'Q' else 0
+    ldq(p, data_addr(n)); a = r[REG[p]]; old = rdm(a, n); wrm(a, r[REG[o]], n); wr_reg(REG[o], old, n)
+    seq([0xED, 0xAC, q << 6 | o << 3 | p])                                                                   # XCHGx rr,(rr')
+def t_cas():
+    s = rnd.choice('EQ'); n = BITS[s]; p, o = rnd.choice([0, 2, 3, 4, 5]), rnd.choice(R6); q = 1 if s == 'Q' else 0
+    ldq(p, data_addr(n)); a = r[REG[p]]; m = rdm(a, n)
+    if rnd.random() < .5: ldq(7, m | (rnd.getrandbits(32) << 32 if s == 'E' else 0))                         # metade das vezes A ja e igual
+    res, f = arith(r['AX'], m, n, True, 0, xy_from_b=True); st['f'] = f; eq = (r['AX'] & msk(n)) == m
+    wr_reg('AX', m, n)
+    if eq: wrm(a, r[REG[o]], n)
+    seq([0xED, 0xAD, q << 6 | p << 3 | o])                                                                   # CASx (rr'),rr
+cr = [0] * 8
+def t_cr():
+    k = rnd.randrange(8); c = rnd.choice(R6)
+    if rnd.random() < .5: cr[k] = r[REG[c]]; seq([0xED, 0x20, k << 3 | c])                                   # LDCR kk,rr
+    else: r[REG[c]] = cr[k]; seq([0xED, 0x21, k << 3 | c])                                                   # STCR rr,kk
+def t_nop2(): seq(rnd.choice([[0xED, 0xA5], [0xED, 0xA6], [0xED, 0x08], [0xED, 0x0F], [0xED, 0xC4], [0xED, 0xFC]]))   # FENCE, ISYNC, ED ilegal (NOP de 2 bytes), PGINV
+TESTS = [(t_mul, 10), (t_div, 8), (t_xchg, 3), (t_cas, 4), (t_cr, 3), (t_nop2, 2), (t_alu, 22), (t_incdec, 6), (t_shift, 10), (t_bit, 8), (t_ldrr, 5), (t_ldimm, 8), (t_ldmem, 8), (t_ldabs, 6), (t_ldidx, 8), (t_stack, 6),
          (t_jr, 5), (t_jpimm, 4), (t_jpreg, 4), (t_call, 4), (t_ret, 4)]
 pool = [t for t, w in TESTS for _ in range(w)]
 ld_sp(0xF000)

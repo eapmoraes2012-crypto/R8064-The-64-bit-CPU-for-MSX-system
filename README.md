@@ -7,14 +7,15 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
 - O nucleo do SoC (`09_core_min`) executa o **Z80 completo**: pagina principal, CB, DD/FD (IX/IY, IXH/IXL), DDCB/FDCB e a pagina ED do Z80.
   Conferido instrucao a instrucao contra o modelo `12_z80/ref/z80ref.c` (`09_core_min/sim_z80`: mais de 1,1 milhao de instrucoes, flags X/Y incluidas,
   e o inicio do ZEXDOC). Desde a REV36 essa e a ROM padrao (`uop.mem`) do SoC e de todos os testes; a antiga codificacao de teste da pagina principal acabou.
-- Instrucoes proprias do R8064 (pagina ED): as inteiras de 16/32/64 bits tem microcodigo desde a REV37 (ALU, INC/DEC, deslocamentos, bits, LDx, pilha,
-  desvios, chamadas e retornos), com semantica INFERIDA (`09_core_min/PREMISSAS_R8064.txt`). Conferidas contra um modelo em Python escrito a partir dessas premissas
-  (`09_core_min/sim_r64`: 108 mil instrucoes em programas aleatorios, sem divergencias).
-  Faltam: E/S de 16/32/64 bits, multiplicacao/divisao, FPU e instrucoes de sistema.
+- Instrucoes proprias do R8064 (pagina ED) com microcodigo: as inteiras de 16/32/64 bits (ALU, INC/DEC, deslocamentos, bits, LDx, pilha, desvios, chamadas e
+  retornos), multiplicacao e divisao (blocos do modulo 03 ligados ao nucleo), LDCR/STCR, PGINV, XCHG e CAS. Semantica INFERIDA (`09_core_min/PREMISSAS_R8064.txt`),
+  conferida contra um modelo em Python escrito a partir dessas premissas (`09_core_min/sim_r64`: programas aleatorios, sem divergencias).
+  Faltam: FPU (45 instrucoes), E/S de 16/32/64 bits e as de sistema/privilegio (PROT, JP USER, SCALL, SYSRT, RESET, STDBY, WAKE, LDCTX, SVCTX).
+  Divisao por zero ou com estouro ainda nao gera excecao.
 - Diferencas conhecidas para um Z80 real: R nao conta buscas; HALT e um salto para si mesmo; X/Y nao documentados de BIT n,(HL) e dos blocos; um opcode ED
-  que nao e do Z80 nao vira NOP de 2 bytes; codigo que se modifica e executa em seguida, sem desvio no meio, ve o byte antigo (fila de busca).
+  que nao e do Z80 e instrucao do R8064 (so os sem instrucao viram NOP de 2 bytes); codigo que se modifica e executa em seguida, sem desvio no meio, ve o byte antigo (fila de busca).
 - PnR do topo de placa com o Z80 completo (REV37): 52 % das LUTs, 36 de 46 BSRAM; 3 de 4 sementes fecham a 57,28 MHz (59 a 74 MHz), com folga menor que antes.
-- O SoC (`13_soc`) reune nucleo + governador + memoria MSX + MMU + caches + SDRAM. Nao instancia mul/div (03), `msx_if` (04), FPU (08/11) nem o Z80 classico (12).
+- O SoC (`13_soc`) reune nucleo + governador + memoria MSX + MMU + caches + SDRAM. Nao instancia `msx_if` (04), FPU (08/11) nem o Z80 classico (12).
 - O Z80 classico (`12_z80`) passa no ZEXDOC, mas a ultima Fmax medida (44-52 MHz) esta abaixo do clock de 57,28 MHz.
 - Nada foi verificado em hardware. O topo de placa ainda nao liga o barramento do MSX.
 - Pendencias e historico: `modulos/13_soc/resultado_soc.txt` (a REV33 lista o que esta aberto).
@@ -24,7 +25,7 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
 |---|---|---|
 | `01_alu_regfile` | ALU de 64 bits e banco de registradores | sim (via 09) |
 | `02_pipeline` | modelo de temporizacao do pipeline (estudo, nao sintetizavel) | nao |
-| `03_muldiv` | multiplicador e divisor | nao |
+| `03_muldiv` | multiplicador e divisor | sim (desde a REV39) |
 | `04_msx_if` | interface MSX + FIFO (primeira versao) | nao |
 | `05_sdram` | controlador de SDRAM e modelo de simulacao | sim |
 | `05b_cache` | estudo de dimensionamento das caches (Python) | - |

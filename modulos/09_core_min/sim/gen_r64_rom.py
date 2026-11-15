@@ -5,10 +5,12 @@
 # fpos=0 -> destino b3[2:0], fonte A b3[5:3]; a fonte B e sempre b3[2:0]. Codigos: 000 BC, 010 DE, 011 IY, 100 HL, 101 IX, 111 AX.
 # Bits novos da uop: [95] r8 (o campo do destino e um registrador de 8 bits do Z80: SARB/SHLB/SHRB), [96] ccf (condicao vinda de b3[5:3]),
 #   [97] ccinv (condicao contraria: desvio de pulo de CALL cc / RET cc).  immsel com isz = 1 / 2: numero do bit em b3[6:3] / b3[7:3].
-# FORA desta etapa: E/S de 16/32/64 bits (INW/OUTW...), multiplicacao e divisao, FPU, instrucoes de sistema e atomicas.
+#   [98] mdu (multiplicacao/divisao; o campo alu vira o comando: 0-3 dispara MULU/MULS/DIVU/DIVS, 8+n le o resultado n, 16 guarda a parte alta do dividendo),
+#   [99] r8b (fonte B = registrador de 8 bits do Z80), [100] bb2 (campo da fonte B no 2o byte), [101] crk (LDCR/STCR: CR em b3[7:3]).
+# FORA: E/S de 16/32/64 bits (INW/OUTW...), FPU, PROT, JP USER, RESET/STDBY/WAKE, SCALL/SYSRT, LDCTX/SVCTX. FENCE e ISYNC sao NOP (uop 0).
 from gen_z80_rom import POS, ADD, ADC, SUB, SBC, AND, OR, XOR, CP, INC, DEC, SHL, SHR, SAR, ROL, ROR, SP, TMP, ZERO
-POS.update(r8=95, ccf=96, ccinv=97)
-IX, IY, BC = 9, 10, 1
+POS.update(r8=95, ccf=96, ccinv=97, mdu=98, r8b=99, bb2=100, crk=101)
+IX, IY, BC, AX, DE, HL, T2 = 9, 10, 1, 0, 2, 3, 12
 def uop(**k):
     v = 0
     for n, x in k.items(): v |= x << POS[n]
@@ -94,4 +96,31 @@ def aplica(uops, livre):
         rseq = [dict(rd=1, aI=SP, immz=1, wren=1, dI=TMP, sz=z, zx=1), spadj(z, SUB), dict(cond=0, **JTMP)]
         chain(ret,   rseq)                                                                                        # RETx
         chain(retcc, [SKIP] + rseq)                                                                               # RETx cc
+    # ---- multiplicacao (MLTUB do R800: ED C1..F9; MLTUW HL,BC / HL,SP: ED C3 / F3; demais: tt 001 rrr) e divisao; nao alteram flags ----
+    def START(op, z, **k): return dict(mdu=1, alu=op, sz=z, **k)                       # op: 0 MULU, 1 MULS, 2 DIVU, 3 DIVS
+    def READ(sel, d, z, **k): return dict(mdu=1, alu=8 | sel, wren=1, dI=d, sz=z, **k)  # sel: 0 baixo/quociente, 1 alto/resto, 2 produto[31:16], 3 {resto32, quociente32}
+    def SETHI(a, z, **k): return dict(mdu=1, alu=16, aI=a, sz=z, **k)
+    chain(25, [START(0, 0, aI=AX, r8b=1, bb2=1), READ(0, HL, 1)])                                                 # MLTUB A,u    -> HL = A * u
+    chain(26, [START(0, 1, aI=HL, bI=BC), READ(0, HL, 1), READ(2, DE, 1)])                                        # MLTUW HL,BC  -> DE:HL
+    chain(27, [START(0, 1, aI=HL, bI=SP), READ(0, HL, 1), READ(2, DE, 1)])                                        # MLTUW HL,SP
+    for sg, (ib, iw, ie, iq) in ((0, (None, 28, 29, 30)), (1, (21, 22, 23, 24))):
+        if ib: chain(ib, [START(sg, 0, aI=AX, r8b=1), READ(0, AX, 1)])                                            # MLTSB AL,u   -> AX (16 bits)
+        chain(iw, [START(sg, 1, aI=HL, bF=1), READ(0, HL, 1), READ(2, DE, 1)])                                    # MLTxW HL,rr  -> DE:HL
+        chain(ie, [START(sg, 2, aI=AX, bF=1), READ(0, AX, 3)])                                                    # MLTxE        -> QA (64 bits)
+        chain(iq, [START(sg, 3, aI=AX, bF=1), READ(0, AX, 3)] + ([READ(1, DE, 3)] if sg else []))                 # MLTUQ -> QA ; MLTSQ -> QDE:QA
+    for sg, (ib, iw, ie, iq) in ((0, (14, 15, 16, 17)), (1, (10, 11, 12, 13))):
+        chain(ib, [SETHI(AX, 0, ashr8=1), START(2 | sg, 0, aI=AX, r8b=1), READ(0, AX, 0), READ(1, AX, 0, hb=1)])  # DIVxB AX,t   -> AL = quociente, AH = resto
+        chain(iw, [SETHI(DE, 1), START(2 | sg, 1, aI=AX, bF=1), READ(0, AX, 1), READ(1, DE, 1)])                  # DIVxW DX:AX  -> AX = quociente, DE = resto
+        chain(ie, [SETHI(AX, 2), START(2 | sg, 2, aI=AX, bF=1), READ(3, AX, 3)])                                  # DIVxE QA     -> QA = {resto, quociente}
+        chain(iq, [SETHI(DE, 3), START(2 | sg, 3, aI=AX, bF=1), READ(0, AX, 3), READ(1, DE, 3)])                  # DIVxQ QDE:QA -> QA = quociente, QDE = resto
+    # ---- registradores de controle, TLB, troca e comparacao-e-troca ----
+    chain(180, [dict(aF=1, fpos=1, crd=1, crk=1, wren=1, sz=3, **MOV)])                                           # LDCR kk,rr : CR[kk] := rr
+    chain(181, [dict(cra=1, crk=1, dF=1, fpos=0, wren=1, sz=3, **MOV)])                                           # STCR rr,kk : rr := CR[kk]
+    chain(186, [dict(alu=ADD, aI=ZERO, bF=1, bb2=1, wren=1, dI=48, sz=3)])                                        # PGINV (uu) : descarga da TLB pelo endereco (= escrever CR16)
+    for z, (ix, ic) in ((2, (187, 189)), (3, (188, 190))):
+        chain(ix, [dict(aF=1, fpos=0, wren=1, dI=T2, sz=3, **MOV), dict(rd=1, aF=1, fpos=1, immz=1, wren=1, dI=TMP, sz=z, zx=1),   # XCHGx rr,(rr')
+                   dict(wr=1, aF=1, fpos=1, immz=1, bI=T2, sz=z), dict(aI=TMP, wren=1, sz=z, **MOV, **D1)])
+        chain(ic, [dict(rd=1, aF=1, fpos=0, immz=1, wren=1, dI=TMP, sz=z, zx=1), dict(alu=CP, aI=AX, bI=TMP, fwe=1, sz=z),         # CASx (rr'),rr: se (rr') == A:
+                   dict(aI=TMP, wren=1, dI=AX, sz=z, **MOV), dict(br=1, rel=1, immz=1, cond=2, altinv=1),                         #   (rr') := rr, Z = 1 ; senao A := (rr'), Z = 0
+                   dict(wr=1, aF=1, fpos=0, immz=1, bF=1, sz=z)])
     return nextfree[0]

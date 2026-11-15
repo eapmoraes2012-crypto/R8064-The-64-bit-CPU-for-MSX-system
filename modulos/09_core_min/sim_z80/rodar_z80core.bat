@@ -5,7 +5,7 @@ cd /d "%~dp0"
 set S=..\sim
 set R=..\rtl
 for %%F in (uop.mem mainctrl.mem rom_ed_a.mem rom_ed_b.mem amb_idx.mem ctrl.mem ctrl_b.mem) do copy /y %S%\%%F . >nul
-iverilog -g2012 -o z80core.vvp tb_z80core.v %R%\r8064_core_min.v %R%\r8064_decode.v %R%\r8064_decode_rom.v %R%\regfile64.v %R%\regmap_b.v %R%\regmerge.v %R%\alu_prep.v %R%\alu_core_s.v
+iverilog -g2012 -o z80core.vvp tb_z80core.v %R%\r8064_core_min.v %R%\r8064_decode.v %R%\r8064_decode_rom.v %R%\regfile64.v %R%\regmap_b.v %R%\regmerge.v %R%\alu_prep.v %R%\alu_core_s.v ..\..\03_muldiv\rtl\mul_unit.v ..\..\03_muldiv\rtl\div_unit.v
 if errorlevel 1 (echo COMPILACAO FALHOU & exit /b 1)
 del resultado_z80core.txt 2>nul
 for %%V in (r53 r56 zex) do (

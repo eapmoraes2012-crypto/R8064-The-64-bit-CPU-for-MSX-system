@@ -207,3 +207,18 @@ REV38 (14/11/2026): TESTE AMPLO DAS INSTRUCOES R8064 DE 16/32/64 BITS + MEDICAO 
       Os valores daqui servem para comparar versoes entre si, NAO como Fmax final: o que vale e rodar_pnr_board.bat no PC.
       Limitadores vistos nos logs do usuario que ja existiam e nao foram tocados: rede do 'hold' (SDRAM -> hold -> flush -> CE do pipeline, 18,6 ns de fio na
       semente 1) e o somador de endereco -> alvo do desvio (7 ns de fio na semente 2). Mexer neles muda o controle do pipeline: fica como proposta, nao foi feito.
+
+REV39 (15/11/2026): MULTIPLICACAO, DIVISAO E MAIS INSTRUCOES DO R8064 NO NUCLEO. Simulado (Icarus 12); sintese so com a ferramenta da nuvem (ver aviso da REV38).
+  NOVO: mul_unit e div_unit (03_muldiv) instanciados em r8064_core_min. Uma uop "dispara" a unidade e espera em M (mesmo 'hold' dos acessos a memoria) ate o
+        resultado; uops seguintes leem as partes do resultado (baixo/alto, quociente/resto). Uop de 102 bits: [98] mdu, [99] r8b, [100] bb2, [101] crk.
+        Microcodigo (gen_r64_rom.py): MLTUB/MLTUW do R800 (ED C1..F9, ED C3, ED F3), MLTS/MLTU B/W/E/Q, DIVS/DIVU B/W/E/Q, LDCR/STCR, PGINV, XCHGE/XCHGQ, CASE/CASQ.
+        FENCE e ISYNC = NOP. Opcode ED sem instrucao = NOP de 2 bytes (antes comprimento 0: travava). ROM de uops: 1302 de 2048 entradas.
+        Premissas (destinos dos produtos, formato quociente/resto, sem flags): 09_core_min/PREMISSAS_R8064.txt, itens 10 a 16.
+  TESTE (sim_r64, nucleo x modelo em Python, instrucao a instrucao): 36 programas, 108.020 instrucoes incluindo ~3.000 multiplicacoes e divisoes de todos os
+        tamanhos, com e sem sinal: 0 divergencias. A divisao so foi testada SEM erro (o gerador evita divisor zero e estouro).
+        Regressao: 10_mode_gov (28 execucoes), tb_core, tb_bank, tb_soc (bypass e +mmu), tb_soc_exc sc1-8, sim_z80: OK.
+  AREA (topo de placa, ferramenta da nuvem): LUT4 12003 -> 14306 (68 %), DFF 6407 -> 8054 (51 %), BSRAM 38/46, 4 multiplicadores 18x18 em DSP.
+        Fmax na mesma ferramenta: 90,8 / 96,2 MHz em 2 sementes (sem mul/div: 93,6 a 110,8). Os numeros dessa ferramenta sao maiores que os do OSS CAD Suite: medir no PC.
+  LISTAS DE ARQUIVOS: todos os .bat/.ys/.sh que compilam o nucleo passaram a incluir 03_muldiv/rtl/mul_unit.v e div_unit.v.
+  PENDENTE: erro de divisao (zero/estouro) sem excecao nem flag; flags do MULUB/MULUW do R800; FPU (45), E/S de 16/32/64 bits, PROT, JP USER, SCALL, SYSRT, RESET,
+        STDBY, WAKE, LDCTX, SVCTX (precisam do modelo de privilegio/excecao); tempos de MLT/DIV nos modos governados nao conferidos.
