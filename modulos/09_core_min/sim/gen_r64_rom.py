@@ -12,7 +12,7 @@
 # Modelo de privilegio e de excecao: ../MODELO_PRIVILEGIO.txt.
 # SEM microcodigo (marcadas unimp): FPU (45 instrucoes) e a E/S de 16/32/64 bits (INW/OUTW...). FENCE, ISYNC e WAKE sao NOP.
 from gen_z80_rom import POS, ADD, ADC, SUB, SBC, AND, OR, XOR, CP, INC, DEC, SHL, SHR, SAR, ROL, ROR, SP, TMP, ZERO
-POS.update(r8=95, ccf=96, ccinv=97, mdu=98, r8b=99, bb2=100, crk=101, priv=102, unimp=103, scall=104, ju=105)
+POS.update(r8=95, ccf=96, ccinv=97, mdu=98, r8b=99, bb2=100, crk=101, priv=102, unimp=103, scall=104, ju=105, fpu=106)
 IX, IY, BC, AX, DE, HL, T2 = 9, 10, 1, 0, 2, 3, 12
 def uop(**k):
     v = 0
@@ -151,5 +151,30 @@ def aplica(uops, livre):
         if k < len(CTX) - 1: sv.append(NEXT); ld.append(NEXT)
     chain(191, sv)                                                                                                # SVCTX (uu)
     chain(192, ld)                                                                                                # LDCTX (uu)
-    for i in list(range(40, 67)) + list(range(193, 211)) + [163, 164, 165, 166, 167, 168]: chain(i, [dict(unimp=1)])   # FPU e E/S larga: sem microcodigo
+    # ---- FPU (../MODELO_FPU.txt): a unidade 08_fpu/rtl/fpu_unit.v faz a conta; a uop so entrega o comando (campo dI), n (byte da instrucao) e os dados de memoria ----
+    def FX(cmd, ioff=1, **k): return dict(mdu=1, fpu=1, alu=0, dI=cmd, use_imm=1, ioff=ioff, isz=0, sz=3, **k)     # dispara e espera
+    def FRD(sel, d): return dict(mdu=1, fpu=1, alu=8 | sel, wren=1, dI=d, sz=3)                                    # le r0 (sel 0) / r1 (sel 1)
+    def FHI(a): return dict(mdu=1, fpu=1, alu=16, aI=a, sz=3)                                                      # 16 bits altos de um valor de 80 bits
+    K1, K2, POP, T3 = 16, 32, 32 | 8, 24
+    LDM = lambda z: dict(rd=1, aI=HL, immz=1, wren=1, dI=TMP, sz=z)                                                # TMP := (QHL)
+    STM = lambda z: dict(wr=1, aI=HL, immz=1, sz=z, bI=TMP)                                                        # (QHL) := TMP
+    HL8 = dict(alu=SUB, use_imm=1, immc=1, isz=3, wren=1, dI=T3, aI=HL, sz=3)                                      # T3 := QHL + 8
+    chain(195, [FX(0, ioff=2)]); chain(63, [FX(1)]); chain(54, [FX(2)]); chain(42, [FX(3)])                        # FADD / FSUB / FMUL / FDIV ST0,STn
+    chain(59, [FX(4)]); chain(203, [FX(8)]); chain(199, [FX(5, ioff=2)]); chain(40, [FX(K1 | 5)])                  # FSQRT, FRINT, FCOM STn, FCOPP
+    chain(197, [FX(K2 | 0, ioff=2)]); chain(196, [FX(K2 | 1, ioff=2)]); chain(198, [FX(K2 | 2, ioff=2)])           # FLD STn, FXCH STn, FSTP STn
+    chain(200, [FX(K2 | 3)]); chain(201, [FX(K2 | 4)]); chain(43, [FX(K2 | 5)])                                    # FCHS, FABS, FINIT
+    chain(202, [FX(K2 | 10)]); chain(51, [FX(K2 | 11)]); chain(50, [FX(K2 | 12)])                                  # FLD1, FLDZ, FLDPI
+    chain(47, [FX(K2 | 13)]); chain(48, [FX(K2 | 14)]); chain(49, [FX(K2 | 15)])                                   # FLDL2, FLDLG, FLDLN
+    chain(62, [FX(K2 | 9), FRD(0, T2), dict(aI=T2, sz=0, fwe=1, fop=6, **MOV)])                                    # FSTSW: F := {0, C3, 0, 0, 0, C2, 0, C0}
+    chain(204, [LDM(3), FX(6, aI=TMP)]); chain(205, [LDM(2), FX(9, aI=TMP)]); chain(206, [LDM(3), FX(10, aI=TMP)]) # FILD, FLD32, FLD64 (QHL)
+    chain(46, [LDM(3), HL8, dict(rd=1, aI=T3, immz=1, wren=1, dI=T2, sz=1), FHI(T2), FX(K2 | 6, aI=TMP)])          # FLD80 (QHL)
+    # gravacoes: o valor e convertido, gravado e SO DEPOIS a pilha anda (uma falta de pagina na gravacao reinicia a instrucao com a pilha intacta)
+    chain(44, [FX(7), FRD(0, TMP), STM(3)]); chain(45, [FX(7), FRD(0, TMP), STM(3), FX(POP)])                      # FIST, FISTP (QHL): inteiro de 64 bits
+    chain(207, [FX(11), FRD(0, TMP), STM(2)]); chain(208, [FX(11), FRD(0, TMP), STM(2), FX(POP)])                  # FST32, FSP32
+    chain(209, [FX(12), FRD(0, TMP), STM(3)]); chain(210, [FX(12), FRD(0, TMP), STM(3), FX(POP)])                  # FST64, FSP64
+    ST80 = [FX(K2 | 7), FRD(0, TMP), STM(3), FRD(1, T2), HL8, dict(wr=1, aI=T3, immz=1, sz=1, bI=T2)]
+    chain(60, ST80); chain(61, ST80 + [FX(POP)])                                                                   # FST80, FSTP8 (QHL)
+    chain(53, [dict(alu=INC, aI=ZERO, wren=1, dI=49, sz=3, priv=1), dict(br=1, cond=0, rel=1, immz=1)])            # FLUSH: descarrega a TLB inteira (CR17 := 1) e o pipeline
+    # sem microcodigo: transcendentais e restos (FCOS FLN FREM FREM1 FSIN FSINC FTAN FYL2P FYL2X), FSAVE/FRSTR e a E/S larga
+    for i in [41, 52, 55, 56, 57, 58, 64, 65, 66, 193, 194, 163, 164, 165, 166, 167, 168]: chain(i, [dict(unimp=1)])
     return nextfree[0]

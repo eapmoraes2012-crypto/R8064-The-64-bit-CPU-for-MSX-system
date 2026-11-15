@@ -1,9 +1,9 @@
-# gera uop.mem (2048 x 106 bits), mainctrl.mem (256 x 32) e prog*.mem para o nucleo R8064 (precisa de gen_z80_rom.py na mesma pasta)
+# gera uop.mem (2048 x 107 bits), mainctrl.mem (256 x 32) e prog*.mem para o nucleo R8064 (precisa de gen_z80_rom.py na mesma pasta)
 # formato da uop, bits 0-79: [4:0] alu [6:5] sz(0..3 = 8/16/32/64) [7] use_imm [8] rd [9] wr [10] wren [11] br [14:12] cond [15] rel [16] fwe
 #   [17] dF [18] aF [19] bF [20] fpos [26:21] dI [32:27] aI [38:33] bI [41:39] ioff [43:42] isz [44] sext [45] exx [46] exaf [47] aD
 #   [48] hb (escreve byte alto) [49] more [50] io_rd [51] io_wr [62:52] nxt [63] immz [64] bsrc [65] bpcn [66] tabs [67] zx [69:68] fmode (flags de bloco)
 #   [70] tself (alvo = PC da propria instrucao) [71] cmix (cond = PV e nao-Z) [72] ashr8 (operando A = A>>8, para B) [73] keepc [76:74] misc [77] crd [78] cra
-#   [79] immc (imediato constante = -(1<<isz): usado por PUSH/CALL para enderecar [SP-n] ANTES de alterar SP).   Bits 80-94: ver gen_z80_rom.py; 95-105: gen_r64_rom.py.
+#   [79] immc (imediato constante = -(1<<isz): usado por PUSH/CALL para enderecar [SP-n] ANTES de alterar SP).   Bits 80-94: ver gen_z80_rom.py; 95-106: gen_r64_rom.py.
 import sys
 F=dict(alu=0,sz=3,use_imm=0,rd=0,wr=0,wren=0,br=0,cond=0,rel=0,fwe=0,dF=0,aF=0,bF=0,fpos=0,dI=0,aI=0,bI=0,ioff=0,isz=0,sext=0,exx=0,exaf=0,aD=0,
        hb=0,more=0,crd=0,cra=0,iord=0,iowr=0,nxt=0,immz=0,bsrc=0,bpcn=0,tabs=0,zx=0,fmode=0,tself=0,cmix=0,ashr8=0,keepc=0,misc=0,immc=0)
@@ -94,7 +94,7 @@ for _op in [x for x in range(0x40,0x80) if x&7 in (0,1,6)]+[0x47,0xA2,0xA3,0xAA,
 print('uop.mem: %d entradas usadas de 2048; cadeias ate %d (limite 1791)'%(sum(1 for u in uops if u),livre-1))
 if len(sys.argv)>1 and sys.argv[1]=='rand':    # conteudo pseudo-aleatorio para a sintese (nada vira constante)
     import random; random.seed(1)
-    for i in range(2048): uops[i]=random.getrandbits(105)
+    for i in range(2048): uops[i]=random.getrandbits(106)
     for i in range(256): lens[i]=random.randint(1,13)
 open('uop.mem','w').write('\n'.join('%027x'%u for u in uops)+'\n')
 open('mainctrl.mem','w').write('\n'.join('%08x'%l for l in lens)+'\n')

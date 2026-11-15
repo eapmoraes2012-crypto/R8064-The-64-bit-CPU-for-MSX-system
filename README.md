@@ -14,7 +14,10 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
 - Modelo de privilegio e de excecao (REV40, `09_core_min/MODELO_PRIVILEGIO.txt`): modos supervisor / usuario (CR18), entrada unica de excecao pelo vetor CR9
   com causa / auxiliar / EPC em CR11 / CR12 / CR13, retorno por SYSRT. E uma DEFINICAO feita nesta revisao, nao algo que ja existia no projeto: revise.
   O software MSX roda sempre em supervisor e nao e afetado.
-  Faltam: FPU (45 instrucoes) e E/S de 16/32/64 bits (sem microcodigo: NOP, ou excecao se CR14 bit 2 = 1, o que permite emular por software).
+- FPU (REV41, `09_core_min/MODELO_FPU.txt`): pilha ST0-ST7 de 80 bits e 34 instrucoes no nucleo (cargas, constantes, soma, subtracao, multiplicacao, divisao,
+  raiz, comparacao, conversoes, FSTSW), com um nucleo aritmetico compacto novo (`08_fpu/rtl/fpu_seq.v`) que usa o multiplicador e o divisor do modulo 03.
+  Faltam: transcendentais e restos (FSIN, FCOS, FSINC, FTAN, FLN, FYL2X, FYL2P, FREM, FREM1), FSAVE/FRSTR e a E/S de 16/32/64 bits
+  (sem microcodigo: NOP, ou excecao se CR14 bit 2 = 1, o que permite emular por software).
 - Diferencas conhecidas para um Z80 real: R nao conta buscas; HALT e um salto para si mesmo; X/Y nao documentados de BIT n,(HL) e dos blocos; um opcode ED
   que nao e do Z80 e instrucao do R8064 (so os sem instrucao viram NOP de 2 bytes); codigo que se modifica e executa em seguida, sem desvio no meio, ve o byte antigo (fila de busca).
 - PnR do topo de placa com o Z80 completo (REV37): 52 % das LUTs, 36 de 46 BSRAM; 3 de 4 sementes fecham a 57,28 MHz (59 a 74 MHz), com folga menor que antes.
@@ -34,7 +37,8 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
 | `05b_cache` | estudo de dimensionamento das caches (Python) | - |
 | `06_cache` | `cache8k` (2 vias, estudo) e `cache_dm` (mapeamento direto, a usada) | `cache_dm` |
 | `07_mmu` | MMU Sv39 | sim |
-| `08_fpu`, `11_fpu_stk` | FPU em hardware (substituida por firmware) e pilha de FPU | nao |
+| `08_fpu` | FPU: `fpu_unit.v` + `fpu_seq.v` (compacta) | sim (desde a REV41) |
+| `08_fpu/rtl/fpu_alu.v`, `11_fpu_stk` | FPU grande antiga e pilha avulsa (substituidas) | nao |
 | `09_core_min` | nucleo minimo (decodificador por ROM de uops) e geradores de ROM | sim |
 | `10_mode_gov` | governador de tempo + modos (Z80 ROM, R800 DRAM, nativo) + sistema MSX | sim |
 | `10_msx_mem` | mapper de memoria MSX + MegaRAM | sim |
@@ -47,7 +51,8 @@ No terminal do OSS CAD Suite:
 - Regressao do core/governador/sistema: `modulos\10_mode_gov\rodar_tudo.bat`
 - SoC (excecoes, SoC basico, gerador de clock): `modulos\13_soc\rodar_exc.bat`
 - Nucleo em modo Z80 contra o modelo de referencia: `modulos\09_core_min\sim_z80\rodar_z80core.bat`
-- Instrucoes R8064 de 16/32/64 bits contra o modelo: `modulos\09_core_min\sim_r64\rodar_r64.bat`
+- Instrucoes R8064 de 16/32/64 bits, sistema e FPU contra o modelo: `modulos\09_core_min\sim_r64\rodar_r64.bat`
+- Nucleo aritmetico da FPU contra 39.000 vetores: `modulos\08_fpu\rodar_seq.bat`
 - Place-and-route do top da placa (4 sementes): `modulos\13_soc\pnr\rodar_pnr_board.bat`
 - Bitstream: `modulos\13_soc\pnr\gerar_bitstream_board.bat 0 <semente>`
 

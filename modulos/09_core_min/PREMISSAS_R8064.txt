@@ -47,7 +47,11 @@ TAMANHOS: W = 16, E = 32, Q = 64 bits. Escrever W ou E num registrador PRESERVA 
 17. DJNZW nn (REV40): o contador e BC de 16 bits (antes era so o B). Sem flags.
 18. SISTEMA (REV40): modos supervisor / usuario, excecoes, SCALL, SYSRT, JP USER, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX: tudo em MODELO_PRIVILEGIO.txt.
 
-FORA (sem microcodigo; NOP do comprimento certo, ou excecao de causa 7 se CR14 bit 2 = 1): INW/INE/INQ e OUTW/OUTE/OUTQ (a E/S do nucleo e de 8 bits) e a FPU (45).
+19. FPU (REV41): 34 instrucoes com microcodigo (pilha, cargas, constantes, soma, subtracao, multiplicacao, divisao, raiz, comparacao, conversoes, FSTSW):
+    tudo em MODELO_FPU.txt. FLUSH (ED 94): descarrega a TLB inteira e o pipeline; privilegiada.
+
+FORA (sem microcodigo; NOP do comprimento certo, ou excecao de causa 7 se CR14 bit 2 = 1): INW/INE/INQ e OUTW/OUTE/OUTQ (a E/S do nucleo e de 8 bits),
+FCOS, FLN, FREM, FREM1, FSIN, FSINC, FTAN, FYL2P, FYL2X, FSAVE, FRSTR.
 
 VERIFICACAO: (1) sim_r64/tb_r64_fumaca.v: 21 instrucoes com resultado calculado a mao. (2) sim_r64/gen_r64_prog.py: MODELO em Python escrito a partir destas
 premissas + gerador de programas aleatorios; tb_r64core.v compara o nucleo com o modelo instrucao a instrucao (PC, AX, BC, DE, HL, IX, IY, SP de 64 bits, F e

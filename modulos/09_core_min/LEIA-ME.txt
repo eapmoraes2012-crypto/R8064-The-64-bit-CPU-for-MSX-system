@@ -14,3 +14,5 @@ MULTIPLICACAO E DIVISAO (15/11/2026, REV39): o nucleo instancia mul_unit e div_u
 sim/gen_r64_rom.py -> instrucoes proprias do R8064 (pagina ED); premissas em PREMISSAS_R8064.txt; teste em sim_r64/ (rodar_r64.bat).
 PRIVILEGIO E EXCECOES (15/11/2026, REV40): MODELO_PRIVILEGIO.txt (modos, CR18, causas, SYSRT, instrucoes de sistema, flags de MLT/DIV, DJNZW com BC).
  Testes: sim_r64/rodar_r64.bat (passo a passo e +livre) e 13_soc/rodar_exc.bat (cenarios 9 a 12).
+FPU (15/11/2026, REV41): MODELO_FPU.txt. O nucleo instancia 08_fpu/rtl/fpu_unit.v (que instancia fpu_seq.v): qualquer compilacao do nucleo precisa tambem
+ desses dois arquivos (os .bat, .ys e .sh do repositorio ja os incluem).
