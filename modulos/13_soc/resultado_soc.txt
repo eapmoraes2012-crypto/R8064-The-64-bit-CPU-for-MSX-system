@@ -173,8 +173,8 @@ REV36 (14/11/2026): SoC E TESTES ANTIGOS PASSADOS PARA A ROM DO Z80. uop.mem / m
 
 REV37 (14/11/2026): (1) PnR DO USUARIO com o nucleo da REV35/36 (uop de 96 bits, Z80 completo). (2) INSTRUCOES INTEIRAS DO R8064 DE 16/32/64 BITS (em andamento).
   (1) rodar_pnr_board.bat, 57,28 MHz: LUT4 10889/20736 (52 %), DFF 6326 (40 %), BSRAM 36/46 (era 35: o Yosys corta as colunas da ROM de uops que sao sempre 0).
-      Fmax apos roteamento: semente 1 = 48,61 MHz (FALHA) | 2 = 60,96 | 3 = 59,19 | 4 = 74,44. Antes (REV23): 68,31 / 54,30 / 77,20 / 67,02.
-      Passam 3 de 4 como antes, mas a folga caiu: duas sementes ficam a 2-4 MHz do alvo. Caminhos criticos novos: ALU estagio A (ctl_x2 -> lr_b, semente 3) e o
+      Fmax apos roteamento: semente 1 = 48,61 MHz (FALHA) | 2 = 60,96 | 3 = 59,19 | 4 = 74,44. Rodada anterior registrada (sem 3D, B2B=0): 72,4 / 67,5 / 76,9 / 43,4 (falha).
+      Passam 3 de 4 como antes, mas a folga caiu: duas sementes ficam a 2-4 MHz do alvo (antes a pior que passava tinha 67,5). Caminhos criticos novos: ALU estagio A (ctl_x2 -> lr_b, semente 3) e o
       somador de endereco/alvo (imediato -> addr_x2/tgt_x2, semente 2), onde entraram o DAA / deslocamento com carry e o mux do deslocamento (IX+d).
       Semente 1: caminho de roteamento do 'hold' (SDRAM -> hold -> flush -> CE), 18,6 ns de fio: nao e logica nova.
       Hold: 4 a 20 violacoes por semente, pior -0,12 ns, sempre nos enderecos ADB da BSRAM u_dec.ctrl: as MESMAS ja registradas em 10_mode_gov/pnr/resultado_core80.txt.
