@@ -38,3 +38,6 @@ __pycache__/
 modulos/09_core_min/sim_z80/z80trace
 modulos/09_core_min/sim_z80/*.mem
 modulos/09_core_min/sim_z80/*.exe
+
+# Teste das instrucoes R8064: copias temporarias
+modulos/09_core_min/sim_r64/*.mem
