@@ -352,7 +352,7 @@ module r8064_core_min #(
         4'd3: f_new = {x3_f[7:6], x3_res[13], x3_hc12, x3_res[11], x3_f[2:0]};                     // ADC/SBC HL,rr: todas, H e X/Y do byte alto
         4'd4: f_new = {fl[7:6], x3_res[5], 1'b0, x3_res[3], fl[2], 1'b0, 1'b1};                    // SCF (resultado = A)
         4'd5: f_new = {fl[7:6], x3_res[5], fl[0], x3_res[3], fl[2], 1'b0, ~fl[0]};                 // CCF (resultado = A)
-        4'd7: f_new = {x3_f[7:6], x3_xa53[1], 1'b1, x3_xa53[0], x3_f[2], 1'b0, fl[0]};               // BIT n,r (AND com a mascara): Z/PV/S do resultado, X/Y do operando
+        4'd7: f_new = {x3_f[7:6], x3_xa53[1], 1'b1, x3_xa53[0], x3_f[6], 1'b0, fl[0]};               // BIT n,r (AND com a mascara): S/Z do resultado, PV = Z, X/Y do operando
         4'd6: f_new = x3_res[7:0];                                                                 // F := resultado (POP AF)
         default: f_new = f_leg;
     endcase

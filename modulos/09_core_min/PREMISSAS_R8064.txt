@@ -13,7 +13,7 @@ TAMANHOS: W = 16, E = 32, Q = 64 bits. Escrever W ou E num registrador PRESERVA 
 2. INCx / DECx rr (ED 3E / ED 3C, b3 = tt rrr 001): alteram S, Z, H, PV, N e MANTEM C (como INC r do Z80; diferente de INC rr do Z80, que nao mexe em flags).
 3. Deslocamentos de 1 bit: SHL (ED 29, tt rrr 110), SHR (ED 28), RLC (ED 06), RRC (ED 07), SAR (ED 29, tt 110 rrr). tt = 00 B, 01 W, 10 E, 11 Q.
    Nas formas B o campo e um registrador de 8 bits com o codigo do Z80 (B C D E H L - A). Flags: S, Z, PV = paridade do byte baixo, C = bit que saiu, H = N = 0.
-4. BITW/RESW n,tt (ED 30: 0/1 nnnn ttt), SETW (ED 2F: 0 nnnn ttt), BITE/RESE/SETE (ED 33/32/31: nnnnn ttt). BIT: Z = bit em 0, PV = Z, H = 1, N = 0, C mantido.
+4. BITW/RESW n,tt (ED 30: 0/1 nnnn ttt), SETW (ED 2F: 0 nnnn ttt), BITE/RESE/SETE (ED 33/32/31: nnnnn ttt). BIT: Z = bit em 0, PV = Z, S = o bit testado quando ele e o mais alto do tamanho, H = 1, N = 0, C mantido, X/Y = bits 3 e 5 do registrador.
    RES/SET nao alteram flags.
 5. LDx (ED 3B W, 3A E, 39 Q): 01 ddd sss = rr,rr' | 01 ddd 001 = rr,imediato | 00 ddd sss = rr,(rr') | 11 aaa sss = (rr),rr' (endereco aaa, dado sss)
    | 00 rrr 001 + 8 bytes = (nnnnnnnn),rr | 10 rrr 001 + 8 bytes = rr,(nnnnnnnn). Nenhum LD altera flags.
@@ -30,4 +30,7 @@ TAMANHOS: W = 16, E = 32, Q = 64 bits. Escrever W ou E num registrador PRESERVA 
 FORA DESTA ETAPA: INW/INE/INQ e OUTW/OUTE/OUTQ (a E/S do nucleo e de 8 bits: falta definir como sao os acessos), multiplicacao e divisao, FPU,
 instrucoes de sistema (PROT, JP USER, SCALL, LDCR/STCR, contexto, PGINV...) e atomicas.
 
-VERIFICACAO: so um teste de fumaca (sim_r64/rodar_r64.bat, cerca de 20 instrucoes com resultado calculado a mao). Falta o teste amplo com programas aleatorios.
+VERIFICACAO: (1) sim_r64/tb_r64_fumaca.v: 21 instrucoes com resultado calculado a mao. (2) sim_r64/gen_r64_prog.py: MODELO em Python escrito a partir destas
+premissas + gerador de programas aleatorios; tb_r64core.v compara o nucleo com o modelo instrucao a instrucao (PC, AX, BC, DE, HL, IX, IY, SP de 64 bits, F e
+a memoria final). O teste mostra que o RTL faz o que estas premissas dizem; NAO mostra que as premissas sao o que a planilha original definia.
+Nao cobertos pelo teste aleatorio: prefixos de banco (N0-N7) junto com estas instrucoes, EXX/EX AF, faltas de pagina e os modos governados.

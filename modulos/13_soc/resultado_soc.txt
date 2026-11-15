@@ -185,3 +185,25 @@ REV37 (14/11/2026): (1) PnR DO USUARIO com o nucleo da REV35/36 (uop de 96 bits,
       mascara de bit de 4/5 bits (BITW/BITE). Nao sintetizado.
       VERIFICADO: so o teste de fumaca sim_r64 (21 instrucoes, valores calculados a mao): OK. Regressao 10_mode_gov (28) e sim_z80: OK com a ROM nova.
       PENDENTE: teste amplo com programas aleatorios contra um modelo; E/S de 16/32/64 bits; mul/div; FPU; sistema.
+
+REV38 (14/11/2026): TESTE AMPLO DAS INSTRUCOES R8064 DE 16/32/64 BITS + MEDICAO DE TIMING (Yosys/nextpnr rodados na nuvem, pacotes YoWASP, nextpnr 0.11.1).
+  (1) TESTE: 09_core_min/sim_r64/gen_r64_prog.py = MODELO em Python (escrito a partir de PREMISSAS_R8064.txt) + gerador de programas aleatorios; tb_r64core.v compara
+      o nucleo com o modelo uma instrucao por vez (PC, AX, BC, DE, HL, IX, IY, SP de 64 bits, F) e a memoria final.
+      36 programas, 108.023 instrucoes, todos os opcodes da etapa exercitados: 0 divergencias. rodar_r64.bat roda a fumaca e 2 programas prontos (vec/).
+      Mudanca: BIT de 16/32 bits passa a ter PV = Z em qualquer bit (antes PV era a paridade do byte baixo do resultado; no Z80, de 8 bits, da no mesmo).
+      Limite do teste: mostra que o RTL segue as premissas, nao que as premissas sao as da planilha original. Fora dele: prefixos de banco, EXX, faltas, modos governados.
+  (2) TIMING. CORRECAO da REV37: o caminho critico da semente 2 do PnR do usuario (opa_x1 -> somador de 64 bits -> tgt_x2) e o somador de endereco/alvo que JA existia;
+      o mux do deslocamento (IX+d) fica um estagio antes e nao esta nesse caminho. So o caminho da semente 3 (ALU estagio A) passa por logica nova.
+      Medicao A/B do nucleo + governador (pnr_gov_top, 4 sementes, mesma ferramenta), Fmax pos-roteamento:
+        original (commit inicial)        LUT4 7201, BSRAM 25:  130,3 /  83,1 / 111,6 / 105,4 MHz  (media 107,6; pior 83,1)
+        REV37 (Z80 + R8064 16/32/64)     LUT4 8116, BSRAM 27:  119,7 / 110,2 / 106,9 /  95,7 MHz  (media 108,1; pior 95,7)
+        REV38 (ALU estagio A refeito)    LUT4 7819, BSRAM 27:  118,2 / 109,8 / 107,7 / 100,1 MHz  (media 108,9; pior 100,1)
+      => no nucleo isolado a logica nova NAO custou Fmax mensuravel; a variacao entre sementes (83 a 130 no original) e maior que qualquer diferenca.
+      Mudanca aplicada: alu_core_s estagio A - o seletor do resultado logico/deslocamento deixou de ser uma cadeia de prioridade de 12 casos e virou E-OU em
+      paralelo (controles mutuamente exclusivos), deslocamentos com um caminho comum para cada lado e DAA so no byte baixo. -297 LUT4. 148.128 vetores da ALU,
+      Z80 (80.000 instrucoes) e R8064 (24.003) refeitos: OK.
+      Topo de placa com o RTL da REV38 (mesma ferramenta, 57,28 MHz): LUT4 12003 (57 %), DFF 6407 (41 %), BSRAM 38/46; 93,6 / 110,8 / 105,5 / 100,3 MHz, 4/4 passam.
+      ATENCAO: esta ferramenta da numeros bem MAIORES que o OSS CAD Suite do usuario para o mesmo tipo de projeto (la o topo de placa da REV35/36 deu 48,6 a 74,4 MHz).
+      Os valores daqui servem para comparar versoes entre si, NAO como Fmax final: o que vale e rodar_pnr_board.bat no PC.
+      Limitadores vistos nos logs do usuario que ja existiam e nao foram tocados: rede do 'hold' (SDRAM -> hold -> flush -> CE do pipeline, 18,6 ns de fio na
+      semente 1) e o somador de endereco -> alvo do desvio (7 ns de fio na semente 2). Mexer neles muda o controle do pipeline: fica como proposta, nao foi feito.

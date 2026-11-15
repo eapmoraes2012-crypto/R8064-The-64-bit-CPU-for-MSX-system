@@ -8,7 +8,8 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
   Conferido instrucao a instrucao contra o modelo `12_z80/ref/z80ref.c` (`09_core_min/sim_z80`: mais de 1,1 milhao de instrucoes, flags X/Y incluidas,
   e o inicio do ZEXDOC). Desde a REV36 essa e a ROM padrao (`uop.mem`) do SoC e de todos os testes; a antiga codificacao de teste da pagina principal acabou.
 - Instrucoes proprias do R8064 (pagina ED): as inteiras de 16/32/64 bits tem microcodigo desde a REV37 (ALU, INC/DEC, deslocamentos, bits, LDx, pilha,
-  desvios, chamadas e retornos), com semantica INFERIDA (`09_core_min/PREMISSAS_R8064.txt`) e so um teste de fumaca (`09_core_min/sim_r64`).
+  desvios, chamadas e retornos), com semantica INFERIDA (`09_core_min/PREMISSAS_R8064.txt`). Conferidas contra um modelo em Python escrito a partir dessas premissas
+  (`09_core_min/sim_r64`: 108 mil instrucoes em programas aleatorios, sem divergencias).
   Faltam: E/S de 16/32/64 bits, multiplicacao/divisao, FPU e instrucoes de sistema.
 - Diferencas conhecidas para um Z80 real: R nao conta buscas; HALT e um salto para si mesmo; X/Y nao documentados de BIT n,(HL) e dos blocos; um opcode ED
   que nao e do Z80 nao vira NOP de 2 bytes; codigo que se modifica e executa em seguida, sem desvio no meio, ve o byte antigo (fila de busca).
@@ -42,6 +43,7 @@ No terminal do OSS CAD Suite:
 - Regressao do core/governador/sistema: `modulos\10_mode_gov\rodar_tudo.bat`
 - SoC (excecoes, SoC basico, gerador de clock): `modulos\13_soc\rodar_exc.bat`
 - Nucleo em modo Z80 contra o modelo de referencia: `modulos\09_core_min\sim_z80\rodar_z80core.bat`
+- Instrucoes R8064 de 16/32/64 bits contra o modelo: `modulos\09_core_min\sim_r64\rodar_r64.bat`
 - Place-and-route do top da placa (4 sementes): `modulos\13_soc\pnr\rodar_pnr_board.bat`
 - Bitstream: `modulos\13_soc\pnr\gerar_bitstream_board.bat 0 <semente>`
 

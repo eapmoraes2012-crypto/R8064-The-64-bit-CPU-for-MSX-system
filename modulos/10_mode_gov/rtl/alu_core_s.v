@@ -30,22 +30,17 @@ module alu_core_s(
     wire [7:0] daa_t  = {1'b0, daa_c, daa_c, 1'b0, 1'b0, daa_lo, daa_lo, 1'b0};
     wire [7:0] daa_r  = fin[1] ? (x[7:0] - daa_t) : (x[7:0] + daa_t);
     wire       daa_h  = fin[1] ? (fin[4] && (x[3:0] < 4'd6)) : (x[3:0] > 4'd9);
-    reg [63:0] lr; reg sh_out;
-    always @* begin
-        lr = 64'd0; sh_out = 1'b0;
-        if (c_and) lr = x & bm;
-        else if (c_or) lr = x | bm;
-        else if (c_xor) lr = x ^ bm;
-        else if (c_cpl) lr = ~x & m;
-        else if (c_daa) begin sh_out = daa_c; lr = {56'd0, daa_r}; end
-        else if (ctl[20]) lr = (x << 4) & m;
-        else if (ctl[21]) lr = x >> 4;
-        else if (c_shl) begin sh_out = top; lr = ((x << 1) & m) | {63'd0, ins}; end
-        else if (c_shr) begin sh_out = low; lr = (x >> 1) | ({63'd0, c_insc & fin[0]} << msb); end
-        else if (c_sar) begin sh_out = low; lr = (x >> 1) | ({63'd0, top} << msb); end
-        else if (c_rol) begin sh_out = top; lr = ((x << 1) & m) | {63'd0, top}; end
-        else if (c_ror) begin sh_out = low; lr = (x >> 1) | ({63'd0, low} << msb); end
-    end
+    // Resultado logico / de deslocamento. Os controles sao mutuamente exclusivos (um por operacao), entao o seletor e um E-OU em paralelo, sem cadeia de
+    // prioridade; o DAA so mexe no byte baixo (o resto fica em 0) e os deslocamentos compartilham um caminho para a esquerda e um para a direita.
+    wire c_lft = c_shl | c_rol, c_rgt = c_shr | c_sar | c_ror;
+    wire in_l = (c_rol & top) | (c_shl & ins);                                  // bit que entra por baixo
+    wire in_r = (c_sar & top) | (c_ror & low) | (c_shr & c_insc & fin[0]);      // bit que entra por cima
+    wire [63:0] lr_l = ((x << 1) & m) | {63'd0, in_l};
+    wire [63:0] lr_r = (x >> 1) | ({63'd0, in_r} << msb);
+    wire [63:0] lr = ({64{c_and}} & (x & bm)) | ({64{c_or}} & (x | bm)) | ({64{c_xor}} & (x ^ bm)) | ({64{c_cpl}} & (~x & m)) |
+                     ({64{c_lft}} & lr_l) | ({64{c_rgt}} & lr_r) | ({64{ctl[20]}} & ((x << 4) & m)) | ({64{ctl[21]}} & (x >> 4)) |
+                     {56'd0, {8{c_daa}} & daa_r};
+    wire sh_out = (c_daa & daa_c) | (c_lft & top) | (c_rgt & low);
     wire par_a = ~^lr[7:0];
     wire [63:0] zk = {(x[62:0] | y[62:0]), ci};
     wire za_a  = ((((x ^ y) ^ zk) & m) == 64'd0);      // x+y+ci==0 sem esperar a cadeia de vai-um
