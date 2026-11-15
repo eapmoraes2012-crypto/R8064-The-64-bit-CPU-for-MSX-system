@@ -8,10 +8,13 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
   Conferido instrucao a instrucao contra o modelo `12_z80/ref/z80ref.c` (`09_core_min/sim_z80`: mais de 1,1 milhao de instrucoes, flags X/Y incluidas,
   e o inicio do ZEXDOC). Desde a REV36 essa e a ROM padrao (`uop.mem`) do SoC e de todos os testes; a antiga codificacao de teste da pagina principal acabou.
 - Instrucoes proprias do R8064 (pagina ED) com microcodigo: as inteiras de 16/32/64 bits (ALU, INC/DEC, deslocamentos, bits, LDx, pilha, desvios, chamadas e
-  retornos), multiplicacao e divisao (blocos do modulo 03 ligados ao nucleo), LDCR/STCR, PGINV, XCHG e CAS. Semantica INFERIDA (`09_core_min/PREMISSAS_R8064.txt`),
+  retornos), multiplicacao e divisao (blocos do modulo 03 ligados ao nucleo, com flags e erro de divisao), LDCR/STCR, PGINV, XCHG, CAS e as de sistema
+  (JP USER, SYSRT, SCALL, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX). Semantica INFERIDA (`09_core_min/PREMISSAS_R8064.txt`),
   conferida contra um modelo em Python escrito a partir dessas premissas (`09_core_min/sim_r64`: programas aleatorios, sem divergencias).
-  Faltam: FPU (45 instrucoes), E/S de 16/32/64 bits e as de sistema/privilegio (PROT, JP USER, SCALL, SYSRT, RESET, STDBY, WAKE, LDCTX, SVCTX).
-  Divisao por zero ou com estouro ainda nao gera excecao.
+- Modelo de privilegio e de excecao (REV40, `09_core_min/MODELO_PRIVILEGIO.txt`): modos supervisor / usuario (CR18), entrada unica de excecao pelo vetor CR9
+  com causa / auxiliar / EPC em CR11 / CR12 / CR13, retorno por SYSRT. E uma DEFINICAO feita nesta revisao, nao algo que ja existia no projeto: revise.
+  O software MSX roda sempre em supervisor e nao e afetado.
+  Faltam: FPU (45 instrucoes) e E/S de 16/32/64 bits (sem microcodigo: NOP, ou excecao se CR14 bit 2 = 1, o que permite emular por software).
 - Diferencas conhecidas para um Z80 real: R nao conta buscas; HALT e um salto para si mesmo; X/Y nao documentados de BIT n,(HL) e dos blocos; um opcode ED
   que nao e do Z80 e instrucao do R8064 (so os sem instrucao viram NOP de 2 bytes); codigo que se modifica e executa em seguida, sem desvio no meio, ve o byte antigo (fila de busca).
 - PnR do topo de placa com o Z80 completo (REV37): 52 % das LUTs, 36 de 46 BSRAM; 3 de 4 sementes fecham a 57,28 MHz (59 a 74 MHz), com folga menor que antes.

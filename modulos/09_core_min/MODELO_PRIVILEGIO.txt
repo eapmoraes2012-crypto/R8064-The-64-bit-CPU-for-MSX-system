@@ -1,0 +1,69 @@
+MODELO DE PRIVILEGIO E DE EXCECAO DO R8064 (REV40, 15/11/2026)
+================================================================
+Definido nesta revisao (o repositorio nao trazia esse modelo). Implementado em rtl/r8064_core_min.v e sim/gen_r64_rom.py; testado em sim_r64 (nucleo x modelo em
+Python) e em 13_soc/sim/tb_soc_exc.v (cenarios 9 a 12, com MMU). Tudo aqui e uma ESCOLHA DE PROJETO: revise e mude o que nao servir.
+
+1. MODOS
+   Dois niveis: SUPERVISOR (0) e USUARIO (1). Depois do reset o nucleo esta em supervisor e NADA muda para o software MSX existente, que nunca sai dele.
+   O modo fica no CR18:  bit 0 = U (modo atual)   bit 1 = PU (modo anterior, salvo na entrada de excecao).
+   O modo atual vai para a MMU (sinal cr_mmu_user): pagina sem o bit U do PTE nao e acessivel em modo usuario; pagina com U nao e executavel em supervisor.
+   CR14 (ja existia):   bit 0 = MMU ligada   bit 1 = U (forma antiga de mudar o modo: continua aceita na ESCRITA)   bit 2 = TE (novo)   bits 15:8 = ASID.
+   TE = "trap enable": liga as excecoes de instrucao ilegal / nao implementada e de erro de divisao. Com TE = 0 (reset) elas se comportam como antes
+   (NOP / resultado fixo com flags), que e o que o software de MSX espera.
+
+2. ENTRADA DE EXCECAO (igual para todas as causas; nada e empilhado)
+   CR12 := valor auxiliar      CR11 := causa      CR13 := EPC      CR18 := {PU = modo de antes, U = 0}      modo := supervisor (ja na busca do tratador)
+   IFF2 := IFF1, IFF1 := 0 (interrupcoes desligadas)      PC := CR9 (vetor; 0040h depois do reset)
+
+   causa (CR11)                                  CR12 (auxiliar)             EPC (CR13)
+   -------------------------------------------   -------------------------   ------------------------------------------
+   falta da MMU: CR11 = {escrita[4], dado[3],    endereco que faltou         a instrucao que faltou (ela e reiniciada)
+                 codigo[2:0] = 1 a 4}  (ja existia)
+   0  interrupcao aceita em modo usuario         0                           a proxima instrucao
+   5  SCALL n                                    n                           a instrucao DEPOIS do SCALL
+   6  erro de divisao (so com TE = 1)            0                           a instrucao de divisao (nada foi alterado)
+   7  instrucao que nao pode ser executada       0 = opcode ED ilegal        a propria instrucao
+                                                 1 = sem microcodigo
+                                                 2 = privilegiada em modo usuario
+   Causa 7 com auxiliar 0 ou 1 so acontece com TE = 1; com auxiliar 2, sempre. Se mais de uma condicao vale, a ordem e: privilegiada, ilegal / sem microcodigo, SCALL.
+
+3. RETORNO: SYSRT (ED A4)      modo := PU (CR18 := CR18 >> 1)      IFF1 := IFF2      PC := CR13
+   O tratador pode mudar CR13 (para pular a instrucao) e CR18 (para escolher o modo de volta) antes do SYSRT.
+   So ha UM nivel salvo: antes de religar interrupcoes ou de fazer algo que possa causar outra excecao, o tratador tem de guardar CR13 e CR18 (e CR11/CR12 se
+   precisar). A pilha NAO e trocada: o tratador roda com o SP do programa interrompido e deve trocar por conta propria (CR0 a CR7 sao livres para rascunho).
+
+4. INSTRUCOES DE SISTEMA
+   JP USER,(uu)  ED B4 BC | B5 DE | B6 HL | B7 AX    modo := usuario; PC := uu.                                                          privilegiada
+   SYSRT         ED A4                               ver item 3.                                                                         privilegiada
+   SCALL n       ED 22 n                             chamada de sistema: excecao causa 5 (em qualquer modo).
+   PROT 0/1      ED 00 / ED 01                       desliga / liga a MMU (CR14 bit 0); os outros bits do CR14 ficam.                    privilegiada
+   RESET         ED 25                               CR14 := 0 (MMU e TE desligados), CR18 := 0, CR10 := 0 (interrupcoes desligadas), PC := 0.
+                                                     NAO limpa registradores, os outros CR, I, o modo de interrupcao nem EXX.            privilegiada
+   STDBY         ED 24                               espera uma interrupcao (repete a si mesma, como HALT).                              privilegiada
+   WAKE          ED 23                               NOP (so ha um nucleo para acordar).                                                 privilegiada
+   SVCTX (uu)    ED AE 08 BC | 0A DE | 0C HL | 0F AX grava o contexto em (uu): 16 palavras de 8 bytes, nesta ordem:
+   LDCTX (uu)    ED AE 48 BC | 4A DE | 4C HL | 4F AX     AX BC DE HL IX IY SP F N0 N1 N2 N3 N4 N5 N6 N7        (F no byte baixo da 8a palavra)
+                                                     O grupo alternativo (EXX / EX AF) nao entra. Nao sao privilegiadas (so tocam a memoria do proprio programa).
+                                                     O bloco de 128 bytes deve estar mapeado: uma falta no meio do LDCTX reinicia a instrucao com uu ja alterado.
+   Privilegiadas tambem: MFCR, MTCR, LDCR, STCR, PGINV e, do Z80, DI, EI, IM n, LD I,A e toda a E/S (IN, OUT, INI/IND/INIR/INDR, OUTI/OUTD/OTIR/OTDR).
+   NAO privilegiadas: HALT, RETI, RETN, LD A,I, LD A,R, LD R,A.
+   Sem microcodigo (NOP com TE = 0; excecao 7/1 com TE = 1): a FPU (45 instrucoes) e INW/INE/INQ, OUTW/OUTE/OUTQ. Com TE = 1 o sistema pode EMULAR a FPU no tratador.
+
+5. INTERRUPCOES
+   Em supervisor nada mudou (IM 0/1/2 do Z80 empilham o PC; modo legado salta para o vetor). Em modo usuario a interrupcao entra como EXCECAO de causa 0
+   (o tratador roda em supervisor e volta com SYSRT, que religa as interrupcoes porque IFF2 guardou o IFF1 de antes).
+
+6. MLT, DIV E DJNZW (pedidos junto)
+   MLT (todas): Z = produto zero; C = a metade alta do produto e significativa (sem sinal: diferente de zero, igual ao MULUB/MULUW do R800; com sinal: diferente
+        da extensao de sinal da metade baixa); com sinal: S = sinal do produto e PV = C; sem sinal: S = PV = 0. H e N ficam como estavam; bits 5 e 3 = 0.
+   DIV (todas): sem erro: Z = quociente zero, S = sinal do quociente (so com sinal), PV = C = 0. H e N ficam; bits 5 e 3 = 0.
+        ERRO (divisor zero ou quociente que nao cabe): com TE = 0: C = PV = 1, Z = S = 0, quociente = tudo 1 e resto = parte baixa do dividendo;
+        com TE = 1: excecao de causa 6 e nenhum registrador nem flag muda.
+   DJNZW nn: BC (16 bits) := BC - 1, sem flags; salta se BC != 0. (Antes usava so o B, como o DJNZ.)
+
+7. LIMITES CONHECIDOS
+   - Escrever CR14 ou CR18 com LDCR/MTCR muda TE/modo alguns clocks depois: a instrucao logo a seguir pode ainda ser decodificada com o valor antigo.
+     Para trocar de modo use JP USER, SYSRT ou a propria excecao (esses esvaziam o pipeline). Ler o CR14 nao devolve o modo: use o CR18.
+   - Um so nivel de salvamento (item 3) e nenhuma deteccao de "falta dupla": uma excecao dentro do tratador sobrescreve CR11/12/13/18.
+   - As excecoes novas so foram simuladas no modo nativo; nos modos com temporizacao governada (Z80 / R800) nao foram conferidas.
+   - Nao ha protecao de E/S por porta: em modo usuario toda E/S e privilegiada (o sistema pode emular no tratador).

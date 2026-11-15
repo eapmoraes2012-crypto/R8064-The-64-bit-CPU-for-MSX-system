@@ -222,3 +222,23 @@ REV39 (15/11/2026): MULTIPLICACAO, DIVISAO E MAIS INSTRUCOES DO R8064 NO NUCLEO.
   LISTAS DE ARQUIVOS: todos os .bat/.ys/.sh que compilam o nucleo passaram a incluir 03_muldiv/rtl/mul_unit.v e div_unit.v.
   PENDENTE: erro de divisao (zero/estouro) sem excecao nem flag; flags do MULUB/MULUW do R800; FPU (45), E/S de 16/32/64 bits, PROT, JP USER, SCALL, SYSRT, RESET,
         STDBY, WAKE, LDCTX, SVCTX (precisam do modelo de privilegio/excecao); tempos de MLT/DIV nos modos governados nao conferidos.
+
+REV40 (15/11/2026): FLAGS E ERRO DE MLT/DIV, DJNZW COM BC, MODELO DE PRIVILEGIO E DE EXCECAO, INSTRUCOES DE SISTEMA. Simulado (Icarus 12); sintese so na ferramenta da nuvem.
+  DEFINICAO: 09_core_min/MODELO_PRIVILEGIO.txt (modos supervisor/usuario no CR18, entrada unica de excecao, causas 0/5/6/7 alem das faltas da MMU, SYSRT,
+        CR14 bit 2 = TE). E uma escolha feita nesta revisao: o repositorio nao trazia esse modelo. Com os valores de reset o software MSX nao ve diferenca.
+  NOVO NO NUCLEO: flags de MLT e DIV saindo da unidade; erro de divisao (flags + resultado fixo, ou excecao 6 com TE); DJNZW conta em BC (16 bits);
+        armadilhas na fronteira de instrucao (privilegiada em modo usuario, ilegal / sem microcodigo com TE, SCALL); interrupcao em modo usuario entra como excecao;
+        a entrada de excecao grava tambem o CR18 (4 escritas em vez de 3). Uop de 106 bits: [102] priv, [103] unimp, [104] scall, [105] ju.
+        Microcodigo: JP USER, SYSRT, SCALL, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX; MFCR/MTCR/LDCR/STCR/PGINV e, do Z80, DI/EI/IM/LD I,A e a E/S viraram
+        privilegiadas (so tem efeito em modo usuario); FPU e E/S larga marcadas "sem microcodigo". ROM de uops: 1432 de 2048 entradas.
+  ERROS ACHADOS PELOS TESTES E CORRIGIDOS: a ALU sobrescrevia H e N antes das flags de MLT/DIV; a entrada de excecao na fronteira disparava em 2 clocks
+        seguidos com o nucleo solto e perdia o "modo anterior" (o mesmo cuidado foi posto na falta de busca de instrucao, que tinha a mesma forma).
+  TESTE: sim_r64, nucleo x modelo em Python: passo a passo 16 programas / 64.097 instrucoes e, novo, nucleo SOLTO (+livre, estado final) 12 programas / 48.080
+        instrucoes: 0 divergencias. Nesses 28 programas houve 2.591 excecoes (SCALL 775, erro de divisao 292, ilegal 306, sem microcodigo 314, privilegiada 904),
+        em supervisor e em usuario. tb_soc_exc cenarios 9 a 12 (com MMU): usuario + SCALL + SYSRT + privilegiada; interrupcao em modo usuario; PROT 1 + RESET; STDBY.
+        Regressao: 10_mode_gov (28 execucoes), tb_core, tb_bank, tb_soc (bypass e +mmu), tb_soc_exc 1-8, sim_z80 (12.000 instrucoes), fumaca R8064: OK.
+  AREA / FMAX (nucleo + governador, pnr_gov_top, ferramenta da nuvem, 2 sementes; serve so para comparar versoes): LUT4 10696 -> 11293, DFF 5606 -> 5688,
+        BSRAM 27 -> 28; antes 112,5 / 63,0 MHz, depois 103,6 / 94,6 MHz (a diferenca entre sementes e maior que a entre versoes). Topo de placa NAO refeito:
+        rodar rodar_pnr_board.bat no PC (os logs enviados em 15/11 sao do RTL da REV35/36: LUT4 52 %, BSRAM 36).
+  NAO CONFERIDO: excecoes novas nos modos governados (Z80 / R800); LDCTX com falta de pagina no meio; RESET e STDBY so no SoC (cenarios dirigidos).
+  PENDENTE: FPU (45) e E/S de 16/32/64 bits; tempos de MLT/DIV nos modos governados.

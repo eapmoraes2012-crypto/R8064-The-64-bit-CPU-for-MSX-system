@@ -12,3 +12,5 @@ O que o teste NAO cobre / limites conhecidos: ver 13_soc/resultado_soc.txt, REV3
 MULTIPLICACAO E DIVISAO (15/11/2026, REV39): o nucleo instancia mul_unit e div_unit de 03_muldiv/rtl. Qualquer compilacao do nucleo precisa desses dois arquivos
  (ex.: iverilog ... ../rtl/*.v ../../03_muldiv/rtl/mul_unit.v ../../03_muldiv/rtl/div_unit.v). Os .bat e .ys do repositorio ja os incluem.
 sim/gen_r64_rom.py -> instrucoes proprias do R8064 (pagina ED); premissas em PREMISSAS_R8064.txt; teste em sim_r64/ (rodar_r64.bat).
+PRIVILEGIO E EXCECOES (15/11/2026, REV40): MODELO_PRIVILEGIO.txt (modos, CR18, causas, SYSRT, instrucoes de sistema, flags de MLT/DIV, DJNZW com BC).
+ Testes: sim_r64/rodar_r64.bat (passo a passo e +livre) e 13_soc/rodar_exc.bat (cenarios 9 a 12).

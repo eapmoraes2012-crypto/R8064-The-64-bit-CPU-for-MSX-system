@@ -1,6 +1,6 @@
 @echo off
 rem Rode DENTRO do terminal do OSS CAD Suite. Instrucoes R8064 de 16/32/64 bits (ver ..\PREMISSAS_R8064.txt):
-rem  1) teste de fumaca (21 instrucoes, valores calculados a mao) ; 2) dois programas aleatorios de vec\ contra o modelo em Python, instrucao a instrucao.
+rem  1) teste de fumaca (21 instrucoes, valores calculados a mao) ; 2) dois programas aleatorios de vec\ contra o modelo em Python, instrucao a instrucao (inclui sistema: ..\MODELO_PRIVILEGIO.txt).
 rem Para gerar outros programas: gerar_vetores.sh (Linux/WSL) ou  python gen_r64_prog.py <semente> <prefixo> [N]
 cd /d "%~dp0"
 set S=..\sim
@@ -13,3 +13,5 @@ vvp -n r64.vvp
 iverilog -g2012 -o r64core.vvp tb_r64core.v %SRC%
 if errorlevel 1 (echo COMPILACAO FALHOU & exit /b 1)
 for %%V in (q1 q2) do vvp -n r64core.vvp +hex=vec/%%V_mem.hex +trace=vec/%%V_trace.txt +fim=vec/%%V_fim.hex
+rem os mesmos programas com o nucleo solto (instrucoes coladas no pipeline): compara o estado final
+for %%V in (q1 q2) do vvp -n r64core.vvp +hex=vec/%%V_mem.hex +trace=vec/%%V_trace.txt +fim=vec/%%V_fim.hex +livre

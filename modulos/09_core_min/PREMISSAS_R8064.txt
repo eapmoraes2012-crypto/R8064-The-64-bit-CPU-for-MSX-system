@@ -27,16 +27,16 @@ TAMANHOS: W = 16, E = 32, Q = 64 bits. Escrever W ou E num registrador PRESERVA 
 9. CALLE nnnn (ED 35) / CALLQ nnnnnnnn (ED 34); CALLE (rr) (ED 37 00 001 rrr); CALLE cc,(rr) (ED 37 11 ccc rrr); CALLQ = ED 36. RETE (ED 04), RETQ (ED 05),
    RETE cc (ED 03 01 ccc 000), RETQ cc (ED 03 10 ccc 000). E empilha/desempilha 4 bytes do endereco de retorno; Q, 8 bytes.
 
-10. MULTIPLICACAO (unidade mul_unit do modulo 03, em DSP). Nenhuma MLT altera flags [no R800, MULUB/MULUW alteram Z e C: nao reproduzido].
+10. MULTIPLICACAO (unidade mul_unit do modulo 03, em DSP). Flags (REV40): Z = produto zero, C = metade alta significativa (como no R800), S e PV so nas formas com sinal: MODELO_PRIVILEGIO.txt, item 6.
     MLTUB A,u (ED C1, C9, D1, D9, E1, E9, F9 = MULUB do R800): HL = A * u (sem sinal). MLTUW HL,BC / HL,SP (ED C3 / ED F3 = MULUW do R800): DE:HL = HL * rr.
     ED 3E (sem sinal) / ED 3F (com sinal), b3 = tt 001 rrr: MLTSB AL,u: AX (16 bits) = AL * u (u = registrador de 8 bits); MLTxW HL,rr: DE:HL = HL * rr (32 bits);
     MLTxE: QA = EA * rr (32 x 32 -> 64 bits em AX); MLTUQ QA,rr: AX = 64 bits BAIXOS de AX * rr (a parte alta se perde); MLTSQ QDE:QA,rr: DE:AX = 128 bits.
-11. DIVISAO (div_unit do modulo 03, 1 bit por clock). ED 3C (sem sinal) / ED 3D (com sinal), b3 = tt 001 rrr. Nenhuma DIV altera flags.
+11. DIVISAO (div_unit do modulo 03, 1 bit por clock). ED 3C (sem sinal) / ED 3D (com sinal), b3 = tt 001 rrr. Flags (REV40): Z, S e, em erro, C = PV = 1.
     DIVxB AX,t: AX (16 bits) / t (B C D E H L) -> AL = quociente, AH = resto.   DIVxW DX:AX,rr: DE:AX (32 bits) / rr -> AX = quociente, DE = resto.
     DIVxE QA,rr: AX (64 bits) / rr (32 bits) -> AX = {resto (32 bits altos), quociente (32 bits baixos)}.   DIVxQ QDE:QA,rr: DE:AX (128 bits) / rr -> AX = quociente, DE = resto.
-    Com sinal: quociente truncado para zero, resto com o sinal do dividendo. DIVISAO POR ZERO ou QUOCIENTE FORA DA FAIXA: hoje NAO ha excecao nem flag; o resultado e
-    o que a unidade deixar (indefinido). Definir: excecao (qual causa/vetor) ou flag.
-12. LDCR kk,rr (ED 20, b3 = kkkkk rrr): CR[kk] := rr.  STCR rr,kk (ED 21): rr := CR[kk]. Fazem o mesmo que MTCR/MFCR, com qualquer registrador. Sem checagem de privilegio.
+    Com sinal: quociente truncado para zero, resto com o sinal do dividendo. DIVISAO POR ZERO ou QUOCIENTE FORA DA FAIXA (REV40): com CR14 bit 2 = 0,
+    C = PV = 1, quociente = tudo 1, resto = parte baixa do dividendo; com CR14 bit 2 = 1, excecao de causa 6 (MODELO_PRIVILEGIO.txt).
+12. LDCR kk,rr (ED 20, b3 = kkkkk rrr): CR[kk] := rr.  STCR rr,kk (ED 21): rr := CR[kk]. Fazem o mesmo que MTCR/MFCR, com qualquer registrador. Privilegiadas (REV40), como MTCR/MFCR e PGINV.
 13. PGINV (uu) (ED C4 BC, D4 DE, E4 HL, FC AX): descarrega da TLB a traducao do endereco em uu (igual a escrever o CR16).
 14. XCHGE/XCHGQ rr,(rr') (ED AC, b3 = 0 q ddd sss; rr = ddd, ponteiro = sss): troca o registrador com a memoria. Sem flags.
     CASE/CASQ (rr'),rr (ED AD, b3 = 0 q ppp sss; ponteiro = ppp, valor novo = sss): compara A (do tamanho) com a memoria, com as flags de CP;
@@ -44,10 +44,13 @@ TAMANHOS: W = 16, E = 32, Q = 64 bits. Escrever W ou E num registrador PRESERVA 
 15. FENCE e ISYNC (ED A5 / ED A6): NOP (o nucleo executa em ordem e nao ha outro nucleo).
 16. Opcode ED sem instrucao: NOP de 2 bytes, como no Z80 (antes tinha comprimento 0 e travava a execucao).
 
-FORA (ainda sem microcodigo; executam como NOP do comprimento certo): INW/INE/INQ e OUTW/OUTE/OUTQ (a E/S do nucleo e de 8 bits: falta definir os acessos), FPU (45),
-PROT, JP USER, RESET, STDBY, WAKE, SCALL, SYSRT, LDCTX, SVCTX (dependem do modelo de privilegio/excecao, que nao esta definido no repositorio).
+17. DJNZW nn (REV40): o contador e BC de 16 bits (antes era so o B). Sem flags.
+18. SISTEMA (REV40): modos supervisor / usuario, excecoes, SCALL, SYSRT, JP USER, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX: tudo em MODELO_PRIVILEGIO.txt.
+
+FORA (sem microcodigo; NOP do comprimento certo, ou excecao de causa 7 se CR14 bit 2 = 1): INW/INE/INQ e OUTW/OUTE/OUTQ (a E/S do nucleo e de 8 bits) e a FPU (45).
 
 VERIFICACAO: (1) sim_r64/tb_r64_fumaca.v: 21 instrucoes com resultado calculado a mao. (2) sim_r64/gen_r64_prog.py: MODELO em Python escrito a partir destas
 premissas + gerador de programas aleatorios; tb_r64core.v compara o nucleo com o modelo instrucao a instrucao (PC, AX, BC, DE, HL, IX, IY, SP de 64 bits, F e
 a memoria final). O teste mostra que o RTL faz o que estas premissas dizem; NAO mostra que as premissas sao o que a planilha original definia.
+(3) tb_r64core.v +livre: o mesmo programa com as instrucoes coladas no pipeline; compara so o estado final. (4) 13_soc/sim/tb_soc_exc.v cenarios 9 a 12: modo usuario com MMU.
 Nao cobertos pelo teste aleatorio: prefixos de banco (N0-N7) junto com estas instrucoes, EXX/EX AF, faltas de pagina e os modos governados.

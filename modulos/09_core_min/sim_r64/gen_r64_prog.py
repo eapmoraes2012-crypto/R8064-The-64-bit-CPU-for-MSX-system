@@ -2,6 +2,8 @@
 # Uso: python3 gen_r64_prog.py <semente> <prefixo> [N]   -> <prefixo>_mem.hex (64 KB), <prefixo>_trace.txt, <prefixo>_fim.hex
 # O modelo foi escrito a partir de ../PREMISSAS_R8064.txt (nao do RTL). O programa e gerado e executado no modelo ao mesmo tempo, entao o gerador sabe
 # o valor dos registradores: ponteiros de leitura/gravacao sempre caem na area de dados (8000h-FFFFh; o codigo fica abaixo) e os desvios sao para a frente.
+# Sistema (../MODELO_PRIVILEGIO.txt): modo supervisor/usuario, SCALL, SYSRT, JP USER, instrucoes privilegiadas, excecao de instrucao ilegal / nao implementada e de
+# erro de divisao, LDCTX/SVCTX. Cada excecao tem o seu tratador montado mais adiante no programa (o vetor CR9 e apontado antes).
 # Cada linha do traco = estado depois de uma instrucao: pc ax bc de hl ix iy sp f (64 bits em hexadecimal; f com 2 digitos).
 # O testbench usa uma memoria de 64 KB (endereco de 16 bits); o modelo faz o mesmo.
 import random, sys
@@ -147,8 +149,8 @@ def t_jr():
     k = rnd.randrange(0, 5); kind = rnd.randrange(3)
     if kind == 0: branch([0xED, 0x2D] + le(k, 2), True, k)                                                   # JRW nn
     elif kind == 1: cc = rnd.randrange(8); branch([0xED, 0x2A, cc << 3 | 1] + le(k, 2), cond(cc), k)         # JRW cc,nn
-    else:                                                                                                    # DJNZW nn
-        b = ((r['BC'] >> 8) - 1) & 0xFF; r['BC'] = (r['BC'] & ~0xFF00 & M64) | b << 8; branch([0xED, 0x2E] + le(k, 2), b != 0, k)
+    else:                                                                                                    # DJNZW nn: contador = BC (16 bits)
+        b = (r['BC'] - 1) & 0xFFFF; wr_reg('BC', b, 16); branch([0xED, 0x2E] + le(k, 2), b != 0, k)
 def t_jpimm():
     k = rnd.randrange(0, 5); kind = rnd.randrange(4)
     if kind == 0: t = code[0] + 6 + k; branch([0xED, 0x2C] + le(t, 4), True, k)                              # JPE nnnn
@@ -191,52 +193,70 @@ def sgn(v, n): v &= msk(n); return v - (1 << n) if v >> (n - 1) else v
 def r8get(u): name, sh = R8[u]; return (r[name] >> sh) & 0xFF
 def ldx(code_r, val, s):                        # LDW/LDE/LDQ rr, imediato
     n = BITS[s]; wr_reg(REG[code_r], val, n); seq([0xED, LDB2[s], 0x40 | code_r << 3 | 1] + le(val & msk(n), n // 8))
+def mflags(p, n, sg):                           # flags de MLT: p = produto (inteiro Python), n = bits de cada operando
+    lo, hi = p & msk(n), (p >> n) & msk(n)
+    c = (hi != (msk(n) if lo >> (n - 1) else 0)) if sg else (hi != 0)
+    st['f'] = (st['f'] & (FH | FN)) | (FZ if p == 0 else 0) | (FC if c else 0) | ((FP if c else 0) | (FS if p < 0 else 0) if sg else 0)
 def t_mul():
     k = rnd.randrange(7)
     if k == 0:                                                                                               # MLTUB A,u (R800): HL = A * u
-        u = rnd.choice(list(R8)); wr_reg('HL', (r['AX'] & 0xFF) * r8get(u), 16); seq([0xED, 0xC1 | u << 3])
+        u = rnd.choice(list(R8)); p = (r['AX'] & 0xFF) * r8get(u); mflags(p, 8, False); wr_reg('HL', p, 16); seq([0xED, 0xC1 | u << 3])
     elif k == 1:                                                                                             # MLTUW HL,BC / HL,SP (R800): DE:HL = HL * rr
         nm, b2 = rnd.choice([('BC', 0xC3), ('SP', 0xF3)]); p = (r['HL'] & 0xFFFF) * (r[nm] & 0xFFFF)
-        wr_reg('HL', p, 16); wr_reg('DE', p >> 16, 16); seq([0xED, b2])
+        mflags(p, 16, False); wr_reg('HL', p, 16); wr_reg('DE', p >> 16, 16); seq([0xED, b2])
     elif k == 2:                                                                                             # MLTSB AL,u: AX (16 bits) = AL * u
-        u = rnd.choice(list(R8)); wr_reg('AX', sgn(r['AX'], 8) * sgn(r8get(u), 8), 16); seq([0xED, 0x3F, 0x08 | u])
+        u = rnd.choice(list(R8)); p = sgn(r['AX'], 8) * sgn(r8get(u), 8); mflags(p, 8, True); wr_reg('AX', p, 16); seq([0xED, 0x3F, 0x08 | u])
     else:
         sg = rnd.random() < .5; s = 'WEQ'[k % 3]; n = BITS[s]; c = rnd.choice(R6); b2 = 0x3F if sg else 0x3E
         a, b = (r['HL'] if s == 'W' else r['AX']), r[REG[c]]
         p = (sgn(a, n) * sgn(b, n)) if sg else ((a & msk(n)) * (b & msk(n)))
+        mflags(p, n, sg)
         if s == 'W': wr_reg('HL', p, 16); wr_reg('DE', p >> 16, 16)                                          # MLTxW HL,rr: DE:HL
         elif s == 'E': r['AX'] = p & M64                                                                     # MLTxE: QA
         else:
             r['AX'] = p & M64                                                                                # MLTUQ: QA ; MLTSQ: QDE:QA
             if sg: r['DE'] = (p >> 64) & M64
         seq([0xED, b2, 'BWEQ'.index(s) << 6 | 1 << 3 | c])
-def t_div():                                    # operandos preparados para NAO dar erro (divisor zero / quociente fora da faixa)
-    sg = rnd.random() < .5; s = rnd.choice('BWEQ'); n = BITS[s]; b2 = 0x3D if sg else 0x3C
-    if s == 'B': c = rnd.randrange(6); dname = None
-    else: c = rnd.choice([0, 3, 4, 5]); dname = REG[c]                                                       # divisor: BC, IY, HL ou IX
+def div_calc(dd, d, n, sg):                    # dd = dividendo de 2n bits, d = divisor de n bits (padroes de bits) -> (erro, quociente, resto)
+    if sg:
+        ddv, dv = sgn(dd, 2 * n), sgn(d, n)
+        if dv == 0: return True, 0, 0
+        q = abs(ddv) // abs(dv) * (1 if (ddv < 0) == (dv < 0) else -1); rem = ddv - q * dv
+        return not -(1 << (n - 1)) <= q < (1 << (n - 1)), q, rem
+    if d == 0 or dd // d >> n: return True, 0, 0
+    return False, dd // d, dd % d
+def div_ops(n, sg, want_err):                   # sorteia dividendo / divisor ate dar (ou nao dar) erro
     while True:
         d = rnd.getrandbits(n) if rnd.random() < .7 else rnd.getrandbits(rnd.randrange(1, n))
-        if sg:
-            dv = sgn(d, n)
-            if dv == 0: continue
-            q = rnd.randrange(-(1 << (n - 1)), 1 << (n - 1)); rem = rnd.randrange(abs(dv)); dd = q * dv
-            dd += rem if dd >= 0 else -rem
-            if dd == 0 and q != 0: continue
-            q = abs(dd) // abs(dv) * (1 if (dd < 0) == (dv < 0) else -1); rem = dd - q * dv
-            if not -(1 << (n - 1)) <= q < (1 << (n - 1)): continue
-        else:
-            if d == 0: continue
-            dd = rnd.randrange(d << n) if rnd.random() < .7 else rnd.getrandbits(n); q, rem = dd // d, dd % d
-        break
+        if want_err and rnd.random() < .4: d = 0
+        k = rnd.random()
+        if sg and d and k < .5:                                                                              # quociente perto das bordas da faixa
+            dv = sgn(d, n); q = rnd.choice([-(1 << (n - 1)) - 1, -(1 << (n - 1)), (1 << (n - 1)) - 1, 1 << (n - 1), rnd.randrange(-(1 << (n - 1)), 1 << (n - 1))])
+            rem = rnd.randrange(abs(dv)); dd = q * dv; dd += rem if dd >= 0 else -rem; dd &= msk(2 * n)
+        elif d and k < .8: dd = rnd.randrange(d << n) if not sg else rnd.getrandbits(n + rnd.randrange(1, n))
+        else: dd = rnd.getrandbits(2 * n) if want_err else rnd.getrandbits(n)
+        e, q, rem = div_calc(dd, d, n, sg)
+        if e == want_err: return dd, d, e, q, rem
+def div_emit(s, sg, want_err, te):              # monta os operandos e a instrucao; devolve (bytes da instrucao, funcao que aplica o resultado)
+    n = BITS[s]; b2 = 0x3D if sg else 0x3C
+    if s == 'B': c = rnd.randrange(6)
+    else: c = rnd.choice([0, 3, 4, 5])                                                                       # divisor: BC, IY, HL ou IX
+    dd, d, e, q, rem = div_ops(n, sg, want_err)
     lo, hi = dd & msk(n), (dd >> n) & msk(n)
+    if e: q, rem = msk(n), lo                                                                                # erro sem excecao: quociente = tudo 1, resto = parte baixa do dividendo
     if s == 'B':
         name, sh = R8[c]; ldx({'BC': 0, 'DE': 2, 'HL': 4}[name], (rnd.getrandbits(8) << (8 - sh)) | (d << sh), 'W')   # divisor num registrador de 8 bits
-        ldx(7, hi << 8 | lo, 'W'); wr_reg('AX', (rem & 0xFF) << 8 | (q & 0xFF), 16)                          # AL = quociente, AH = resto
-    elif s == 'E':
-        ldx(c, d, 'E'); ldx(7, hi << 32 | lo, 'Q'); r['AX'] = (rem & msk(32)) << 32 | (q & msk(32))          # QA = {resto, quociente}
-    else:
-        ldx(c, d, s); ldx(2, hi, s); ldx(7, lo, s); wr_reg('AX', q, n); wr_reg('DE', rem, n)                 # AX = quociente, DE = resto
-    seq([0xED, b2, 'BWEQ'.index(s) << 6 | 1 << 3 | c])
+        ldx(7, hi << 8 | lo, 'W')
+    elif s == 'E': ldx(c, d, 'E'); ldx(7, hi << 32 | lo, 'Q')
+    else: ldx(c, d, s); ldx(2, hi, s); ldx(7, lo, s)
+    def apply():
+        if s == 'B': wr_reg('AX', (rem & 0xFF) << 8 | (q & 0xFF), 16)                                        # AL = quociente, AH = resto
+        elif s == 'E': r['AX'] = (rem & msk(32)) << 32 | (q & msk(32))                                       # QA = {resto, quociente}
+        else: wr_reg('AX', q, n); wr_reg('DE', rem, n)                                                       # AX = quociente, DE = resto
+        st['f'] = (st['f'] & (FH | FN)) | ((FP | FC) if e else (FZ if q & msk(n) == 0 else 0) | (FS if sg and q < 0 else 0))
+    return [0xED, b2, 'BWEQ'.index(s) << 6 | 1 << 3 | c], apply
+def t_div():                                    # 1 em 5 com erro (divisor zero / quociente fora da faixa): aqui a excecao esta desligada, so flags e resultado fixo
+    bs, apply = div_emit(rnd.choice('BWEQ'), rnd.random() < .5, rnd.random() < .2, False); apply(); seq(bs)
 def t_xchg():
     s = rnd.choice('EQ'); n = BITS[s]; p, o = rnd.choice(R6), rnd.choice(R6); q = 1 if s == 'Q' else 0
     ldq(p, data_addr(n)); a = r[REG[p]]; old = rdm(a, n); wrm(a, r[REG[o]], n); wr_reg(REG[o], old, n)
@@ -249,13 +269,86 @@ def t_cas():
     wr_reg('AX', m, n)
     if eq: wrm(a, r[REG[o]], n)
     seq([0xED, 0xAD, q << 6 | p << 3 | o])                                                                   # CASx (rr'),rr
-cr = [0] * 8
+# ---------- sistema ----------
+cr = [0] * 32                                   # CR0-CR7 livres; 9 vetor, 11 causa, 12 auxiliar, 13 EPC, 14 {TE [2], MMU [0]}, 18 modo {anterior [1], usuario [0]}
+nreg = [0] * 8                                  # N0-N7 (so aparecem no teste por LDCTX / SVCTX)
 def t_cr():
-    k = rnd.randrange(8); c = rnd.choice(R6)
-    if rnd.random() < .5: cr[k] = r[REG[c]]; seq([0xED, 0x20, k << 3 | c])                                   # LDCR kk,rr
-    else: r[REG[c]] = cr[k]; seq([0xED, 0x21, k << 3 | c])                                                   # STCR rr,kk
-def t_nop2(): seq(rnd.choice([[0xED, 0xA5], [0xED, 0xA6], [0xED, 0x08], [0xED, 0x0F], [0xED, 0xC4], [0xED, 0xFC]]))   # FENCE, ISYNC, ED ilegal (NOP de 2 bytes), PGINV
-TESTS = [(t_mul, 10), (t_div, 8), (t_xchg, 3), (t_cas, 4), (t_cr, 3), (t_nop2, 2), (t_alu, 22), (t_incdec, 6), (t_shift, 10), (t_bit, 8), (t_ldrr, 5), (t_ldimm, 8), (t_ldmem, 8), (t_ldabs, 6), (t_ldidx, 8), (t_stack, 6),
+    k = rnd.randrange(8); c = rnd.choice(R6); j = rnd.randrange(4)
+    if j == 0: cr[k] = r[REG[c]]; seq([0xED, 0x20, k << 3 | c])                                              # LDCR kk,rr
+    elif j == 1: r[REG[c]] = cr[k]; seq([0xED, 0x21, k << 3 | c])                                            # STCR rr,kk
+    elif j == 2: cr[k] = r['AX']; seq([0xED, 0x0C, k])                                                       # MTCR n
+    else: r['AX'] = cr[k]; seq([0xED, 0x0A, k])                                                              # MFCR n
+def t_nop2():                                   # FENCE, ISYNC, ED ilegal, PGINV, WAKE, FPU e E/S larga (sem microcodigo; com TE = 0 sao NOP), PROT 0
+    if rnd.random() < .15: cr[14] &= ~1; seq([0xED, 0x00]); return
+    seq(rnd.choice([[0xED, 0xA5], [0xED, 0xA6], [0xED, 0x08], [0xED, 0x0F], [0xED, 0xC4], [0xED, 0xFC], [0xED, 0x23], [0xED, 0x80], [0xED, 0x17], [0xED, 0x27, 0x01], [0xED, 0xAF, 0x08]]))
+CTXR = ['AX', 'BC', 'DE', 'HL', 'IX', 'IY', 'SP']
+def t_ctx():                                    # SVCTX (uu) / LDCTX (uu): 16 palavras de 8 bytes: AX BC DE HL IX IY SP F N0..N7
+    u = rnd.choice([0, 2, 4, 7]); ldq(u, rnd.randrange(0x8000, 0xFF00) & ~7 | (rnd.getrandbits(48) << 16 if rnd.random() < .3 else 0)); a = r[REG[u]]
+    if rnd.random() < .5:
+        for i, nm in enumerate(CTXR): wrm(a + 8 * i, r[nm], 64)
+        wrm(a + 56, st['f'], 64)
+        for i in range(8): wrm(a + 64 + 8 * i, nreg[i], 64)
+        seq([0xED, 0xAE, 0x08 | u])
+    else:
+        v = [rdm(a + 8 * i, 64) for i in range(16)]
+        for i, nm in enumerate(CTXR): r[nm] = v[i]
+        st['f'] = v[7] & 0xFF; nreg[:] = v[8:]
+        seq([0xED, 0xAE, 0x48 | u]); chk_sp()
+def ldcr(k, val):                               # CR[k] := val (por um registrador sorteado)
+    c = rnd.choice(R6); ldq(c, val); cr[k] = val; seq([0xED, 0x20, k << 3 | c])
+def trap(bs, cause, aux, epc, H):               # a instrucao 'bs' nao executa: entra na excecao e o programa continua no tratador (H)
+    emit(bs); assert code[0] <= H, 'tratador longe demais'
+    ntrap[(cause, aux if cause == 7 else 0, cr[18] & 1)] = ntrap.get((cause, aux if cause == 7 else 0, cr[18] & 1), 0) + 1
+    cr[12] = aux; cr[11] = cause; cr[13] = epc & M64; cr[18] = (cr[18] & 1) << 1
+    code[0] = H; done(cr[9])
+def handler(exp, cont=True, force=None, nextvec=False):   # le causa / auxiliar / EPC / modo para registradores (conferidos no traco) e volta com SYSRT
+    for k in (11, 12, 13, 18):
+        c = rnd.choice(R6); r[REG[c]] = cr[k]; seq([0xED, 0x21, k << 3 | c])
+    assert (cr[11], cr[12]) == exp
+    ln = (14 if cont else 0) + (14 if force is not None else 0) + (14 if nextvec else 0) + 2
+    dest = code[0] + ln
+    if nextvec: ldcr(9, dest + GAP)
+    if cont: ldcr(13, dest)
+    if force is not None: ldcr(18, force)
+    cr[18] >>= 1; emit([0xED, 0xA4]); done(cr[13])                                                          # SYSRT: modo := anterior, PC := EPC
+    if cont: assert code[0] == dest
+GAP = 0x70
+ntrap = {}                                      # (causa, auxiliar, modo) -> quantas vezes
+PRIV = [[0xED, 0x20, 0x4A], [0xED, 0x21, 0x58], [0xED, 0x0A, 0x0E], [0xED, 0x0C, 0x12], [0xED, 0xC4], [0xED, 0xA4], [0xED, 0xB5], [0xED, 0x00], [0xED, 0x01], [0xED, 0x25], [0xED, 0x24], [0xED, 0x23],
+        [0xF3], [0xFB], [0xD3, 0x98], [0xDB, 0x98], [0xED, 0x78], [0xED, 0x79], [0xED, 0x56], [0xED, 0x47], [0xED, 0xA2], [0xED, 0xB3]]   # Z80: DI, EI, E/S, IM, LD I,A
+def one_trap(H, user, te):                      # sorteia e monta UMA instrucao que causa excecao; devolve (causa, auxiliar)
+    kinds = ['scall'] + (['priv'] * 2 if user else []) + (['ill', 'unimp', 'div'] if te else [])
+    k = rnd.choice(kinds)
+    if k == 'scall': n = rnd.getrandbits(8); trap([0xED, 0x22, n], 5, n, code[0] + 3, H); return 5, n
+    if k == 'priv': trap(rnd.choice(PRIV), 7, 2, code[0], H); return 7, 2
+    if k == 'ill': trap(rnd.choice([[0xED, 0x08], [0xED, 0x0F]]), 7, 0, code[0], H); return 7, 0
+    if k == 'unimp': trap(rnd.choice([[0xED, 0x80], [0xED, 0x17], [0xED, 0x27, 0x01], [0xED, 0xAF, 0x08]]), 7, 1, code[0], H); return 7, 1
+    bs, apply = div_emit(rnd.choice('BWEQ'), rnd.random() < .5, True, True); trap(bs, 6, 0, code[0], H); return 6, 0   # erro de divisao com TE: nada muda
+def t_trap():                                   # excecao em modo supervisor
+    te = rnd.random() < .7; ldcr(14, 4 if te else 0)
+    if rnd.random() < .3:                                                                                    # SCALL voltando pelo EPC natural (a instrucao seguinte)
+        n = rnd.getrandbits(8); H = code[0] + 14 + 3 + 4; ldcr(9, H); hl = 12 + 2
+        x = code[0]; emit([0xED, 0x22, n, 0xED, 0x2D] + le(hl, 2)); cr[12] = n; cr[11] = 5; cr[13] = x + 3; cr[18] = (cr[18] & 1) << 1; done(H)
+        handler((5, n), cont=False); assert st['pc'] == x + 3
+        done(code[0])                                                                                        # o JRW por cima do tratador
+    else:
+        H = code[0] + 14 + GAP; ldcr(9, H); exp = one_trap(H, False, te); handler(exp)
+    if te: ldcr(14, 0)
+USERPOOL = None
+def t_user():                                   # entra em modo usuario (JP USER), roda instrucoes comuns e sai por excecoes
+    te = rnd.random() < .6; ldcr(14, 4 if te else 0)
+    H = code[0] + 14 + 13 + GAP; ldcr(9, H)
+    j = rnd.randrange(4); u = [0, 2, 4, 7][j]; k = rnd.randrange(3); t = code[0] + 13 + k; ldq(u, t)
+    emit([0xED, 0xB4 | j]); filler(k); cr[18] = 1; done(t)                                                   # JP USER,(uu): BC / DE / HL / AX
+    rounds = rnd.randrange(1, 4)
+    for i in range(rounds):
+        for _ in range(rnd.randrange(0, 4)): rnd.choice(USERPOOL)()
+        exp = one_trap(H, True, te); assert cr[18] == 2
+        if i == rounds - 1: handler(exp, force=0)                        # ultima: volta em modo supervisor
+        else: handler(exp, nextvec=True); H = code[0] + GAP; assert cr[18] == 1                               # volta para o modo usuario
+    if te: ldcr(14, 0)
+USERPOOL = [t_alu, t_incdec, t_shift, t_bit, t_ldrr, t_ldimm, t_mul, t_ldabs]
+TESTS = [(t_trap, 3), (t_user, 3), (t_ctx, 2), (t_mul, 10), (t_div, 8), (t_xchg, 3), (t_cas, 4), (t_cr, 3), (t_nop2, 2), (t_alu, 22), (t_incdec, 6), (t_shift, 10), (t_bit, 8), (t_ldrr, 5), (t_ldimm, 8), (t_ldmem, 8), (t_ldabs, 6), (t_ldidx, 8), (t_stack, 6),
          (t_jr, 5), (t_jpimm, 4), (t_jpreg, 4), (t_call, 4), (t_ret, 4)]
 pool = [t for t, w in TESTS for _ in range(w)]
 ld_sp(0xF000)
@@ -270,4 +363,4 @@ start = bytearray(final); start[0x8000:] = snapshot_data      # memoria inicial:
 open(pref + '_mem.hex', 'w').write('\n'.join('%02x' % b for b in start) + '\n')
 open(pref + '_fim.hex', 'w').write('\n'.join('%02x' % b for b in final) + '\n')
 open(pref + '_trace.txt', 'w').write('\n'.join(trace) + '\n')
-sys.stderr.write('%d instrucoes, %d bytes de codigo\n' % (len(trace), code[0]))
+sys.stderr.write('%d instrucoes, %d bytes de codigo, excecoes (causa, aux, modo usuario): %s\n' % (len(trace), code[0], sorted(ntrap.items())))

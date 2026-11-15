@@ -13,6 +13,11 @@ vvp exc.vvp +sc=5
 vvp exc.vvp +sc=6
 vvp exc.vvp +sc=7
 vvp exc.vvp +sc=8
+rem modelo de privilegio (09_core_min\MODELO_PRIVILEGIO.txt): 9 modo usuario com MMU, 10 interrupcao em modo usuario, 11 PROT + RESET, 12 STDBY
+vvp exc.vvp +sc=9
+vvp exc.vvp +sc=10
+vvp exc.vvp +sc=11
+vvp exc.vvp +sc=12
 rem SoC: programa de sequencias a partir da SDRAM, MMU em bypass e ligada
 iverilog -g2012 -o soc.vvp tb_soc.v ..\rtl\r8064_soc.v ..\rtl\r8064_memsys.v ..\rtl\mem_arb4.v ..\rtl\cache_dm.v ..\rtl\mmu.v ..\rtl\sdram_ctrl.v sdram_model.v %CORE%
 vvp soc.vvp

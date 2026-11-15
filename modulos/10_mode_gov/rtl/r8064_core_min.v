@@ -1,5 +1,5 @@
 // r8064_core_min.v - NUCLEO MINIMO SINTETIZAVEL do R8064 (esqueleto para medir area/Fmax do orcamento enxuto).
-// NAO e o nucleo final: executa um subconjunto de microoperacoes dirigido por ROM de microoperacoes (uop.mem, 102 bits).
+// NAO e o nucleo final: executa um subconjunto de microoperacoes dirigido por ROM de microoperacoes (uop.mem, 106 bits).
 // O que e REAL (estrutura e largura): fila de prefetch 32 B + alinhador de 13 bytes, decodificador ED real (ROM_A/ROM_B/ctrl), ROM de pagina principal,
 //   ROM de uops em BSRAM, banco de 64x64 (BSRAM, 3 leituras), mapeamento de registradores (EXX/EX AF), extracao de imediato, forwarding (X2/M/W) com
 //   interlock de carga-uso, ALU de 2 estagios (alu_prep/alu_core do modulo 01), somador de enderecos, somador de alvo de desvio, LSU de 64 bits com
@@ -56,6 +56,8 @@ module r8064_core_min #(
     reg [63:0] npc, epc; reg irq_taken_q;
     // flush REGISTRADO (corta flags -> condicao -> flush -> reset de todo o front-end): desvio tomado custa +1 clock
     reg [63:0] pc_last;   // PC da ultima instrucao emitida: a proxima so e emitida >= 6 clocks depois da ultima uop (decodificacao), entao ao chegar em M a uop e sempre da ultima instrucao
+    reg c_en, c_user, c_te; wire ex_take_m; reg md_q, mdu_done; wire [7:0] mdu_f;   // declarados aqui porque sao usados antes dos blocos que os definem
+    reg trap_q;                   // a candidata gera excecao em vez de executar (privilegiada em modo usuario, nao implementada, SCALL)
     wire ex_take, ex_take_d; reg ex_act; reg [1:0] exk; reg ex_isd, ex_we; reg [2:0] ex_cs;
     wire flush_raw = flush_br | (irq_take & ~irq_new) | ex_take;
     reg  flush_q; reg [63:0] flush_tgt_q;
@@ -139,9 +141,9 @@ module r8064_core_min #(
     wire [9:0] ed_id; wire ed_ill; wire [3:0] ed_len; wire [4:0] ed_nr, ed_nw; wire [1:0] ed_nio; wire [7:0] ed_ex; wire [1:0] ed_pen; wire ed_hc, ed_z80, ed_bk;
     r8064_decode u_dec(.clk(clk), .b2(b2), .b3(b3), .id(ed_id), .illegal(ed_ill), .len(ed_len), .nr(ed_nr), .nw(ed_nw), .nio(ed_nio), .ex(ed_ex), .pen_code(ed_pen), .has_cond(ed_hc), .is_z80(ed_z80), .bankable(ed_bk));
     reg [31:0] mainc [0:255];
-    reg [101:0] uopm  [0:2047];
+    reg [105:0] uopm  [0:2047];
     initial begin $readmemh(MAINC_FILE, mainc); $readmemh(UOP_FILE, uopm); end
-    reg [31:0] mainc_q; reg [101:0] uop_q;
+    reg [31:0] mainc_q; reg [105:0] uop_q;
     // sequenciador de microoperacoes: u[49]=mais uops, u[62:52]=endereco da proxima. Espaco: principal 0-255, ED 256+id, CB 768-1023, DDCB/FDCB 1792-2047, cadeias 1024-1791
     reg seq; reg [10:0] nxt_r; reg [2:0] seqc;
     wire [10:0] base_a = irq_ent ? (im == 2'd2 ? 11'd601 : 11'd600) : is_ed ? (11'd256 + {1'b0, ed_id}) : is_cb ? (xy_on ? {3'b111, b3} : {3'b011, b2}) : {3'b000, b1};   // DD CB d op: regiao 1792 + op
@@ -154,7 +156,7 @@ module r8064_core_min #(
     assign clen = clen_r;
     reg ifx_q; reg [7:0] ifd_q;
     reg hz_q;   // interlock de escrita parcial (ver abaixo)
-    wire issue = dv && (ds == ds_last) && !hold && !flush && (gov_go || seq) && (seqc == 3'd0) && !hz_q && !(ifx_q && !seq);
+    wire issue = dv && (ds == ds_last) && !hold && !flush && (gov_go || seq) && (seqc == 3'd0) && !hz_q && !(ifx_q && !seq) && !trap_q;
     wire u_last = !uop_q[49];
     assign consume = issue && u_last;
     always @(posedge clk) begin
@@ -194,7 +196,7 @@ module r8064_core_min #(
 
     // ============ emissao: campos, registradores, imediato ============
     reg sw_main, sw_af;
-    wire [101:0] u = uop_q;
+    wire [105:0] u = uop_q;
     wire f_pos = u[20];
     wire [7:0] fb = is_ed ? b3 : b1;          // pagina ED: campos de registrador vem do byte modificador (b3)
     wire [2:0] rrD = f_pos ? fb[5:3] : fb[2:0];
@@ -220,7 +222,8 @@ module r8064_core_min #(
     wire [5:0] r8i = (rrD == 3'd7) ? 6'd0 : {4'd0, rrD[2:1]} + 6'd1;
     wire       r8h = u[95] && (rrD != 3'd7) && !rrD[0];
     wire [5:0] iD = u[77] ? crn : u[95] ? xsw(r8i, sw_main, sw_af, 2'd0) : u[17] ? mD : xsw(u[26:21], sw_main, sw_af, xy_db);
-    wire [5:0] iA = u[47] ? iD : u[78] ? crn : (u[18] ? mA : xsw(u[32:27], sw_main, sw_af, xy_a));   // u[47]: fonte A = destino (2 operandos)
+    wire [5:0] jui = (b2[1:0] == 2'd3) ? 6'd0 : {4'd0, b2[1:0]} + 6'd1;      // u[105]: JP USER,(uu): ED B4 BC, B5 DE, B6 HL, B7 AX
+    wire [5:0] iA = u[47] ? iD : u[78] ? crn : u[105] ? xsw(jui, sw_main, sw_af, 2'd0) : (u[18] ? mA : xsw(u[32:27], sw_main, sw_af, xy_a));   // u[47]: fonte A = destino (2 operandos)
     // u[99]: a fonte B e um registrador de 8 bits com o codigo r do Z80 (MLTxB, DIVxB)
     wire [5:0] r8bi = (rrB == 3'd7) ? 6'd0 : {4'd0, rrB[2:1]} + 6'd1;
     wire       r8bh = u[99] && (rrB != 3'd7) && !rrB[0];
@@ -230,7 +233,7 @@ module r8064_core_min #(
     wire [2:0] ccf = fb[5:3] ^ {2'b00, u[97]};                    // contraria = troca o bit 0 do codigo
     wire [3:0] ccm = (ccf == 3'd0) ? 4'b0010 : (ccf == 3'd1) ? 4'b0001 : (ccf == 3'd2) ? 4'b0100 : (ccf == 3'd3) ? 4'b0011 :
                      (ccf == 3'd4) ? 4'b0110 : (ccf == 3'd5) ? 4'b0101 : (ccf == 3'd6) ? 4'b1000 : 4'b0111;   // {condx, cond}
-    reg [101:0] u_iss;
+    reg [105:0] u_iss;
     always @* begin
         u_iss = u;
         if (u[96]) begin u_iss[14:12] = ccm[2:0]; u_iss[81] = ccm[3]; end
@@ -256,7 +259,7 @@ module r8064_core_min #(
     end
 
     // ============ banco de registradores (3 leituras: A, B e valor antigo do destino) ============
-    reg         v_xr; reg [101:0] u_xr; reg [63:0] pcn_xr, imm_xr, pc_xr; reg [5:0] a_xr, b_xr, d_xr; reg [4:0] ob3_xr; reg xyd_xr; reg [7:0] dsp_xr;
+    reg         v_xr; reg [105:0] u_xr; reg [63:0] pcn_xr, imm_xr, pc_xr; reg [5:0] a_xr, b_xr, d_xr; reg [4:0] ob3_xr; reg xyd_xr; reg [7:0] dsp_xr;
     // sob hold o estagio XR fica parado: o endereco de leitura passa a ser o dele (a_xr/b_xr/d_xr), senao a saida sincrona do banco seguiria o candidato seguinte
     wire [63:0] rf_a, rf_b, rf_d;
     wire        w_we; wire [5:0] w_addr; wire [63:0] w_data;
@@ -274,12 +277,12 @@ module r8064_core_min #(
     end
     // X2 / M / W produzem os valores a encaminhar
     reg [63:0] st_x1, old_x1;   // dado de escrita / valor antigo do destino acompanham a instrucao em X1 (antes eram sobrescritos a cada clock)
-    reg         v_x1; reg [101:0] u_x1; reg [63:0] opa_x1, opb_x1, imm_x1, pcn_x1, pc_x1; reg [5:0] d_x1;
-        reg         v_x2; reg [101:0] u_x2; reg [63:0] xa_x2, yb_x2, yy_x2, addr_x2, tgt_x2, st_x2, old_x2; reg ci_x2; reg [21:0] ctl_x2; reg [5:0] d_x2; reg [7:0] f_x2in;
-    reg         v_m;  reg [101:0] u_m;  reg [63:0] res_m, addr_m, st_m, old_m; reg [5:0] d_m; reg dn_m;
-    reg         v_w;  reg [101:0] u_w;  reg [63:0] res_w, old_w; reg [5:0] d_w;
+    reg         v_x1; reg [105:0] u_x1; reg [63:0] opa_x1, opb_x1, imm_x1, pcn_x1, pc_x1; reg [5:0] d_x1;
+        reg         v_x2; reg [105:0] u_x2; reg [63:0] xa_x2, yb_x2, yy_x2, addr_x2, tgt_x2, st_x2, old_x2; reg ci_x2; reg [21:0] ctl_x2; reg [5:0] d_x2; reg [7:0] f_x2in;
+    reg         v_m;  reg [105:0] u_m;  reg [63:0] res_m, addr_m, st_m, old_m; reg [5:0] d_m; reg dn_m;
+    reg         v_w;  reg [105:0] u_w;  reg [63:0] res_w, old_w; reg [5:0] d_w;
     // ALU em 2 estagios: A em X2 (soma baixa 32 b), B em X3 (soma alta 32 b + flags). Resultado/flags validos no estagio X3.
-    reg         v_x3; reg [101:0] u_x3; reg [63:0] addr_x3, st_x3, old_x3; reg [5:0] d_x3;
+    reg         v_x3; reg [105:0] u_x3; reg [63:0] addr_x3, st_x3, old_x3; reg [5:0] d_x3;
     wire [63:0] x3_res; wire [7:0] x3_f; wire x3_hc12; wire [1:0] x3_xa53;
     alu_core_s u_core(.clk(clk), .en(!hold), .xa(xa_x2), .yb(yb_x2), .yy(yy_x2), .ci(ci_x2), .ctl(ctl_x2), .sz(u_x2[6:5]), .fin(fl), .res(x3_res), .fout(x3_f), .xa53(x3_xa53), .hc12(x3_hc12));
     wire [63:0] m_fwd = ldval;                    // valor de carga (ou resultado) do estagio M
@@ -298,7 +301,7 @@ module r8064_core_min #(
     wire [5:0]  nx_dm  = hold ? d_m : d_x3;
     wire        nx_vw  = rst ? 1'b0 : ex_act ? 1'b1 : (v_m && !hold && !ex_take_d);
     wire        nx_w_wr = nx_vw && (ex_act ? 1'b1 : u_m[10]);
-    wire [5:0]  nx_dw  = ex_act ? ((exk == 2'd0) ? 6'd44 : (exk == 2'd1) ? 6'd43 : 6'd45) : d_m;
+    wire [5:0]  nx_dw  = ex_act ? ((exk == 2'd0) ? 6'd44 : (exk == 2'd1) ? 6'd43 : (exk == 2'd2) ? 6'd45 : 6'd50) : d_m;
     reg sm_a, sw_a, sm_b, sw_b;
     always @(posedge clk) begin
         sm_a <= nx_m_wr && (nx_dm == nx_a);
@@ -396,7 +399,7 @@ module r8064_core_min #(
     end
     // irq_arm_q: parte lenta da condicao (INT pendente, IE, atraso do EI) registrada; o atraso de 1 clock e coberto por flush_q / dv (entrada de INT e excecao) e pelo vazio do pipeline
     reg irq_arm_q; always @(posedge clk) irq_arm_q <= rst ? 1'b0 : (irq_pend && ie && !ei_cnt);
-    assign irq_take = irq_arm_q && !flush_q && pipe_empty_q && !issue_q && !dv && !seq;   // hold implica v_m (pipe_empty_q = 0)
+    assign irq_take = irq_arm_q && !flush_q && pipe_empty_q && !issue_q && !dv && !seq && !c_user;   // hold implica v_m (pipe_empty_q = 0)
     assign flush_tgt_raw = (flush_br && !ex_take) ? tgt_x2 : vec;
     // PC da proxima instrucao (arquitetural) e PC salvo na interrupcao. Num bloco repetido (LDIR...) o desvio para o proprio PC
     // deixa npc = PC da instrucao, entao a interrupcao entre iteracoes retoma exatamente a repeticao (BC/HL/DE ja atualizados).
@@ -414,9 +417,11 @@ module r8064_core_min #(
         if (rst) begin fl <= 8'd0; fl2 <= 8'd0; sw_f <= 1'b0; tz <= 1'b0; end
         else if (v_x3 && !hold) begin
             if (u_x3[46] && (!u_x3[45] || sw_f)) begin fl <= fl2; fl2 <= fl; sw_f <= u_x3[45] ? 1'b0 : ~sw_f; end
-            else if (u_x3[16]) fl <= f_new;
+            else if (u_x3[16] && !u_x3[98]) fl <= f_new;   // u[98] (MLT/DIV): as flags saem da unidade, mais abaixo
+            if (md_q && mdu_done && u_m[16] && !ex_take_m) fl <= mdu_f;      // MLT/DIV: flags quando a uop que disparou sai de M (hold = 0 neste clock)
             if (u_x3[86]) tz <= !nzres;
         end
+        else if (!rst && md_q && mdu_done && u_m[16] && !ex_take_m) fl <= mdu_f;
     end
     // X3: segunda metade da ALU (os dados abaixo apenas atravessam o estagio)
     always @(posedge clk) begin
@@ -430,8 +435,8 @@ module r8064_core_min #(
     // completo so em W; o consumidor (leitura de A/B, ou mescla do destino antigo) esperaria um valor incompleto/antigo. Bloqueia a emissao enquanto houver
     // produtor parcial para o mesmo registrador, e tambem qualquer produtor em voo quando a nova uop e parcial no mesmo destino (WAW). Registrado: uops
     // consecutivas distam >= 4 clocks, entao o atraso de 1 clock nao deixa passar hazard.
-    function pw(input [101:0] uu); pw = uu[10] && (uu[48] || (uu[6:5] != 2'd3 && !uu[67])); endfunction
-    function wr_(input [101:0] uu); wr_ = uu[10]; endfunction
+    function pw(input [105:0] uu); pw = uu[10] && (uu[48] || (uu[6:5] != 2'd3 && !uu[67])); endfunction
+    function wr_(input [105:0] uu); wr_ = uu[10]; endfunction
     wire new_part = pw(u);
     wire [5:0] ra_ = iA_q, rb_ = iB_q, rd_ = iD_q;
     wire hz = (v_xr && ((pw(u_xr) && (d_xr == ra_ || d_xr == rb_ || d_xr == rd_)) || (new_part && wr_(u_xr) && d_xr == rd_))) ||
@@ -493,7 +498,7 @@ module r8064_core_min #(
     // ---- multiplicacao e divisao (u[98]): mul_unit / div_unit do modulo 03. Campo alu da uop: [4] = guarda a parte alta do dividendo (operando A);
     //      [3] = le um resultado ja pronto ([1:0]: 0 baixo/quociente, 1 alto/resto, 2 produto[31:16], 3 {resto32, quociente32});
     //      senao DISPARA: [1] divisao, [0] com sinal; tamanho = sz. A uop que dispara nao escreve: ela espera em M (hold) ate a unidade terminar.
-    reg  [63:0] mdu_a, mdu_b, mdu_hi, mdu_r0, mdu_r1; reg [1:0] mdu_sz; reg mdu_sgn, mdu_isdiv, mdu_done, mul_go, div_go, md_q;
+    reg  [63:0] mdu_a, mdu_b, mdu_hi, mdu_r0, mdu_r1; reg [1:0] mdu_sz; reg mdu_sgn, mdu_isdiv, mul_go, div_go;
     wire mul_rdy, mul_ov, div_busy, div_dn, div_err; wire [127:0] mul_p; wire [63:0] div_q, div_r;
     mul_unit u_mul(.clk(clk), .rst(rst), .in_valid(mul_go), .sz(mdu_sz), .sgn(mdu_sgn), .a(mdu_a), .b(mdu_b), .ready(mul_rdy), .out_valid(mul_ov), .prod(mul_p));
     div_unit u_div(.clk(clk), .rst(rst), .start(div_go), .sz(mdu_sz), .sgn(mdu_sgn), .hi(mdu_hi), .lo(mdu_a), .d(mdu_b), .busy(div_busy), .done(div_dn), .q(div_q), .r(div_r), .err(div_err));
@@ -509,12 +514,27 @@ module r8064_core_min #(
                 end
             end
             if (mdu_isdiv ? div_dn : mul_ov) begin
-                mdu_done <= 1'b1;
-                mdu_r0 <= mdu_isdiv ? div_q : mul_p[63:0]; mdu_r1 <= mdu_isdiv ? div_r : mul_p[127:64];
+                mdu_done <= 1'b1; mdu_err <= mdu_isdiv && div_err;
+                // erro de divisao (divisor zero ou quociente fora da faixa): quociente = tudo 1, resto = parte baixa do dividendo (usados so se a excecao estiver desligada)
+                mdu_r0 <= !mdu_isdiv ? mul_p[63:0] : div_err ? 64'hFFFF_FFFF_FFFF_FFFF : div_q;
+                mdu_r1 <= !mdu_isdiv ? mul_p[127:64] : div_err ? mdu_a : div_r;
             end
             if (md_q && mdu_done) mdu_done <= 1'b0;      // a uop que disparou sai de M neste clock
         end
     end
+    // flags de MLT/DIV (gravadas se a uop que dispara tiver fwe): Z = produto/quociente zero; C = MLT: a metade alta e significativa (sem sinal: != 0, como no R800;
+    // com sinal: != extensao de sinal da baixa) | DIV: erro; S = sinal do resultado (so nas formas com sinal); PV = C nas formas com sinal e na divisao; H e N mantidos; X = Y = 0.
+    reg mdu_err;
+    wire [63:0] mdu_m  = (mdu_sz == 2'd0) ? 64'hFF : (mdu_sz == 2'd1) ? 64'hFFFF : (mdu_sz == 2'd2) ? 64'hFFFF_FFFF : 64'hFFFF_FFFF_FFFF_FFFF;
+    wire [63:0] mdu_lo = mdu_r0 & mdu_m;
+    wire [63:0] mdu_hi2 = (mdu_sz == 2'd0) ? {56'd0, mdu_r0[15:8]} : (mdu_sz == 2'd1) ? {48'd0, mdu_r0[31:16]} : (mdu_sz == 2'd2) ? {32'd0, mdu_r0[63:32]} : mdu_r1;
+    wire mdu_los = (mdu_sz == 2'd0) ? mdu_r0[7] : (mdu_sz == 2'd1) ? mdu_r0[15] : (mdu_sz == 2'd2) ? mdu_r0[31] : mdu_r0[63];
+    wire mdu_his = (mdu_sz == 2'd0) ? mdu_r0[15] : (mdu_sz == 2'd1) ? mdu_r0[31] : (mdu_sz == 2'd2) ? mdu_r0[63] : mdu_r1[63];
+    wire mdu_c = mdu_isdiv ? mdu_err : mdu_sgn ? (mdu_hi2 != (mdu_los ? mdu_m : 64'd0)) : (mdu_hi2 != 64'd0);
+    wire mdu_z = mdu_isdiv ? (!mdu_err && mdu_lo == 64'd0) : (mdu_lo == 64'd0 && mdu_hi2 == 64'd0);
+    wire mdu_s = mdu_sgn && (mdu_isdiv ? (!mdu_err && mdu_los) : mdu_his);
+    assign mdu_f = {mdu_s, mdu_z, 1'b0, fl[4], 1'b0, (mdu_sgn | mdu_isdiv) & mdu_c, fl[1], mdu_c};
+    assign ex_take_m = md_q && mdu_done && mdu_err && c_te;      // erro de divisao com a excecao ligada (CR14 bit 2): a instrucao e abortada, causa 6
     wire [63:0] mdu_out = (u_m[1:0] == 2'd0) ? mdu_r0 : (u_m[1:0] == 2'd1) ? mdu_r1 : (u_m[1:0] == 2'd2) ? {48'd0, mdu_r0[31:16]} : {mdu_r1[31:0], mdu_r0[31:0]};
     assign ldval = u_m[8] ? ldval_r : u_m[50] ? {56'd0, io_rdata} : u_m[98] ? mdu_out : res_m;
     assign hold = (m_mem && !(d_ack && (!xing || beat))) || (md_q && !mdu_done);
@@ -540,8 +560,10 @@ module r8064_core_min #(
     always @(posedge clk) begin
         if (rst) v_w <= 0;
         else if (ex_act) begin   // injecao dos CR de excecao (43 causa, 44 endereco, 45 EPC) pelo estagio W; o pipeline esta vazio
-            v_w <= 1'b1; u_w <= 102'h400; d_w <= (exk == 2'd0) ? 6'd44 : (exk == 2'd1) ? 6'd43 : 6'd45;   // k0: endereco (addr_m ainda vale neste clock), k1: causa, k2: EPC (pc_last/dpc ficam estaveis)
-            res_w <= (exk == 2'd0) ? (ex_isd ? addr_m : ifa) : (exk == 2'd1) ? {59'd0, ex_we, ex_isd, ex_cs} : (ex_isd ? pc_last : dpc); wsz_w <= 3'd4; oldz_w <= 64'd0;
+            v_w <= 1'b1; u_w <= 106'h400; d_w <= (exk == 2'd0) ? 6'd44 : (exk == 2'd1) ? 6'd43 : (exk == 2'd2) ? 6'd45 : 6'd50;   // k0: endereco (addr_m ainda vale neste clock), k1: causa, k2: EPC (pc_last/dpc ficam estaveis)
+            res_w <= (exk == 2'd3) ? {62'd0, ex_pu, 1'b0} :
+                     ex_ovr ? ((exk == 2'd0) ? ex_aux : (exk == 2'd1) ? {59'd0, ex_cau} : ex_epcv) :
+                     (exk == 2'd0) ? (ex_isd ? addr_m : ifa) : (exk == 2'd1) ? {59'd0, ex_we, ex_isd, ex_cs} : (ex_isd ? pc_last : dpc); wsz_w <= 3'd4; oldz_w <= 64'd0;
         end else begin
             v_w <= v_m && !hold && !ex_take_d; u_w <= u_m; d_w <= d_m; res_w <= ldval; old_w <= old_m; wsz_w <= wsz_m; oldz_w <= u_m[67] ? 64'd0 : old_m;
         end
@@ -553,25 +575,46 @@ module r8064_core_min #(
     //    (imediato constante immc) e so depois atualizam SP; POP/RET/LDIR/CPIR/OUTI (e IM2) leem antes de alterar registradores (TMP nao e visivel). NAO reiniciaveis: INI/INIR/IND/INDR (a leitura da porta ja ocorreu).
     //    Falta durante a entrada de INT: IFF2 := 1 e a INT volta a ser pedida (RETN restaura IFF1 e a INT e aceita de novo).
     // I: a palavra buscada deu falta; a excecao e tomada na fronteira de instrucao (pipeline vazio) quando a instrucao candidata fica a <= 12 bytes da palavra (EPC = dpc).
-    assign ex_take_d = m_mem && d_ack && d_flt;
-    wire ex_take_i = dv && !seq && ifx_q && pipe_empty_q && !issue_q && !m_mem && !ex_take_d;
-    assign ex_take = ex_take_d | ex_take_i;
+    assign ex_take_d = (m_mem && d_ack && d_flt) || ex_take_m;
+    wire ex_take_i = dv && !seq && ifx_q && !ex_act && pipe_empty_q && !issue_q && !m_mem && !ex_take_d;
+    // TRAPS tomados na fronteira de instrucao, no lugar de executar a candidata (uop_q ja esta estavel varios clocks antes de ds_last):
+    //   u[102] instrucao privilegiada em modo usuario (causa 7, aux 2) | u[103] sem microcodigo ou ED ilegal, se CR14 bit 2 = 1 (causa 7, aux 1 / 0) | u[104] SCALL (causa 5, aux = n)
+    wire t_priv = u[102] && c_user, t_unimp = (u[103] || en_ill) && c_te, t_scall = u[104];
+    always @(posedge clk) trap_q <= !rst && !flush && dv && !seq && !irq_ent && (t_priv || t_unimp || t_scall);
+    wire ex_take_t = trap_q && dv && !seq && (ds == ds_last) && gov_go && !ex_act && pipe_empty_q && !issue_q && !m_mem && !md_q && !ex_take_d && !ex_take_i;
+    // interrupcao aceita em MODO USUARIO: entra como excecao (causa 0, EPC = proxima instrucao), para o tratador rodar em modo supervisor e voltar com SYSRT
+    wire irq_trap = irq_arm_q && !ex_act && !flush_q && pipe_empty_q && !issue_q && !dv && !seq && c_user && !ex_take_d;
+    assign ex_take = ex_take_d | ex_take_i | ex_take_t | irq_trap;
+    // valores gravados nos CR pela entrada: k0 CR12 (endereco/auxiliar), k1 CR11 (causa), k2 CR13 (EPC), k3 CR18 (modo: {usuario anterior, 0})
+    reg ex_ovr; reg [63:0] ex_aux, ex_epcv; reg [4:0] ex_cau; reg ex_pu;
     always @(posedge clk) begin
         ifd_q <= ifa[7:0] - dpc[7:0];   // a fila tem <= 40 bytes: a distancia cabe em 8 bits (negativa = candidata ja dentro da palavra)
         ifx_q <= ifp && (ifd_q <= 8'd12 || ifd_q >= 8'd224);
         if (rst) begin ex_act <= 1'b0; exk <= 2'd0; end
         else if (ex_take) begin
-            ex_act <= 1'b1; exk <= 2'd0; ex_isd <= ex_take_d; ex_we <= u_m[9]; ex_cs <= ex_take_d ? d_cs : ifc;
-        end else if (ex_act) begin exk <= exk + 2'd1; if (exk == 2'd2) ex_act <= 1'b0; end
+            ex_act <= 1'b1; exk <= 2'd0; ex_isd <= ex_take_d; ex_we <= u_m[9]; ex_cs <= ex_take_d ? d_cs : ifc; ex_pu <= c_user;
+            ex_ovr <= ex_take_m || (!ex_take_d && !ex_take_i);
+            if (ex_take_m)                   begin ex_cau <= 5'd6; ex_aux <= 64'd0; ex_epcv <= pc_last; end
+            else if (!ex_take_d && !ex_take_i && ex_take_t) begin
+                ex_cau  <= t_scall && !t_priv && !t_unimp ? 5'd5 : 5'd7;
+                ex_aux  <= t_priv ? 64'd2 : t_unimp ? {63'd0, !en_ill} : {56'd0, b3};
+                ex_epcv <= (t_scall && !t_priv && !t_unimp) ? dpc + {60'd0, clen} : dpc;
+            end else                         begin ex_cau <= 5'd0; ex_aux <= 64'd0; ex_epcv <= npc; end
+        end else if (ex_act) begin exk <= exk + 2'd1; if (exk == 2'd3) ex_act <= 1'b0; end
     end
     // CR46 = {asid[15:8], user[1], en[0]} | CR47 = raiz (PPN, 20 b) | CR48 = escrita -> descarga da TLB por VA | CR49 = escrita: b0 tudo, b1 por ASID ([15:8]), b2 invalida caches
-    reg c_en, c_user; reg [7:0] c_asid; reg [19:0] c_root;
+    // MODO (ver MODELO_PRIVILEGIO.txt): CR18 (indice 50) = {usuario anterior [1], usuario [0]}. A entrada em qualquer excecao faz anterior := atual, atual := supervisor
+    // (ja no clock da excecao, para a busca do tratador usar as permissoes de supervisor); SYSRT desloca CR18 um bit para a direita.
+    // CR14 bit 2 = TE: liga as excecoes de instrucao nao implementada / ilegal e de erro de divisao. CR14 bit 1 (usuario) continua aceito na escrita, por compatibilidade.
+    reg [7:0] c_asid; reg [19:0] c_root;
     wire cw = v_w && u_w[10];
     always @(posedge clk) begin
-        if (rst) begin c_en <= 1'b0; c_user <= 1'b0; c_asid <= 8'd0; c_root <= 20'd0; end
+        if (rst) begin c_en <= 1'b0; c_user <= 1'b0; c_te <= 1'b0; c_asid <= 8'd0; c_root <= 20'd0; end
         else begin
-            if (cw && d_w == 6'd46) begin c_en <= res_w[0]; c_user <= res_w[1]; c_asid <= res_w[15:8]; end
+            if (cw && d_w == 6'd46) begin c_en <= res_w[0]; c_user <= res_w[1]; c_te <= res_w[2]; c_asid <= res_w[15:8]; end
             if (cw && d_w == 6'd47) c_root <= res_w[19:0];
+            if (cw && d_w == 6'd50) c_user <= res_w[0];
+            if (ex_take) c_user <= 1'b0;
         end
     end
     assign cr_mmu_en = c_en; assign cr_mmu_user = c_user; assign cr_asid = c_asid; assign cr_root = c_root;
@@ -595,7 +638,7 @@ module r8064_core_min #(
             if (v_w && u_w[76:74] == 3'd4) im <= 2'd0;
             if (v_w && u_w[76:74] == 3'd5) im <= 2'd1;
             if (v_w && u_w[76:74] == 3'd6) im <= 2'd2;
-            if (irq_take) irq_pend <= 1'b0;
+            if (irq_take || irq_trap) irq_pend <= 1'b0;
             else if (irq || (tmr == tcmp)) irq_pend <= 1'b1;   // INT e por nivel: se continuar ativa, volta a pedir assim que IFF1 permitir
             if (ex_take_d && irq_ent) irq_pend <= 1'b1;         // a entrada da INT foi abortada por falta: pede de novo (volta a ser aceita apos RETN)
             if (ex_take) begin iff2 <= (ex_take_d && irq_ent) ? 1'b1 : ie; ie <= 1'b0; end   // falta na entrada de INT (empilhar PC/ler vetor): o programa tinha IFF1=1, RETN o restaura      // excecao: IFF1 salvo em IFF2 (RETN restaura), interrupcoes desabilitadas

@@ -29,6 +29,6 @@ P+=[0xED,0x2E,0x00,0x00]                           # DJNZW +0
 P+=[0x18,0xFE]                                     # JR $
 m=P+[0]*(65536-len(P)); m[sub:sub+5]=[0xED,0x3E,0x01,0xED,0x05]   # 0100h: INCW BC ; RETQ
 open('r64_mem.hex','w').write('\n'.join('%02x'%b for b in m)+'\n')
-BCi=(BC&~0xFFFF)|((BC+1)&0xFFFF); BCs=(BCi<<1)&M; B=((BCs>>8)-1)&255; BCf=(BCs&~0xFF00)|(B<<8)
+BCi=(BC&~0xFFFF)|((BC+1)&0xFFFF); BCs=(BCi<<1)&M; BCf=(BCs&~0xFFFF)|((BCs-1)&0xFFFF)   # DJNZW: contador = BC (16 bits)
 exp=[0x9000|1<<20, BCf, BC&~2, 0, 0x9000, BCs&0xFFFF, 0x8000, BC, BC]
 open('r64_esperado.hex','w').write('\n'.join('%016x'%v for v in exp)+'\n')

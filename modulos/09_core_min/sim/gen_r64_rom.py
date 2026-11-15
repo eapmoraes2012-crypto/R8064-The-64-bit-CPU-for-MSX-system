@@ -7,9 +7,12 @@
 #   [97] ccinv (condicao contraria: desvio de pulo de CALL cc / RET cc).  immsel com isz = 1 / 2: numero do bit em b3[6:3] / b3[7:3].
 #   [98] mdu (multiplicacao/divisao; o campo alu vira o comando: 0-3 dispara MULU/MULS/DIVU/DIVS, 8+n le o resultado n, 16 guarda a parte alta do dividendo),
 #   [99] r8b (fonte B = registrador de 8 bits do Z80), [100] bb2 (campo da fonte B no 2o byte), [101] crk (LDCR/STCR: CR em b3[7:3]).
-# FORA: E/S de 16/32/64 bits (INW/OUTW...), FPU, PROT, JP USER, RESET/STDBY/WAKE, SCALL/SYSRT, LDCTX/SVCTX. FENCE e ISYNC sao NOP (uop 0).
+#   [102] priv (instrucao privilegiada: excecao em modo usuario), [103] unimp (sem microcodigo: excecao se CR14 bit 2 = 1, senao NOP),
+#   [104] scall (a instrucao e uma chamada de sistema: sempre excecao), [105] ju (JP USER: registrador pelos 2 bits baixos do 2o byte).
+# Modelo de privilegio e de excecao: ../MODELO_PRIVILEGIO.txt.
+# SEM microcodigo (marcadas unimp): FPU (45 instrucoes) e a E/S de 16/32/64 bits (INW/OUTW...). FENCE, ISYNC e WAKE sao NOP.
 from gen_z80_rom import POS, ADD, ADC, SUB, SBC, AND, OR, XOR, CP, INC, DEC, SHL, SHR, SAR, ROL, ROR, SP, TMP, ZERO
-POS.update(r8=95, ccf=96, ccinv=97, mdu=98, r8b=99, bb2=100, crk=101)
+POS.update(r8=95, ccf=96, ccinv=97, mdu=98, r8b=99, bb2=100, crk=101, priv=102, unimp=103, scall=104, ju=105)
 IX, IY, BC, AX, DE, HL, T2 = 9, 10, 1, 0, 2, 3, 12
 def uop(**k):
     v = 0
@@ -74,7 +77,7 @@ def aplica(uops, livre):
     CCF = dict(ccf=1)
     chain(134, [dict(br=1, cond=0, rel=1, ioff=2, isz=1, sext=1)])                                                # JRW nn
     chain(133, [dict(br=1, rel=1, ioff=3, isz=1, sext=1, **CCF)])                                                 # JRW cc, nn
-    chain(132, [dict(alu=DEC, wren=1, dI=BC, aD=1, ashr8=1, hb=1, sz=0, tzw=1), dict(br=1, cond=2, condx=1, rel=1, ioff=2, isz=1, sext=1)])   # DJNZW nn (B, como DJNZ)
+    chain(132, [dict(alu=DEC, wren=1, dI=BC, aD=1, sz=1, tzw=1), dict(br=1, cond=2, condx=1, rel=1, ioff=2, isz=1, sext=1)])   # DJNZW nn: BC (16 bits) := BC - 1 sem flags; salta se BC != 0
     chain(138, [dict(br=1, cond=0, tabs=1, aI=ZERO, ioff=2, isz=2)])                                              # JPE nnnn
     chain(142, [dict(br=1, cond=0, tabs=1, aI=ZERO, ioff=2, isz=3)])                                              # JPQ nnnnnnnn
     chain(137, [dict(br=1, tabs=1, aI=ZERO, ioff=3, isz=2, **CCF)])                                               # JPE cc, nnnn
@@ -97,7 +100,7 @@ def aplica(uops, livre):
         chain(ret,   rseq)                                                                                        # RETx
         chain(retcc, [SKIP] + rseq)                                                                               # RETx cc
     # ---- multiplicacao (MLTUB do R800: ED C1..F9; MLTUW HL,BC / HL,SP: ED C3 / F3; demais: tt 001 rrr) e divisao; nao alteram flags ----
-    def START(op, z, **k): return dict(mdu=1, alu=op, sz=z, **k)                       # op: 0 MULU, 1 MULS, 2 DIVU, 3 DIVS
+    def START(op, z, **k): return dict(mdu=1, alu=op, sz=z, fwe=1, **k)                    # op: 0 MULU, 1 MULS, 2 DIVU, 3 DIVS
     def READ(sel, d, z, **k): return dict(mdu=1, alu=8 | sel, wren=1, dI=d, sz=z, **k)  # sel: 0 baixo/quociente, 1 alto/resto, 2 produto[31:16], 3 {resto32, quociente32}
     def SETHI(a, z, **k): return dict(mdu=1, alu=16, aI=a, sz=z, **k)
     chain(25, [START(0, 0, aI=AX, r8b=1, bb2=1), READ(0, HL, 1)])                                                 # MLTUB A,u    -> HL = A * u
@@ -114,13 +117,39 @@ def aplica(uops, livre):
         chain(ie, [SETHI(AX, 2), START(2 | sg, 2, aI=AX, bF=1), READ(3, AX, 3)])                                  # DIVxE QA     -> QA = {resto, quociente}
         chain(iq, [SETHI(DE, 3), START(2 | sg, 3, aI=AX, bF=1), READ(0, AX, 3), READ(1, DE, 3)])                  # DIVxQ QDE:QA -> QA = quociente, QDE = resto
     # ---- registradores de controle, TLB, troca e comparacao-e-troca ----
-    chain(180, [dict(aF=1, fpos=1, crd=1, crk=1, wren=1, sz=3, **MOV)])                                           # LDCR kk,rr : CR[kk] := rr
-    chain(181, [dict(cra=1, crk=1, dF=1, fpos=0, wren=1, sz=3, **MOV)])                                           # STCR rr,kk : rr := CR[kk]
-    chain(186, [dict(alu=ADD, aI=ZERO, bF=1, bb2=1, wren=1, dI=48, sz=3)])                                        # PGINV (uu) : descarga da TLB pelo endereco (= escrever CR16)
+    chain(180, [dict(aF=1, fpos=1, crd=1, crk=1, wren=1, sz=3, priv=1, **MOV)])                                           # LDCR kk,rr : CR[kk] := rr
+    chain(181, [dict(cra=1, crk=1, dF=1, fpos=0, wren=1, sz=3, priv=1, **MOV)])                                           # STCR rr,kk : rr := CR[kk]
+    chain(186, [dict(alu=ADD, aI=ZERO, bF=1, bb2=1, wren=1, dI=48, sz=3, priv=1)])                                        # PGINV (uu) : descarga da TLB pelo endereco (= escrever CR16)
     for z, (ix, ic) in ((2, (187, 189)), (3, (188, 190))):
         chain(ix, [dict(aF=1, fpos=0, wren=1, dI=T2, sz=3, **MOV), dict(rd=1, aF=1, fpos=1, immz=1, wren=1, dI=TMP, sz=z, zx=1),   # XCHGx rr,(rr')
                    dict(wr=1, aF=1, fpos=1, immz=1, bI=T2, sz=z), dict(aI=TMP, wren=1, sz=z, **MOV, **D1)])
         chain(ic, [dict(rd=1, aF=1, fpos=0, immz=1, wren=1, dI=TMP, sz=z, zx=1), dict(alu=CP, aI=AX, bI=TMP, fwe=1, sz=z),         # CASx (rr'),rr: se (rr') == A:
                    dict(aI=TMP, wren=1, dI=AX, sz=z, **MOV), dict(br=1, rel=1, immz=1, cond=2, altinv=1),                         #   (rr') := rr, Z = 1 ; senao A := (rr'), Z = 0
                    dict(wr=1, aF=1, fpos=0, immz=1, bF=1, sz=z)])
+    # ---- sistema (MODELO_PRIVILEGIO.txt). CR: 10 = indice 42 (IE), 13 = 45 (EPC), 14 = 46 (MMU/TE), 18 = 50 (modo) ----
+    CR10, CR13, CR14, CR18 = 42, 45, 46, 50
+    chain(292, [dict(alu=ADD, use_imm=1, immz=1, wren=1, dI=AX, cra=1, sz=3, priv=1)])                            # MFCR n (ED 0A n): AX := CR[n]   (agora privilegiada)
+    chain(293, [dict(alu=ADD, use_imm=1, immz=1, wren=1, crd=1, aI=AX, sz=3, priv=1)])                            # MTCR n (ED 0C n): CR[n] := AX
+    chain(182, [dict(scall=1)])                                                                                   # SCALL n: excecao causa 5, CR12 = n, EPC = instrucao seguinte
+    chain(183, [dict(alu=SHR, aI=CR18, wren=1, dI=CR18, sz=3, priv=1), dict(br=1, cond=0, aI=CR13, immz=1, misc=3)])   # SYSRT: modo := anterior; IFF1 := IFF2; PC := EPC
+    chain(175, [dict(alu=INC, aI=ZERO, wren=1, dI=CR18, sz=3, priv=1), dict(br=1, cond=0, ju=1, immz=1)])         # JP USER,(uu): modo := usuario; PC := uu
+    chain(176, [dict(alu=AND, use_imm=1, immsel=3, ioff=1, aI=CR14, wren=1, dI=TMP, sz=3, priv=1),                # PROT 0 / PROT 1 (ED 00 / ED 01): desliga / liga a MMU
+                dict(alu=ADD, use_imm=1, aI=ZERO, ioff=1, isz=0, wren=1, dI=T2, sz=3), dict(alu=OR, aI=TMP, bI=T2, wren=1, dI=CR14, sz=3)])   #   (CR14 bit 0 := bit 0 do opcode)
+    Z0 = lambda d: dict(aI=ZERO, wren=1, dI=d, sz=3, **MOV)
+    chain(177, [dict(priv=1, **Z0(CR14)), Z0(CR18), Z0(CR10), dict(br=1, cond=0, tabs=1, aI=ZERO, immz=1)])       # RESET: MMU desligada, supervisor, IE = 0, PC := 0
+    chain(178, [dict(br=1, cond=0, tself=1, aI=ZERO, priv=1)])                                                    # STDBY: espera interrupcao (repete a si mesma, como HALT)
+    chain(179, [dict(priv=1)])                                                                                    # WAKE: NOP (nucleo unico)
+    # contexto: bloco de 16 palavras de 8 bytes em (uu): AX BC DE HL IX IY SP F N0..N7 (os registradores visiveis; o grupo alternativo e EXX nao entram)
+    CTX = [AX, BC, DE, HL, IX, IY, SP, None] + list(range(16, 24))
+    PTR = dict(alu=ADD, aI=ZERO, bF=1, wren=1, dI=TMP, sz=3)                                                      # TMP := uu (b3[2:0])
+    NEXT = dict(alu=SUB, use_imm=1, immc=1, isz=3, wren=1, dI=TMP, aI=TMP, sz=3)                                  # TMP := TMP + 8
+    sv = [PTR]; ld = [PTR]
+    for k, rg in enumerate(CTX):
+        sv.append(dict(wr=1, aI=TMP, immz=1, sz=3, **(dict(bfl=1) if rg is None else dict(bI=rg))))
+        if rg is None: ld += [dict(rd=1, aI=TMP, immz=1, wren=1, dI=T2, sz=3), dict(aI=T2, sz=0, fwe=1, fop=6, **MOV)]
+        else: ld.append(dict(rd=1, aI=TMP, immz=1, wren=1, dI=rg, sz=3))
+        if k < len(CTX) - 1: sv.append(NEXT); ld.append(NEXT)
+    chain(191, sv)                                                                                                # SVCTX (uu)
+    chain(192, ld)                                                                                                # LDCTX (uu)
+    for i in list(range(40, 67)) + list(range(193, 211)) + [163, 164, 165, 166, 167, 168]: chain(i, [dict(unimp=1)])   # FPU e E/S larga: sem microcodigo
     return nextfree[0]
