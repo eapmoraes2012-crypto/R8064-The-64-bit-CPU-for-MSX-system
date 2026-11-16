@@ -9,6 +9,7 @@
 import random, sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '08_fpu', 'ref'))
 import fpref                                    # modelo exato da aritmetica de 80 bits (modulo 08)
+import gen_fpu_prog as GP                       # os mesmos passos e constantes que estao no fpu_unit.v (transcendentais e restos)
 seed = int(sys.argv[1]); pref = sys.argv[2]; N = int(sys.argv[3]) if len(sys.argv) > 3 else 3000
 rnd = random.Random(seed)
 M64 = (1 << 64) - 1
@@ -21,7 +22,7 @@ st = {'f': 0, 'pc': 0}
 mem = bytearray(65536)
 trace = []
 INDEF = fpref.INDEF
-fp = dict(st=[0] * 8, wr=[False] * 8, emp=[True] * 8, top=0, exc=0, sf=0, c3=0, c2=0, c1=0, c0=0)
+fp = dict(st=[0] * 8, wr=[True] * 8, tmp=[0] * 16, emp=[True] * 8, top=0, exc=0, sf=0, c3=0, c2=0, c1=0, c0=0)
 def par8(v): return bin(v & 0xFF).count('1') % 2 == 0
 def msk(n): return (1 << n) - 1
 def wr_reg(name, val, n):                       # escreve n bits, preserva os de cima
@@ -382,10 +383,77 @@ def t_fstore():
         p = rnd.random() < .5; wrm(a, f_alu(code), nb)                                                        # FST64/FSP64, FST32/FSP32, FIST/FISTP
         if p: f_pop()
         seq(ops[p])
+def f_prog(code):                                # programas internos: 4 FSIN 5 FCOS 6 FSINC 7 FTAN 8 FLN 9 FYL2X 10 FYL2P 11 FREM 12 FREM1
+    t = fp['top']; ib = (t + 1) & 7; ea, eb = fp['emp'][t], fp['emp'][ib]; p2 = code >= 9; pst1 = code in (9, 10); A = fp['st'][t]
+    badlog = code in (8, 9) and (A >> 79 or (A >> 64) & 0x7FFF in (0, 0x7FFF) or not (A >> 63) & 1)
+    if ea or (p2 and eb) or badlog:
+        fp['exc'] |= 1; fp['c1'] = 0
+        if ea or (p2 and eb): fp['sf'] = 1
+        f_set(ib if pst1 else t, INDEF)
+        if pst1: f_pop()
+        return
+    tmp = fp['tmp']; var = code & 3; q = lc = cidx = dq = 0
+    rd = lambda x: fp['st'][(fp['top'] + x - 16) & 7] if x >= 16 else tmp[x]
+    def wrr(x, v):
+        if x >= 16: f_set(fp['top'] + x - 16, v)
+        else: tmp[x] = v
+    pc = GP.ENTRY['trig' if code <= 7 else {8: 'fln', 9: 'fyl2x', 10: 'fyl2p', 11: 'frem', 12: 'frem1'}[code]]
+    while True:
+        p = GP.PROG[pc]; k = p['k']; pc += 1
+        if k == 0:
+            Bv = GP.CONST[cidx] if p['bsel'] == 2 else GP.CONST[p['b']] if p['bsel'] == 1 else rd(p['b'] & 31)
+            res, fl, up, cc = fpref.alu(p['aop'], dq if p['aop'] == 6 else rd(p['a']), Bv, p['rc'], 3)
+            fp['exc'] |= fl; fp['c1'] = int(bool(up))
+            if p['q']: q = res & 3
+            else: wrr(p['dst'], res)
+            if p['bsel'] == 2: cidx -= 1
+        elif k == 1:
+            wrr(p['dst'], GP.CONST[cidx if p['bsel'] == 2 else p['b']])
+            if p['bsel'] == 2: cidx -= 1
+        elif k == 2: v = rd(p['a']); wrr(p['dst'], 0x3FFF << 64 | v & M64); dq = (((v >> 64) & 0x7FFF) - 16383) & M64
+        elif k == 3:
+            c = p['b'] & 1; src = tmp[13] if c ^ (q & 1) else tmp[12]; neg = ((q >> 1) ^ (q & 1)) & 1 if c else (q >> 1) & 1; wrr(p['dst'], src ^ neg << 79)
+        elif k == 4: f_push(rd(p['a']))
+        elif k == 5:
+            if lc: lc -= 1; pc = p['b']
+        elif k == 6: lc = p['a']; cidx = p['b']
+        elif k == 8: pc += 4 * var
+        else:
+            if p['a'] & 1: f_pop()
+            return
+def fnum(lo, hi):                               # normal positivo com expoente em [lo, hi)
+    return (16383 + rnd.randrange(lo, hi)) << 64 | 1 << 63 | rnd.getrandbits(63)
+def fput(v): a = faddr(); poke(a, v, 10); fhl(a); fp['c1'] = 0; f_push(v); seq([0xED, 0x85])                    # FLD80 de um valor escolhido
+def t_ftrans():
+    nfp['trans'] = nfp.get('trans', 0) + 1
+    k = rnd.randrange(9); sg = rnd.getrandbits(1) << 79; esp = rnd.random() < .12                             # esp: usa o que estiver na pilha (vazios, NaN, ...)
+    if not esp:
+        if k < 4: fput(sg | fnum(-20, 8))                                                                     # angulo
+        elif k == 4: fput(fnum(-40, 40))                                                                      # FLN x
+        elif k == 5: fput(sg | fnum(-10, 10)); fput(fnum(-40, 40))                                            # FYL2X: y, x
+        elif k == 6: fput(sg | fnum(-10, 10)); fput(sg ^ (rnd.getrandbits(1) << 79) | fnum(-30, -2))          # FYL2P: y, x pequeno
+        else: fput(sg | fnum(-8, 8)); fput(fnum(-8, 30) | rnd.getrandbits(1) << 79)                           # FREM: divisor, dividendo
+    f_prog([4, 5, 6, 7, 8, 9, 10, 11, 12][k])
+    seq([[0xED, 0x97], [0xED, 0x81], [0xED, 0x10], [0xED, 0x15], [0xED, 0x93], [0xED, 0x17], [0xED, 0x16], [0xED, 0x95], [0xED, 0x96]][k])
+    if rnd.random() < .5: t_fstore()
+def t_fsave():                                  # FSAVE (uu) / FRSTR (uu): 8 bytes {vazios, palavra de estado} + 8 registradores fisicos de 10 bytes
+    nfp['save'] = nfp.get('save', 0) + 1
+    u = rnd.choice([0, 2, 4, 7]); ldq(u, rnd.randrange(0x8000, 0xFF80) | (rnd.getrandbits(48) << 16 if rnd.random() < .3 else 0)); a = r[REG[u]]
+    if rnd.random() < .6:
+        wrm(a, femp() << 16 | fsw(), 64)
+        for i in range(8): wrm(a + 8 + 10 * i, fp['st'][i], 80)
+        seq([0xED, 0xAF, 0x08 | u])
+    else:
+        v = rdm(a, 64)
+        fp.update(exc=v & 63, sf=v >> 6 & 1, c0=v >> 8 & 1, c1=v >> 9 & 1, c2=v >> 10 & 1, top=v >> 11 & 7, c3=v >> 14 & 1, emp=[bool(v >> (16 + i) & 1) for i in range(8)])
+        for i in range(8): fp['st'][i] = rdm(a + 8 + 10 * i, 80)
+        seq([0xED, 0xAF, 0x48 | u])
 def t_fpu():
     d = fdepth(); k = rnd.random()
     if d < 2 and k < .7: t_fload()
     elif d >= 6 and k < .6: t_fstore()
+    elif k > .93: t_fsave()
+    elif k > .80 and d <= 5: t_ftrans()
     else: rnd.choice([t_fload, t_farith, t_farith, t_farith, t_fstack, t_fstore])()
 # ---------- sistema ----------
 cr = [0] * 32                                   # CR0-CR7 livres; 9 vetor, 11 causa, 12 auxiliar, 13 EPC, 14 {TE [2], MMU [0]}, 18 modo {anterior [1], usuario [0]}
@@ -398,7 +466,7 @@ def t_cr():
     else: r['AX'] = cr[k]; seq([0xED, 0x0A, k])                                                              # MFCR n
 def t_nop2():                                   # FENCE, ISYNC, ED ilegal, PGINV, WAKE, FLUSH (TLB inteira + pipeline: sem efeito visivel aqui), FPU e E/S larga (sem microcodigo; com TE = 0 sao NOP), PROT 0
     if rnd.random() < .15: cr[14] &= ~1; seq([0xED, 0x00]); return
-    seq(rnd.choice([[0xED, 0xA5], [0xED, 0xA6], [0xED, 0x08], [0xED, 0x0F], [0xED, 0xC4], [0xED, 0xFC], [0xED, 0x23], [0xED, 0x94], [0xED, 0x81], [0xED, 0x17], [0xED, 0x27, 0x01], [0xED, 0xAF, 0x08]]))
+    seq(rnd.choice([[0xED, 0xA5], [0xED, 0xA6], [0xED, 0x08], [0xED, 0x0F], [0xED, 0xC4], [0xED, 0xFC], [0xED, 0x23], [0xED, 0x94], [0xED, 0x27, 0x01]]))
 CTXR = ['AX', 'BC', 'DE', 'HL', 'IX', 'IY', 'SP']
 def t_ctx():                                    # SVCTX (uu) / LDCTX (uu): 16 palavras de 8 bytes: AX BC DE HL IX IY SP F N0..N7
     u = rnd.choice([0, 2, 4, 7]); ldq(u, rnd.randrange(0x8000, 0xFF00) & ~7 | (rnd.getrandbits(48) << 16 if rnd.random() < .3 else 0)); a = r[REG[u]]
@@ -440,7 +508,7 @@ def one_trap(H, user, te):                      # sorteia e monta UMA instrucao 
     if k == 'scall': n = rnd.getrandbits(8); trap([0xED, 0x22, n], 5, n, code[0] + 3, H); return 5, n
     if k == 'priv': trap(rnd.choice(PRIV), 7, 2, code[0], H); return 7, 2
     if k == 'ill': trap(rnd.choice([[0xED, 0x08], [0xED, 0x0F]]), 7, 0, code[0], H); return 7, 0
-    if k == 'unimp': trap(rnd.choice([[0xED, 0x81], [0xED, 0x17], [0xED, 0x27, 0x01], [0xED, 0xAF, 0x08]]), 7, 1, code[0], H); return 7, 1
+    if k == 'unimp': trap([0xED, 0x27, 0x01], 7, 1, code[0], H); return 7, 1
     bs, apply = div_emit(rnd.choice('BWEQ'), rnd.random() < .5, True, True); trap(bs, 6, 0, code[0], H); return 6, 0   # erro de divisao com TE: nada muda
 def t_trap():                                   # excecao em modo supervisor
     te = rnd.random() < .7; ldcr(14, 4 if te else 0)

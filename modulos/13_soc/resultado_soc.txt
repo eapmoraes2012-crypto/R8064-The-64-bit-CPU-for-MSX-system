@@ -264,3 +264,26 @@ REV41 (15/11/2026): FPU NO NUCLEO (pilha ST0-ST7 + 34 instrucoes). Simulado (Ica
         posicionamento (22 dos 24 ns do caminho sao roteamento; um fio de 11,5 ns saindo do contador da entrada de excecao). 3 de 4 sementes passam com folga.
   PENDENTE: reduzir a area da FPU (reorganizar o caminho de dados para poucas fontes: estimativa de cortar perto da metade, com operacoes 2-3x mais
         lentas); transcendentais e restos; FSAVE/FRSTR; rodar rodar_pnr_board.bat com e sem a FPU.
+
+REV42 (15/11/2026): NUCLEO ARITMETICO DA FPU REORGANIZADO + TRANSCENDENTAIS, RESTOS, FSAVE / FRSTR. Simulado (Icarus 12). A AREA CONTINUA O PROBLEMA.
+  PEDIDO: reorganizar o nucleo aritmetico; depois FSIN, FCOS, FSINC, FTAN, FLN, FYL2X, FYL2P, FREM, FREM1, FSAVE, FRSTR.
+  NUCLEO ARITMETICO (08_fpu/rtl/fpu_seq.v, refeito): registrador de trabalho com 8 fontes, um somador de 68 bits, multiplicacao/divisao/raiz bit a bit
+        (2-3 clocks por bit). Sozinho: ~3.300 -> ~2.570 LUT (22 % a menos, NAO a metade que eu tinha estimado). Mais lento: multiplicacao e divisao
+        ~107 clocks em media, raiz ~160 (antes ~60). Os 117.000 vetores do fpref.py passam (0 erros).
+  TRANSCENDENTAIS E RESTOS: nao cabem no microcodigo do nucleo (ele nao tem lacos), entao a uop so dispara um PROGRAMA dentro do fpu_unit.v: 95 passos
+        de operacoes do fpu_seq + 51 constantes de 80 bits, numa ROM de 512 x 36 bits (1 bloco de RAM). Fonte unica: 08_fpu/ref/gen_fpu_prog.py.
+        Algoritmos, precisao medida (1 a 2 unidades na ultima casa; FLN ate 9) e escolhas: MODELO_FPU.txt, item 5. FREM/FREM1 seguem a formula da lista
+        (nao sao o resto exato do x87). FSAVE/FRSTR: microcodigo (88 bytes: estado + 8 registradores fisicos). ROM de uops: 1571 de 2048 entradas.
+  ERROS ACHADOS E CORRIGIDOS: (1) o laco de Horner dava uma volta a mais e os resultados saiam errados: o hardware e o modelo concordavam (vem da mesma
+        fonte), quem pegou foi a conferencia contra referencias exatas (confere_precisao.py); (2) uma funcao Verilog que lia o topo da pilha por fora
+        dos argumentos (so afetava a simulacao).
+  TESTE: fpu_seq: 39.000 + 78.000 vetores, 0 erros. Nucleo x modelo (estado da FPU conferido a cada instrucao, registradores e memoria no fim): passo a
+        passo 10 programas / 40.028 instrucoes, nucleo solto 8 programas / 32.057: 0 divergencias; incluem, em numeros redondos, 800 transcendentais /
+        restos e 700 FSAVE / FRSTR (contagem da bateria anterior, de mesmo tamanho). Regressao: 10_mode_gov (28), tb_soc, tb_soc_exc 1-12, sim_z80: OK.
+  LIMITE DO TESTE DAS TRANSCENDENTAIS: o modelo executa os mesmos passos que o hardware, entao a comparacao nucleo x modelo prova que o hardware
+        executa o programa certo, nao que o programa calcula a funcao certa; isso so a conferencia de precisao cobre (120 pontos por funcao).
+  AREA: fpu_unit sozinho: 4.400 LUT + 460 ALU + 690 FF + 40 RAM16 + 1 bloco de RAM (antes 4.900 LUT com menos instrucoes). Nucleo + governador na
+        nuvem: 17.213 LUT4, 2.190 ALU, BSRAM 29 (sem a FPU: 11.293 / 28): na REV41 o posicionador nao achou lugar com numeros quase iguais.
+        A placa real precisa ser medida no PC do autor (rodar_pnr_board.bat); chave para tirar a FPU: R8064_SEM_FPU (MODELO_FPU.txt, item 7).
+  PENDENTE: area fora do nucleo aritmetico; palavra de controle programavel; resto exato; E/S de 16/32/64 bits.
+  POSICIONAMENTO NA NUVEM (REV42, nucleo + governador, sementes 1 e 2): nao terminou a tempo de entrar neste registro

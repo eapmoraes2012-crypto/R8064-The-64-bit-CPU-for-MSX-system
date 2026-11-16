@@ -175,6 +175,16 @@ def aplica(uops, livre):
     ST80 = [FX(K2 | 7), FRD(0, TMP), STM(3), FRD(1, T2), HL8, dict(wr=1, aI=T3, immz=1, sz=1, bI=T2)]
     chain(60, ST80); chain(61, ST80 + [FX(POP)])                                                                   # FST80, FSTP8 (QHL)
     chain(53, [dict(alu=INC, aI=ZERO, wren=1, dI=49, sz=3, priv=1), dict(br=1, cond=0, rel=1, immz=1)])            # FLUSH: descarrega a TLB inteira (CR17 := 1) e o pipeline
-    # sem microcodigo: transcendentais e restos (FCOS FLN FREM FREM1 FSIN FSINC FTAN FYL2P FYL2X), FSAVE/FRSTR e a E/S larga
-    for i in [41, 52, 55, 56, 57, 58, 64, 65, 66, 193, 194, 163, 164, 165, 166, 167, 168]: chain(i, [dict(unimp=1)])
+    # transcendentais e restos: programas internos da unidade (08_fpu/ref/gen_fpu_prog.py); a uop so dispara
+    K3 = 48
+    for i, c in ((57, 4), (41, 5), (58, 6), (64, 7), (52, 8), (66, 9), (65, 10), (55, 11), (56, 12)): chain(i, [FX(K3 | c)])   # FSIN FCOS FSINC FTAN FLN FYL2X FYL2P FREM FREM1
+    # FSAVE / FRSTR (uu): 8 bytes de estado {vazios [23:16], palavra de estado [15:0]} + 8 registradores FISICOS de 10 bytes (88 bytes). FSAVE nao altera a FPU.
+    NEXT2 = dict(alu=SUB, use_imm=1, immc=1, isz=1, wren=1, dI=TMP, aI=TMP, sz=3)
+    WT = lambda z: dict(wr=1, aI=TMP, immz=1, sz=z, bI=T2)
+    sv = [PTR, FX(K3 | 0), FRD(0, T2), WT(3), NEXT]; ld = [PTR, dict(rd=1, aI=TMP, immz=1, wren=1, dI=T2, sz=3), FX(K3 | 2, aI=T2), NEXT]
+    for k in range(8):
+        sv += [FX(K3 | 1), FRD(0, T2), WT(3), NEXT, FRD(1, T2), WT(1), NEXT2]
+        ld += [dict(rd=1, aI=TMP, immz=1, wren=1, dI=T3, sz=3), NEXT, dict(rd=1, aI=TMP, immz=1, wren=1, dI=T2, sz=1), FHI(T2), FX(K3 | 3, aI=T3), NEXT2]
+    chain(193, sv); chain(194, ld)
+    for i in [163, 164, 165, 166, 167, 168]: chain(i, [dict(unimp=1)])                                            # E/S larga: sem microcodigo
     return nextfree[0]

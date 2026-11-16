@@ -1,18 +1,21 @@
-FPU DO R8064 NO NUCLEO (REV41, 15/11/2026)
+FPU DO R8064 NO NUCLEO (REV41 / REV42, 15/11/2026)
 ==========================================
 Feita a partir da lista de instrucoes enviada pelo autor do projeto + quatro decisoes dele: aritmetica em uma UNIDADE COMPACTA nova dentro do nucleo;
 transcendentais e restos em outra etapa; FSTSW grava em F; FIST/FISTP gravam inteiro de 64 bits. O que a lista nao dizia esta marcado [ESCOLHA].
 
 1. HARDWARE
-   08_fpu/rtl/fpu_seq.v   nucleo aritmetico de 80 bits (soma, subtracao, multiplicacao, divisao, raiz, comparacao, conversoes). Mesma interface e mesmos
-                          resultados, bit a bit, do fpu_alu.v antigo, mas sequencial: UM somador de 68 bits, tres registradores, deslocamentos de 4/1 bits
-                          por clock, e multiplicacao, divisao e raiz bit a bit nesse somador (nao usa multiplicador nem divisor).
-   08_fpu/rtl/fpu_unit.v  pilha ST0-ST7 (80 bits), marcas de vazio, palavra de estado e os comandos que o microcodigo dispara.
+   08_fpu/rtl/fpu_seq.v   nucleo aritmetico de 80 bits (soma, subtracao, multiplicacao, divisao, raiz, comparacao, conversoes). Mesmos resultados, bit a
+                          bit, do fpu_alu.v antigo. REORGANIZADO na REV42: o registrador de trabalho so recebe 8 fontes, ha UM somador de 68 bits, e
+                          multiplicacao, divisao e raiz sao bit a bit nele (2 a 3 clocks por bit).
+   08_fpu/rtl/fpu_unit.v  pilha ST0-ST7 (80 bits), marcas de vazio, palavra de estado, comandos do microcodigo e (REV42) um executor de "programas":
+                          sequencias de operacoes do fpu_seq entre ST, 8 temporarios e constantes, guardadas com as constantes numa ROM de 512 x 36
+                          bits (1 bloco de RAM). E assim que sao feitas as transcendentais e os restos.
+   08_fpu/ref/gen_fpu_prog.py  fonte UNICA desses programas e constantes: gera o trecho marcado do fpu_unit.v e e usado pelo modelo de teste.
    No nucleo a FPU entra pelo mesmo caminho de MLT/DIV (a uop espera no estagio M ate a unidade terminar). Uop de 107 bits: [106] fpu.
-   Latencia medida do nucleo aritmetico (clocks, min/media/max): soma 5/23/73, multiplicacao 5/61/126, divisao 5/58/117, raiz 5/58/96, comparacao 5,
-   FILD 5/12/24, FIST 5/18/48, FRINT 5/25/66, FLD32/64 5/5/9, FST32/64 5/15/49. A instrucao inteira gasta mais alguns clocks de pipeline.
-   AREA: a unidade inteira sintetizada sozinha da ~4.900 LUT (4.150 sem "wide LUT"), 400 ALU, 540 flip-flops e 40 RAM16; o nucleo aritmetico e ~3.300 disso.
-   E MAIS do que eu pretendia para uma unidade "compacta" (ver PENDENCIAS no fim).
+   Latencia do nucleo aritmetico (clocks, min/media/max): soma 6/26/76, multiplicacao 6/108/191, divisao 6/106/185, raiz 6/159/233, comparacao 6,
+   FILD 6/13/26, FIST 6/19/49, FRINT 6/26/67, FLD32/64 6/6/10, FST32/64 6/15/50. Um seno ou logaritmo sao 35 a 55 dessas operacoes (alguns milhares de clocks).
+   AREA (unidade inteira sintetizada sozinha): 4.400 LUT, 460 ALU, 690 flip-flops, 40 RAM16 e 1 bloco de RAM. O nucleo aritmetico caiu de ~3.300 para
+   ~2.570 LUT com a reorganizacao (22 %, nao a metade que eu tinha estimado); o resto e a pilha, o executor e os multiplexadores de 80 bits.
 
 2. FORMATO E ARREDONDAMENTO
    Registradores de 80 bits no formato estendido do x87 (sinal, expoente de 15 bits, significando de 64 bits com o bit inteiro explicito).
@@ -28,7 +31,7 @@ transcendentais e restos em outra etapa; FSTSW grava em F; FIST/FISTP gravam int
    [ESCOLHA] Empilhar com ST7 ocupado: IE + SF, C1 = 1, e o que entra e o INDEFINIDO.
    C1: "arredondou para cima" nas aritmeticas e conversoes; 0 nas outras (menos o caso de estouro de pilha acima).
 
-4. INSTRUCOES COM MICROCODIGO (34)                                        codigo            efeito
+4. INSTRUCOES BASICAS (34)                                        codigo            efeito
    FLD STn                                                                ED BC 10+n        empilha uma copia de STn
    FXCH STn                                                               ED BC 08+n        troca ST0 com STn
    FSTP STn                                                               ED BC 18+n        STn := ST0; desempilha
@@ -48,8 +51,24 @@ transcendentais e restos em outra etapa; FSTSW grava em F; FIST/FISTP gravam int
    FLUSH                                                                  ED 94             descarrega a TLB inteira (CR17 := 1) e o pipeline. Privilegiada. [nao e de FPU; veio na lista]
    QHL = HL de 64 bits como endereco. Nas gravacoes com desempilhamento a pilha so anda DEPOIS da escrita: uma falta de pagina reinicia a instrucao sem perda.
 
-5. SEM MICROCODIGO (NOP, ou excecao 7/1 com CR14 bit 2 = 1, para emulacao por software): FCOS, FLN, FREM, FREM1, FSIN, FSINC, FTAN, FYL2P, FYL2X
-   (a "outra etapa") e FSAVE / FRSTR (ED AF nn; nao estavam na lista: sem elas uma troca de contexto nao salva a FPU).
+5. TRANSCENDENTAIS, RESTOS, FSAVE / FRSTR (REV42)
+   FSIN ED 97, FCOS ED 81: ST0 := sen / cos (ST0).   FTAN ED 15: ST0 := tan(ST0) (nao empilha o 1.0 do x87).
+   FSINC ED 10: ST0 := sen, ST1 := cos do ST0 antigo (a pilha cresce um), como na lista.   [no x87 a ordem e a contraria]
+   FLN ED 93: ST0 := ln(ST0).   FYL2X ED 17: ST1 := ST1 * log2(ST0), desempilha.   FYL2P ED 16: ST1 := ST1 * log2(ST0 + 1), desempilha.
+        [ESCOLHA] A lista dizia "ST0 <- ...": fiz como o x87 (o resultado toma o lugar de ST1 e a pilha desce), que e o que da ST0 = resultado no fim.
+   FREM ED 95, FREM1 ED 96: ST0 := ST0 - ST1 * int(ST0 / ST1), int = truncar (FREM) ou arredondar (FREM1). E a formula da lista ao pe da letra, com a
+        divisao arredondada: NAO e o resto exato do x87 (nao ha reducao parcial nem C2; para quocientes acima de 2^64 o resultado nao tem sentido).
+   ALGORITMOS (gen_fpu_prog.py): seno/cosseno: k = arredonda(x * 2/pi), r = x - k*pi/2 com pi/2 em tres pedacos (exato para |k| < 2^31), polinomios de
+        Taylor (11 e 12 termos) e troca por quadrante. Logaritmo: x = m * 2^e, f = (m-1)/(m+1), serie de 20 termos; FYL2P usa f = x/(2+x).
+   PRECISAO medida contra referencias exatas (08_fpu/ref/confere_precisao.py, 120 pontos por funcao): erro maximo em unidades da ultima casa do
+        significando de 64 bits: seno 0,8; cosseno 1,2; tangente 1,7; FYL2X 1,9; FYL2P 2,1; FLN 8,9 (pior quando o resultado e perto de zero).
+        Os resultados NAO sao arredondados corretamente; angulos acima de ~2^31 perdem precisao (e acima de 2^63 o resultado nao vale nada).
+   [ESCOLHA] CASOS ESPECIAIS: FLN / FYL2X so aceitam ST0 normal e positivo; zero, negativo, denormal, infinito ou NaN dao IE + INDEFINIDO (o x87 da
+        -infinito com ZE para zero). Nas outras, infinito e NaN seguem pelas operacoes e saem como NaN/INDEFINIDO com IE. Operando vazio: IE + SF + INDEFINIDO.
+        As marcas de excecao acumulam as de TODOS os passos internos (PE quase sempre fica ligada); C1 e o do ultimo passo.
+   FSAVE (uu) ED AF 08 BC | 0A DE | 0C HL | 0F AX   grava 88 bytes: 8 de estado ([15:0] palavra de estado, [23:16] vazios) + os 8 registradores FISICOS
+   FRSTR (uu) ED AF 48 BC | 4A DE | 4C HL | 4F AX   (10 bytes cada, posicao 0 a 7, nao relativos ao topo). FSAVE NAO reinicia a FPU (o do x87 reinicia).
+   SEM MICROCODIGO agora so a E/S de 16/32/64 bits.
 
 6. TESTES
    08_fpu/sim/tb_seq.v (rodar_seq.bat): fpu_seq contra o modelo exato fpref.py: os 39.000 vetores do repositorio e mais 78.000 novos, todos os modos: 0 erros.
@@ -58,14 +77,13 @@ transcendentais e restos em outra etapa; FSTSW grava em F; FIST/FISTP gravam int
    NAO testado: FLUSH no SoC (so que nao muda o estado da CPU e que e privilegiada); FPU junto com faltas de pagina; FPU nos modos de temporizacao Z80 / R800.
 
 7. AREA E A CHAVE PARA TIRAR A FPU
-   Na ferramenta da nuvem o nucleo + governador COM a FPU nao coube no GW2AR-18 (17.071 LUT4 + 2.114 ALU: o posicionador desistiu); sem a FPU sao 11.293.
-   Os numeros da nuvem sao mais altos que os do OSS CAD Suite do autor (la a PLACA inteira da REV40 deu 12.003 LUT4), entao o resultado real so sai
+   Na ferramenta da nuvem o nucleo + governador COM a FPU continua sem caber no GW2AR-18 (ver REV42 em 13_soc/resultado_soc.txt); sem a FPU sao 11.293
+   LUT4. Os numeros da nuvem sao mais altos que os do OSS CAD Suite do autor (la a PLACA inteira da REV40 deu 12.003 LUT4), entao o resultado real so sai
    rodando rodar_pnr_board.bat. Se nao couber ou nao fechar o tempo, a FPU sai com uma macro, sem mexer em mais nada:
        nos .ys (13_soc/pnr/ys_board.ys etc.) troque   read_verilog -sv ...   por   read_verilog -sv -DR8064_SEM_FPU ...
    Com a macro, as instrucoes de FPU terminam na hora, devolvem zero e nao guardam nada (o resto do nucleo fica igual).
 
 8. PENDENCIAS
-   - AREA: o grosso sao os multiplexadores de 68 bits do registrador de trabalho (cerca de 25 fontes diferentes). Reorganizar o caminho de dados para
-     poucas fontes (um deslocador, o somador e uma carga), com multiplicacao/divisao/raiz em 2-3 clocks por bit, deve cortar perto da metade, ao custo de
-     operacoes 2 a 3 vezes mais lentas. Nao foi feito nesta revisao.
-   - Transcendentais e restos, FSAVE/FRSTR, palavra de controle programavel.
+   - AREA: ainda ~4.400 LUT. O que sobra de gordura esta fora do nucleo aritmetico (multiplexadores de 80 bits da escrita na pilha e dos resultados).
+   - Palavra de controle programavel (arredondamento / precisao / mascaras); resto exato (FPREM); casos especiais do logaritmo como no x87.
+   - Nao testado: FPU junto com faltas de pagina, FPU nos modos de temporizacao Z80 / R800, FLUSH no SoC.

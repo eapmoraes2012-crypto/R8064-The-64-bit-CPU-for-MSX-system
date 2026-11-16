@@ -36,7 +36,7 @@ module tb_r64core;
         if ($test$plusargs("livre")) begin : solto
             rc = 11; while (rc == 11) begin rc = $fscanf(fd, "%h %h %h %h %h %h %h %h %h %h %h", g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], pc0[7:0], e_sw, e_em); if (rc == 11) begin n = n + 1; for (k = 0; k < 8; k = k + 1) e[k] = g[k]; e_f = pc0[7:0]; end end
             go = 1; tmo = 0;
-            while (!(dut.flush_br && dut.flush_tgt_raw == e[0])) begin @(posedge clk); tmo = tmo + 1; if (tmo > 1000000) begin $display("ERRO: o programa nao chegou ao fim (pc=%h)", dut.npc); errs = errs + 1; disable solto; end end
+            while (!(dut.flush_br && dut.flush_tgt_raw == e[0])) begin @(posedge clk); tmo = tmo + 1; if (tmo > 30000000) begin $display("ERRO: o programa nao chegou ao fim (pc=%h)", dut.npc); errs = errs + 1; disable solto; end end
             repeat (40) @(posedge clk);                    // o ultimo desvio (ou o JR $ final) ja foi tomado: o estado nao muda mais
             g[0] = e[0]; g[1] = dut.u_rf1.mem_a[0]; g[2] = dut.u_rf1.mem_a[1]; g[3] = dut.u_rf1.mem_a[2]; g[4] = dut.u_rf1.mem_a[3]; g[5] = dut.u_rf1.mem_a[9]; g[6] = dut.u_rf1.mem_a[10]; g[7] = dut.u_rf1.mem_a[11];
             for (k = 1; k < 8; k = k + 1) if (g[k] !== e[k]) begin errs = errs + 1; $display("DIVERGENCIA no estado final, registrador %0d: nucleo %h modelo %h", k, g[k], e[k]); end
@@ -48,9 +48,9 @@ module tb_r64core;
                 if (rc != 11) disable laco;
                 pc0 = dut.npc;
                 go = 1; tmo = 0; @(posedge clk);
-                while (!dut.consume && !dut.flush_br && !dut.ex_take) begin @(posedge clk); tmo = tmo + 1; if (tmo > 5000) begin $display("ERRO: instrucao %0d (pc=%h) nao foi emitida", n, pc0); errs = errs + 1; disable laco; end end
+                while (!dut.consume && !dut.flush_br && !dut.ex_take) begin @(posedge clk); tmo = tmo + 1; if (tmo > 60000) begin $display("ERRO: instrucao %0d (pc=%h) nao foi emitida", n, pc0); errs = errs + 1; disable laco; end end
                 #1 go = 0; idle = 0; tmo = 0;
-                while (idle < 3) begin @(posedge clk); #1; idle = busy ? 0 : idle + 1; tmo = tmo + 1; if (tmo > 5000) begin $display("ERRO: instrucao %0d (pc=%h) nao terminou", n, pc0); errs = errs + 1; disable laco; end end
+                while (idle < 3) begin @(posedge clk); #1; idle = busy ? 0 : idle + 1; tmo = tmo + 1; if (tmo > 60000) begin $display("ERRO: instrucao %0d (pc=%h) nao terminou", n, pc0); errs = errs + 1; disable laco; end end
                 n = n + 1;
                 g[0] = dut.npc; g[1] = dut.u_rf1.mem_a[0]; g[2] = dut.u_rf1.mem_a[1]; g[3] = dut.u_rf1.mem_a[2]; g[4] = dut.u_rf1.mem_a[3];
                 g[5] = dut.u_rf1.mem_a[9]; g[6] = dut.u_rf1.mem_a[10]; g[7] = dut.u_rf1.mem_a[11];

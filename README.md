@@ -14,10 +14,10 @@ Alvo de clock: 57,28 MHz (3,58 MHz x 16).
 - Modelo de privilegio e de excecao (REV40, `09_core_min/MODELO_PRIVILEGIO.txt`): modos supervisor / usuario (CR18), entrada unica de excecao pelo vetor CR9
   com causa / auxiliar / EPC em CR11 / CR12 / CR13, retorno por SYSRT. E uma DEFINICAO feita nesta revisao, nao algo que ja existia no projeto: revise.
   O software MSX roda sempre em supervisor e nao e afetado.
-- FPU (REV41, `09_core_min/MODELO_FPU.txt`): pilha ST0-ST7 de 80 bits e 34 instrucoes no nucleo (cargas, constantes, soma, subtracao, multiplicacao, divisao,
-  raiz, comparacao, conversoes, FSTSW), com um nucleo aritmetico sequencial novo (`08_fpu/rtl/fpu_seq.v`). Custa cerca de 5.000 LUT: conferir a ocupacao da placa.
-  Faltam: transcendentais e restos (FSIN, FCOS, FSINC, FTAN, FLN, FYL2X, FYL2P, FREM, FREM1), FSAVE/FRSTR e a E/S de 16/32/64 bits
-  (sem microcodigo: NOP, ou excecao se CR14 bit 2 = 1, o que permite emular por software).
+- FPU (REV41/42, `09_core_min/MODELO_FPU.txt`): pilha ST0-ST7 de 80 bits e as 45 instrucoes de FPU da tabela no nucleo, com um nucleo aritmetico
+  sequencial (`08_fpu/rtl/fpu_seq.v`) e um executor de programas para transcendentais e restos (`fpu_unit.v`). As transcendentais tem erro de 1 a 2
+  unidades na ultima casa (FLN ate 9) e FREM nao e o resto exato do x87. A unidade custa cerca de 4.400 LUT: conferir a ocupacao da placa
+  (ha uma chave para sintetizar sem ela). Falta so a E/S de 16/32/64 bits.
 - Diferencas conhecidas para um Z80 real: R nao conta buscas; HALT e um salto para si mesmo; X/Y nao documentados de BIT n,(HL) e dos blocos; um opcode ED
   que nao e do Z80 e instrucao do R8064 (so os sem instrucao viram NOP de 2 bytes); codigo que se modifica e executa em seguida, sem desvio no meio, ve o byte antigo (fila de busca).
 - PnR do topo de placa com o Z80 completo (REV37): 52 % das LUTs, 36 de 46 BSRAM; 3 de 4 sementes fecham a 57,28 MHz (59 a 74 MHz), com folga menor que antes.
