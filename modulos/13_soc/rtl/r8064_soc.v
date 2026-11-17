@@ -36,7 +36,7 @@ module r8064_soc #(parameter FIFO_BASE = 8'hE8, parameter INIT_CYC = 20000, para
     assign io_x_we = sx_we && !dma_io_sel; assign io_x_re = sx_re && !dma_io_sel; assign io_x_a = sx_a; assign io_x_wd = sx_wd;   // the DMA ports do not leave the SoC
     wire x_req, x_we, x_acc, x_done; wire [19:0] x_addr; wire [63:0] x_wd, x_rd; wire [7:0] x_be;
     // boot sequencer: 0 waits init_done | 1 boot_go pulse | 2 waits 1 clock | 3 waits for channel 0 to finish | 4 boot_clr pulse and releases the core
-    reg boot_busy; reg [2:0] bst; wire boot_go = (bst == 3'd1), boot_clr = (bst == 3'd4), boot_done;
+    reg boot_busy; reg [2:0] bst; wire boot_done; wire boot_go = (bst == 3'd1); wire boot_clr = (bst == 3'd4);   // separate declarations (Gowin synthesis: EX3436)
     always @(posedge clk) begin
         if (rst) begin boot_busy <= (BOOT_WORDS != 0); bst <= (BOOT_WORDS != 0) ? 3'd0 : 3'd5; end
         else case (bst)
