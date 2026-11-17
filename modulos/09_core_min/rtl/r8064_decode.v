@@ -59,7 +59,11 @@ module r8064_decode #(
     // the control ROM is read with BOTH id candidates (A and B) in parallel and the choice is made after the register:
     // takes the id = a_q[10] ? b_q : a_q multiplexer off the path to the ROM address (same latency: +2 clocks)
     reg [31:0] ca_q, cb_q; reg sel_q;
-    always @(posedge clk) begin ca_q <= ctrl[a_q[8:0]]; cb_q <= ctrl[b_q[8:0]]; sel_q <= a_q[10]; end
+    // REV47: port A of the control ROM is addressed by ROM_A (LUT logic) one clock earlier and its output is re-registered (ca_q = same
+    // value and latency as before). Before, the address came straight from the a_q flip-flop with no logic in between: hold violation
+    // (-0.12 ns) at the BSRAM address input in nextpnr.
+    reg [31:0] ca0;
+    always @(posedge clk) begin ca0 <= ctrl[rom_a_w[8:0]]; ca_q <= ca0; cb_q <= ctrl[b_q[8:0]]; sel_q <= a_q[10]; end
     wire [31:0] c_q = sel_q ? cb_q : ca_q;
 
     assign len      = c_q[3:0];

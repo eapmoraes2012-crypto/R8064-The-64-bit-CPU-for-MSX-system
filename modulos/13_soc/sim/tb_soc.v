@@ -45,7 +45,7 @@ module tb_soc;
         chk("OUT porta 77h", lw_a, 64'h77); chk("OUT data", lw_d, 64'h41); chk("1 external OUT", n_ow, 1); chk("1 external IN", n_ir, 1);
         chk("no I fault", i_fault, 0); chk("no D fault", d_fault, 0);
         if ($test$plusargs("mmu")) $display("page table reads: MMU-I=%0d MMU-D=%0d", nwi, nwd);
-        $display("violacoes SDRAM=%0d | dbg_pc=%h | modo z80=%0d rom=%0d", mdl.viol, dbg_pc, z80, rom);
+        $display("SDRAM violations=%0d | dbg_pc=%h | modo z80=%0d rom=%0d", mdl.viol, dbg_pc, z80, rom);
         if (errs == 0) $display("RESULT: SOC OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end

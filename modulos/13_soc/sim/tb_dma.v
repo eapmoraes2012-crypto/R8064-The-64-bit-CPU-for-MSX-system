@@ -123,7 +123,7 @@ module tb_dma;
         crw(0, 64'h7F_FF80); crw(1, 64'h1_0000); crw(2, 64'h8000_0010); wait_done(0, 4000); iow(8'hEE, 8'h01);
         for (i = 0; i < 16; i = i + 1) chk("copy from the top (8 MB)", mw(20'h2000 + i), mw(20'hFFFF0 + i));
         crw(0, 64'h0); crw(1, 64'h100_0000); crw(2, 64'h8000_0001); ior(8'hEE, st); chk("destination = 16 MB: error", st & 8'h07, 8'h06); iow(8'hEE, 8'h01);
-        chk("violacoes SDRAM", mdl.viol, 0);
+        chk("SDRAM violations", mdl.viol, 0);
         if (errs == 0) $display("RESULT: DMA OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end

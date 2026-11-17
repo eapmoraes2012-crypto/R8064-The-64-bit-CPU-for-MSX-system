@@ -48,6 +48,16 @@ module r8064_core_min #(
     output wire [1:0]  gov_dsize,
     output wire        gov_dwe
 );
+    // ============ address width ============
+    // REV47: implemented address width (PC, fetch address, effective addresses, branch targets). Architecturally addresses are 64-bit;
+    // with R8064_AW32 (Tang Nano 20K builds) only the low 32 bits are implemented: address arithmetic wraps modulo 2^32 and the high bits
+    // read as 0 (PC pushed by CALL/INT, EPC, address results). Without the macro the core is the full 64-bit version.
+`ifdef R8064_AW32
+    localparam AW = 32;
+`else
+    localparam AW = 64;
+`endif
+    localparam [63:0] AMASK = (AW >= 64) ? 64'hFFFF_FFFF_FFFF_FFFF : ((64'd1 << AW) - 64'd1);
     // ============ controle global ============
     wire hold;                    // M waiting for the data bus
     wire flush_br;                // taken branch (X2)
@@ -67,7 +77,7 @@ module r8064_core_min #(
     wire [63:0] flush_tgt_raw;
     always @(posedge clk) begin
         if (rst) flush_q <= 1'b0; else flush_q <= flush_raw;
-        flush_tgt_q <= flush_tgt_raw;
+        flush_tgt_q <= flush_tgt_raw & AMASK;
     end
     reg  [63:0] dpc_q;
     reg  [7:0]  fl;
@@ -100,7 +110,7 @@ module r8064_core_min #(
                 if (drop) drop <= 1'b0;
                 else begin
                     case (wp) 2'd0: qw0 <= i_rdata; 2'd1: qw1 <= i_rdata; 2'd2: qw2 <= i_rdata; default: qw3 <= i_rdata; endcase
-                    wp <= wp + 2'd1; fa <= fa + 64'd8; skip <= 3'd0;
+                    wp <= wp + 2'd1; fa <= (fa + 64'd8) & AMASK; skip <= 3'd0;
                     if (i_flt && !ifp) begin ifp <= 1'b1; ifa <= fa; ifc <= i_cs; end
                 end
             end else if (!ireq_r && !drop && qcnt <= 6'd24) ireq_r <= 1'b1;
@@ -192,7 +202,7 @@ module r8064_core_min #(
     always @(posedge clk) begin
         if (rst) dpc_q <= 64'd0;
         else if (flush) dpc_q <= flush_tgt;
-        else if (consume) dpc_q <= dpc + {60'd0, clen};
+        else if (consume) dpc_q <= (dpc + {60'd0, clen}) & AMASK;
     end
 
     // ============ emissao: campos, registradores, imediato ============
@@ -210,7 +220,14 @@ module r8064_core_min #(
     // illegal banked instruction: illegal id, no bankable operand, 8-bit operand in bank N, IX/IY in bank, or prefix + 13 bytes
     wire bank_ill = bank_on && (ed_ill || !ed_bk || (bank[1] && uop_q[6:5] == 2'd0) || ed_len > 4'd12 ||
                                 (uop_q[17] && !vD) || (uop_q[18] && !vA) || (uop_q[19] && !vB));
-    wire en_ill = is_ed && (ed_ill || bank_ill);   // illegal (exception: in this skeleton it becomes a NOP without write)
+    // REV47: R8064_NO_MD64 (Tang Nano 20K builds): DIVSQ (13), DIVUQ (17), MLTSQ (24), MLTUQ (30) are not implemented -> treated as illegal
+    // (unimplemented-instruction exception, cause 7, if CR14.TE = 1; otherwise skipped like a NOP of the instruction's own length)
+`ifdef R8064_NO_MD64
+    wire md64_ill = (ed_id == 10'd13) || (ed_id == 10'd17) || (ed_id == 10'd24) || (ed_id == 10'd30);
+`else
+    wire md64_ill = 1'b0;
+`endif
+    wire en_ill = is_ed && (ed_ill || bank_ill || md64_ill);   // illegal (exception: in this skeleton it becomes a NOP without write)
     wire [5:0] crn = u[101] ? {1'b1, b3[7:3]} : {1'b1, b3[4:0]};   // u[101]: LDCR/STCR (CR in b3[7:3], register in b3[2:0])
     //         // MTCR/MFCR: CR n = indice 32+n do banco (ED 0A n = MFCR, ED 0C n = MTCR)
     // EXPLICIT uop indices (0 AX, 1 BC, 2 DE, 3 HL) also obey EXX / EX AF,AF' (before only the rr fields obeyed: LDIR after EXX used the wrong group)
@@ -243,7 +260,9 @@ module r8064_core_min #(
     end
     reg [5:0] iA_q, iB_q, iD_q;
     always @(posedge clk) begin iA_q <= iA; iB_q <= iB; iD_q <= iD; end
-    wire [103:0] ish = (xy_on && u[93]) ? (dwin >> 16) : (dwin >> {u[41:39], 3'b000});   // u[93]: with DD/FD the immediate comes after the displacement (LD (IX+d),n)
+    // REV47: a single shift amount (2 bytes with DD/FD + u[93]) and one shifter (before: two 104-bit shifters and a mux)
+    wire [2:0] isa = (xy_on && u[93]) ? 3'd2 : u[41:39];
+    wire [103:0] ishw = dwin >> {isa, 3'b000}; wire [63:0] ish = ishw[63:0];   // u[93]: with DD/FD the immediate comes after the displacement (LD (IX+d),n)
     reg [63:0] immv;
     always @* case (u[43:42])
         2'd0: immv = u[44] ? {{56{ish[7]}},  ish[7:0]}  : {56'd0, ish[7:0]};
@@ -273,7 +292,7 @@ module r8064_core_min #(
         if (rst || flush_x) v_xr <= 0;
         else if (!hold) begin
             if (issue) pc_last <= dpc;
-            v_xr <= issue && !en_ill; u_xr <= u_iss; imm_xr <= u[63] ? 64'd0 : immv; pcn_xr <= dpc + {60'd0, clen}; pc_xr <= dpc; a_xr <= iA_q; b_xr <= iB_q; d_xr <= iD_q; ob3_xr <= (u[43:42] == 2'd0) ? {2'b00, ish[5:3]} : (u[43:42] == 2'd1) ? {1'b0, ish[6:3]} : ish[7:3]; xyd_xr <= xy_on && u[92]; dsp_xr <= dwin[15:8];
+            v_xr <= issue && !en_ill; u_xr <= u_iss; imm_xr <= u[63] ? 64'd0 : immv; pcn_xr <= (dpc + {60'd0, clen}) & AMASK; pc_xr <= dpc; a_xr <= iA_q; b_xr <= iB_q; d_xr <= iD_q; ob3_xr <= (u[43:42] == 2'd0) ? {2'b00, ish[5:3]} : (u[43:42] == 2'd1) ? {1'b0, ish[6:3]} : ish[7:3]; xyd_xr <= xy_on && u[92]; dsp_xr <= dwin[15:8];
         end
     end
     // X2 / M / W produce the values to forward
@@ -339,8 +358,8 @@ module r8064_core_min #(
         else if (!hold) begin
             v_x2 <= v_x1; u_x2 <= u_x1; xa_x2 <= xa; yb_x2 <= yb; yy_x2 <= yy; ci_x2 <= ci; ctl_x2 <= ctl; d_x2 <= d_x1;
             st_x2 <= st_x1; old_x2 <= old_x1;
-            addr_x2 <= opa_x1 + imm_x1;
-            tgt_x2 <= u_x1[70] ? pc_x1 : u_x1[66] ? (opa_x1 + imm_x1) : u_x1[15] ? (pcn_x1 + imm_x1) : opa_x1;
+            addr_x2 <= (opa_x1 + imm_x1) & AMASK;
+            tgt_x2 <= (u_x1[70] ? pc_x1 : u_x1[66] ? (opa_x1 + imm_x1) : u_x1[15] ? (pcn_x1 + imm_x1) : opa_x1) & AMASK;
         end
     end
 
@@ -403,7 +422,7 @@ module r8064_core_min #(
         if (rst) begin npc <= 64'd0; epc <= 64'd0; end
         else begin
             if (irq_take) epc <= npc;
-            if (flush_q) npc <= flush_tgt; else if (consume) npc <= dpc + {60'd0, clen};
+            if (flush_q) npc <= flush_tgt; else if (consume) npc <= (dpc + {60'd0, clen}) & AMASK;
         end
     end
     // F' (EX AF,AF' also swaps the flags; EXINI = exx+exaf together goes back to the main F). The swap travels in the pipeline (X3), in order with the flag writes.
@@ -461,7 +480,16 @@ module r8064_core_min #(
     wire [7:0] bmask = (u_m[6:5] == 2'd0) ? 8'h01 : (u_m[6:5] == 2'd1) ? 8'h03 : (u_m[6:5] == 2'd2) ? 8'h0F : 8'hFF;
     wire [15:0] bme = {8'h00, bmask} << addr_m[2:0];       // byte mask in the 16-byte window {word A+8, word A}
     // a single 64-bit rotator serves both beats: lane L receives byte (L - offset) mod 8; d_be selects the valid lanes
-    wire [63:0] strot = (st_m << {addr_m[2:0], 3'b000}) | (st_m >> (7'd64 - {addr_m[2:0], 3'b000}));
+    // REV47: byte rotations written as explicit 8:1 byte multiplexers (before: two opposite 64-bit shifters ORed, ~4 barrel shifters in yosys)
+    function [63:0] rotl8(input [63:0] v, input [2:0] n);   // rotate left by n bytes: byte L of the result = byte (L - n) mod 8 of v
+        reg [63:0] r1, r2;
+        begin   // 3 levels of 2:1 multiplexers (1, 2, 4 bytes)
+            r1 = n[0] ? {v[55:0], v[63:56]} : v;
+            r2 = n[1] ? {r1[47:0], r1[63:48]} : r1;
+            rotl8 = n[2] ? {r2[31:0], r2[63:32]} : r2;
+        end
+    endfunction
+    wire [63:0] strot = rotl8(st_m, addr_m[2:0]);
     assign d_req   = m_mem && !dn_m;
     assign d_we    = u_m[9];
     reg [63:0] addr8_m;   // address of the next word, added in X3 and registered (no adder on the output path)
@@ -469,7 +497,7 @@ module r8064_core_min #(
     assign d_size  = u_m[6:5];
     assign d_be    = beat ? bme[15:8] : bme[7:0];
     assign d_wdata = strot;
-    wire [63:0] ldrot  = (d_rdata >> {addr_m[2:0], 3'b000}) | (d_rdata << (7'd64 - {addr_m[2:0], 3'b000}));   // byte j = word[(j + shift) mod 8]
+    wire [63:0] ldrot  = rotl8(d_rdata, 3'd0 - addr_m[2:0]);   // byte j = word[(j + shift) mod 8]
     wire [63:0] lomask = 64'hFFFF_FFFF_FFFF_FFFF >> {addr_m[2:0], 3'b000};                                    // bytes j < 8 - desloc vem do beat 0
     wire [63:0] ldsh   = xing ? ((ldrot & ~lomask) | (rd0 & lomask)) : ldrot;
     always @(posedge clk) begin
@@ -556,7 +584,7 @@ module r8064_core_min #(
         else if (!hold) begin
             md_q <= v_x3 && u_x3[98] && !u_x3[4] && !u_x3[3];
             v_m <= v_x3; mm_q <= v_x3 && (u_x3[8] || u_x3[9]); u_m <= u_x3; d_m <= d_x3; dn_m <= 1'b0;
-            res_m <= (u_x3[8] || u_x3[9]) ? addr_x3 : x3_res; addr_m <= addr_x3; st_m <= st_x3; old_m <= old_x3; xing <= xing_x3; addr8_m <= {addr_x3[63:3], 3'b000} + 64'd8;
+            res_m <= (u_x3[8] || u_x3[9]) ? addr_x3 : x3_res; addr_m <= addr_x3; st_m <= st_x3; old_m <= old_x3; xing <= xing_x3; addr8_m <= ({addr_x3[63:3], 3'b000} + 64'd8) & AMASK;
         end
     end
 
@@ -609,7 +637,7 @@ module r8064_core_min #(
             else if (!ex_take_d && !ex_take_i && ex_take_t) begin
                 ex_cau  <= t_scall && !t_priv && !t_unimp ? 5'd5 : 5'd7;
                 ex_aux  <= t_priv ? 64'd2 : t_unimp ? 64'd0 : {56'd0, b3};
-                ex_epcv <= (t_scall && !t_priv && !t_unimp) ? dpc + {60'd0, clen} : dpc;
+                ex_epcv <= (t_scall && !t_priv && !t_unimp) ? ((dpc + {60'd0, clen}) & AMASK) : dpc;
             end else                         begin ex_cau <= 5'd0; ex_aux <= 64'd0; ex_epcv <= npc; end
         end else if (ex_act) begin exk <= exk + 2'd1; if (exk == 2'd3) ex_act <= 1'b0; end
     end

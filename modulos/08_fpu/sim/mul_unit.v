@@ -1,7 +1,7 @@
 // mul_unit.v - multiplicador do R8064 (4 multiplicadores 18x18 em paralelo, em DSP).
 //   sz: 0=8, 1=16, 2=32, 3=64 bits; sgn: 1 = signed.
 //   sz<=2 : 2*sz-bit product in ONE pass (pipeline, 1 operation per clock). sz=3: 4 passes (16x64 per pass), 128 bits.
-//   Stages: S1 (operand mux, 18-bit x/y) -> S2 (4 36-bit products, DSP) -> S3a (partial sums) -> S3b (84-bit weighted sum) -> S3c (128-bit accumulator) -> prod/out_valid.
+//   Stages: S1 (operand mux, 18-bit x/y) -> S2 (4 36-bit products, DSP) -> S3a (partial sums) -> S3b (84-bit weighted sum) -> S3c (85-bit accumulator shifted 16 bits per pass) -> prod/out_valid.
 //   Latency (operation accepted at cycle 0 until out_valid): small ones 5 clocks, 64 bits 8 clocks. ready drops for 3 clocks after a 64-bit one.
 module mul_unit(
     input  wire         clk, rst,
@@ -13,13 +13,19 @@ module mul_unit(
     output reg          out_valid,
     output reg  [127:0] prod
 );
+    // REV47: with R8064_NO_MD64 (Tang Nano 20K builds) MLTSQ/MLTUQ (64x64->128) do not exist: no 4-pass path (sz <= 2 only).
+`ifdef R8064_NO_MD64
+    localparam BIG = 1'b0;
+`else
+    localparam BIG = 1'b1;
+`endif
     reg        busy_big; reg [1:0] jc; reg [63:0] ra, rb; reg rsgn;
     assign ready = !busy_big;
     wire issue = in_valid && ready;
     wire [63:0] ca = busy_big ? ra : a;
     wire [63:0] cb = busy_big ? rb : b;
     wire        cs = busy_big ? rsgn : sgn;
-    wire        cbig = busy_big ? 1'b1 : (sz == 2'd3);
+    wire        cbig = busy_big ? 1'b1 : ((sz == 2'd3) && BIG);
     wire [1:0]  cj = busy_big ? jc : 2'd0;
     wire        cv = busy_big | issue;
 
@@ -48,22 +54,23 @@ module mul_unit(
     end
     reg signed [17:0] x1 [0:3]; reg signed [17:0] y1 [0:3]; reg v1, big1; reg [1:0] j1;
     reg signed [35:0] p2 [0:3]; reg v2, big2; reg [1:0] j2;
-    reg signed [127:0] acc;
+    reg signed [84:0] acc; reg [47:0] plo;   // REV47: acc = partial product >> (16*pass) (85 bits) + low limbs already final
     integer k;
-    // S3a: partial sums; S3b: weighted sum (84 bits); S3c: per-pass shift and accumulator (128 bits)
+    // S3a: partial sums; S3b: weighted sum (84 bits); S3c: accumulator (85 bits, shifted right 16 bits per pass)
     reg signed [51:0] t01, t23; reg v3, big3; reg [1:0] j3;
     reg signed [83:0] sw; reg v4, big4; reg [1:0] j4;
     wire signed [51:0] w01 = $signed(p2[0]) + ($signed(p2[1]) <<< 16);
     wire signed [51:0] w23 = $signed(p2[2]) + ($signed(p2[3]) <<< 16);
     wire signed [83:0] w_sum = t01 + (big3 ? (t23 <<< 32) : (t23 <<< 16));
-    wire signed [127:0] sh_b  = $signed(sw) <<< (16 * j4);
-    wire signed [127:0] acc_n = ((j4 == 2'd0) ? 128'sd0 : acc) + sh_b;
+    // REV47: instead of shifting each pass to its weight and adding to a 128-bit accumulator, the accumulator is shifted right by 16
+    //   each pass (its 16 low bits are already final): an 85-bit adder and no 128-bit barrel shifter.
+    wire signed [84:0] acc_n = ((j4 == 2'd0) ? 85'sd0 : (acc >>> 16)) + $signed({sw[83], sw});
     always @(posedge clk) begin
         if (rst) begin
             busy_big <= 0; jc <= 0; v1 <= 0; v2 <= 0; v3 <= 0; v4 <= 0; out_valid <= 0; acc <= 0;
             big1 <= 0; big2 <= 0; big3 <= 0; big4 <= 0; j1 <= 0; j2 <= 0; j3 <= 0; j4 <= 0;
         end else begin
-            if (issue && sz == 2'd3) begin busy_big <= 1; jc <= 2'd1; ra <= a; rb <= b; rsgn <= sgn; end
+            if (issue && sz == 2'd3 && BIG) begin busy_big <= 1; jc <= 2'd1; ra <= a; rb <= b; rsgn <= sgn; end
             else if (busy_big) begin
                 jc <= jc + 1; if (jc == 2'd3) busy_big <= 0;
             end
@@ -77,7 +84,8 @@ module mul_unit(
             if (v4) begin
                 if (big4) begin
                     acc <= acc_n;
-                    if (j4 == 2'd3) begin prod <= acc_n; out_valid <= 1; end
+                    case (j4) 2'd0: plo[15:0] <= acc_n[15:0]; 2'd1: plo[31:16] <= acc_n[15:0]; 2'd2: plo[47:32] <= acc_n[15:0]; default: ; endcase
+                    if (j4 == 2'd3) begin prod <= {acc_n[79:0], plo}; out_valid <= 1; end
                 end else begin prod <= {{44{sw[83]}}, sw}; out_valid <= 1; end
             end
         end

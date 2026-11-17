@@ -127,7 +127,7 @@ module tb_soc_exc;
         if (sc == 13) begin chk("CR11 cause 7 (illegal)", r43, 64'h7); chk("CR12 aux 0", r44, 64'h0); chk("CR13 EPC = ED 08", r45, retpc); chk("DE not executed", rf(2), 64'h0); chk("AX=cause", rf(0), 64'h7); chk("no faults", nfi + nfd, 0); end
         if (sc == 14) begin chk("TE=0: no exception (CR11)", r43, 64'h0); chk("TE=0: DE executed", rf(2), 64'hAAAA); chk("no faults", nfi + nfd, 0); end
         if (sc == 12) begin chk("DE before the INT", de_antes, 64'h0); chk("DE handler", rf(2), 64'hBBBB); end
-        $display("violacoes SDRAM=%0d", mdl.viol);
+        $display("SDRAM violations=%0d", mdl.viol);
         if (errs == 0) $display("RESULT: SOC EXCEPTIONS OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end

@@ -39,8 +39,13 @@ module r8064_dma #(parameter PORT_STAT = 8'hEE, parameter PORT_IE = 8'hEF, param
     // boot: loads channel 0 (buffer offset 0 -> SDRAM 0, boot_cnt words, MODE 0) without going through the core
     input  wire        boot_go, input wire [18:0] boot_cnt, output wire boot_done, input wire boot_clr
 );
-    reg [20:0] s_r [0:3]; reg [20:0] d_r [0:3]; reg [3:0] s_bad, d_bad;
-    reg [20:0] w_src [0:3]; reg [20:0] w_dst [0:3]; reg [18:0] cnt [0:3]; reg [1:0] md_r [0:3];
+`ifdef R8064_DMA2
+    localparam NCH = 2;   // REV47: per-channel state only for the 2 existing channels (the index never reaches 2/3: writes to CR25..CR30 are ignored)
+`else
+    localparam NCH = 4;
+`endif
+    reg [20:0] s_r [0:NCH-1]; reg [20:0] d_r [0:NCH-1]; reg [3:0] s_bad, d_bad;
+    reg [20:0] w_src [0:NCH-1]; reg [20:0] w_dst [0:NCH-1]; reg [18:0] cnt [0:NCH-1]; reg [1:0] md_r [0:NCH-1];
     reg [3:0] act, done, err, ie;
     reg [1:0] cur, last; reg lp; reg [3:0] st; reg [2:0] k; reg [63:0] dbuf;
     localparam E_IDLE = 4'd0, E_RRQ = 4'd1, E_RWT = 4'd2, E_WRQ = 4'd3, E_WWT = 4'd4, E_PUSH = 4'd5, E_POP = 4'd6, E_NEXT = 4'd7, E_RWB = 4'd8;
@@ -109,12 +114,25 @@ module r8064_dma #(parameter PORT_STAT = 8'hEE, parameter PORT_IE = 8'hEF, param
     wire       fany = |actf;
     wire [1:0] fmd = md_r[fn];
     wire [1:0] ioch = {(io_a == PORT_STAT2), 1'b0};     // base of the channel pair of the STAT port
+    // REV47: dbuf in its own block, enabled only by the state (no longer behind 'fin', which depends on m_done/b_ok through the arbiter):
+    // the 64-bit load enable was the critical path. Where 'fin' used to block the load (last word of E_RWT with direct_bw, last byte of E_PUSH),
+    // loading anyway is harmless: the word is finished and dbuf is fully rewritten before its next use.
+    always @(posedge clk) begin
+        if (rst) dbuf <= 64'd0;
+        else case (st)
+            E_RWB:  dbuf <= b_q;
+            E_RWT:  if (m_done) dbuf <= m_rd;
+            E_PUSH: if (act[cur] && b_space) dbuf <= {8'd0, dbuf[63:8]};
+            E_POP:  if (act[cur] && a_avail && !lp) dbuf <= {a_q, dbuf[63:8]};
+            default: ;
+        endcase
+    end
     integer i;
     always @(posedge clk) begin
         if (rst) begin
             ovf_p <= 1'b0; ovf_c <= 2'd0; act <= 4'd0; done <= 4'd0; err <= 4'd0; ie <= 4'd0; st <= E_IDLE; cur <= 2'd0; last <= 2'd3; lp <= 1'b0; k <= 3'd0; inv <= 1'b0;
-            s_bad <= 4'd0; d_bad <= 4'd0; dbuf <= 64'd0;
-            for (i = 0; i < 4; i = i + 1) begin s_r[i] <= 21'd0; d_r[i] <= 21'd0; w_src[i] <= 21'd0; w_dst[i] <= 21'd0; cnt[i] <= 19'd0; md_r[i] <= 2'd0; end
+            s_bad <= 4'd0; d_bad <= 4'd0;
+            for (i = 0; i < NCH; i = i + 1) begin s_r[i] <= 21'd0; d_r[i] <= 21'd0; w_src[i] <= 21'd0; w_dst[i] <= 21'd0; cnt[i] <= 19'd0; md_r[i] <= 2'd0; end
         end else begin
             inv <= 1'b0; lp <= d_pop;
             ovf_p <= go && !bad && !z; ovf_c <= cch;
@@ -149,17 +167,17 @@ module r8064_dma #(parameter PORT_STAT = 8'hEE, parameter PORT_IE = 8'hEF, param
             end else case (st)
                 E_IDLE: if (act != 4'd0) begin cur <= nxt; k <= 3'd0; st <= (mdn == 2'd2) ? E_POP : E_RRQ; end
                 E_RRQ: if (sbuf) begin if (b_ok) st <= E_RWB; end else if (m_acc) st <= E_RWT;
-                E_RWB: begin dbuf <= b_q; k <= 3'd0; st <= !act[cur] ? E_NEXT : (rwb_w && m_acc) ? E_WWT : E_WRQ; end   // so MODO 0
+                E_RWB: begin k <= 3'd0; st <= !act[cur] ? E_NEXT : (rwb_w && m_acc) ? E_WWT : E_WRQ; end   // so MODO 0
                 E_RWT: if (m_done) begin
-                           dbuf <= m_rd; k <= 3'd0;
+                           k <= 3'd0;
                            st <= !act[cur] ? E_NEXT : (md == 2'd0) ? E_WRQ : E_PUSH;
                        end
                 E_WRQ: if (!dbuf_b && m_acc) st <= E_WWT;
                 E_WWT: if (m_done) st <= E_NEXT;   // only gets here with the channel aborted (otherwise 'fin')
                 E_PUSH: if (!act[cur]) st <= E_NEXT;
-                        else if (b_space) begin dbuf <= {8'd0, dbuf[63:8]}; k <= k + 3'd1; end
+                        else if (b_space) k <= k + 3'd1;
                 E_POP:  if (!act[cur]) st <= E_NEXT;
-                        else if (a_avail && !lp) begin dbuf <= {a_q, dbuf[63:8]}; k <= k + 3'd1; if (k == 3'd7) st <= E_WRQ; end
+                        else if (a_avail && !lp) begin k <= k + 3'd1; if (k == 3'd7) st <= E_WRQ; end
                 E_NEXT: begin last <= cur; st <= E_IDLE; end   // only aborts (channel already inactive)
                 default: st <= E_IDLE;
             endcase

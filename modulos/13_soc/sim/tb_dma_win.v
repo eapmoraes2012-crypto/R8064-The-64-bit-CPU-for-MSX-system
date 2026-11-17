@@ -121,7 +121,7 @@ module tb_dma_win;
         spw(P_ST, 8'h01); r_a = 8'hEC; #1 chk("FLAGS: START, busy, no WINDOW", r_rd, 8'h03);
         rw(8'hEC, 8'h01); rw(8'hEC, 8'h04); r_a = 8'hEC; #1 chk("FLAGS after DONE", r_rd, 8'h0C);
         spw(P_ST, 8'h01); spw(P_ST, 8'h08); spr(P_ST, st); chk("restart returns the window", st & 8'h20, 8'h20);
-        chk("violacoes SDRAM", mdl.viol, 0);
+        chk("SDRAM violations", mdl.viol, 0);
         if (errs == 0) $display("RESULT: WINDOW OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end

@@ -59,7 +59,10 @@ module r8064_soc #(parameter FIFO_BASE = 8'hE8, parameter INIT_CYC = 20000, para
     // ---------------- MSX system + core ----------------
     wire [7:0] mmu_asid, fl_asid; wire [19:0] mmu_root; wire fl_all, fl_va_en, fl_asid_en, cache_inv; wire [63:0] fl_va;
     wire c_i_req, c_i_ack, c_d_req, c_d_we, c_d_ack; wire [63:0] c_i_pa, c_i_rd, c_d_pa, c_d_wd, c_d_rd; wire [1:0] c_d_sz; wire [7:0] c_d_be; wire hit_i, hit_d, wr_ok;
-    r8064_msx_sys #(.FIFO_BASE(FIFO_BASE)) u_sys(.clk(clk), .rst(rst | boot_busy), .irq(irq & ~dma_irq),
+    // REV47: registered reset of the CPU system (rst | boot_busy goes into the clock-enable of the whole pipeline: was a critical path
+    // with long routing). Releases the core 1 clock later.
+    reg sys_rst_q; always @(posedge clk) sys_rst_q <= rst | boot_busy;
+    r8064_msx_sys #(.FIFO_BASE(FIFO_BASE)) u_sys(.clk(clk), .rst(sys_rst_q), .irq(irq & ~dma_irq),
         .i_req(c_i_req), .i_ack(c_i_ack), .i_paddr(c_i_pa), .i_rdata(c_i_rd),
         .d_req(c_d_req), .d_we(c_d_we), .d_paddr(c_d_pa), .d_size(c_d_sz), .d_wdata(c_d_wd), .d_be(c_d_be), .d_ack(c_d_ack), .d_rdata(c_d_rd),
         .i_hit(hit_i), .d_hit(hit_d), .d_wr_ok(wr_ok),
