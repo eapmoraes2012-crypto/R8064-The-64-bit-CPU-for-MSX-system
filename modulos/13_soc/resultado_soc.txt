@@ -362,3 +362,8 @@ REV44b (16/11 noite; PnR do usuario: LUT4 82%, BSRAM 45/46, mas "Unable to find 
              DMA com 2 canais no build da placa (-DR8064_DMA2 nos ys_board/ys_cart; simulacao segue com 4 canais).
   Resultado: LUT1-4 + ALU 16.665 -> ~15.700 (yosys); nextpnr local: LUT4 16282 + ALU 1916 antes das ultimas 2 trocas; com a versao final as sementes 2,3,4 passaram da legalizacao inicial (a semente 1 da versao anterior falhava).
   Regressao rt13_regressao.sh: tudo OK. D-cache/I-cache IDX 6 testado e descartado (vira LUT-RAM, pior).
+
+REV44c (16/11 noite): divisor com UM negador (div_unit.v; copia em 08_fpu/rtl): PRE/PRE2/PRE3 e POST/POST2, uma negacao por clock.
+  Divisao com sinal passa de sz+4 para sz+7 clocks: DIVSB/SW/SL/SQ = 15/23/39/71 (antes 12/20/36/68); sem sinal inalterada (10/18/34/66).
+  tb_muldiv: 20108 vetores, 0 erros de resultado, ciclos conforme sz+7: PASS. sim_mdu/chk.py 3000 vetores: 0 erros (MAXCYC 72). rt13_regressao: tudo OK.
+  Area (yosys plano, LUT1-4 + ALU): 15.698 -> 15.274 (-424, -2,7% do chip). ref/expected_cycles.csv e planilha atualizados (DIVS*: +3).

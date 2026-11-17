@@ -101,7 +101,7 @@ module tb_muldiv;
                 if (errs_d <= 5) $display("ERRO div i=%0d sz=%0d sgn=%0d h=%h l=%h d=%h q=%h/%h r=%h/%h e=%b/%b", i, dc[i][1:0], dc[i][2], dh[i], dl[i], dd[i], d_q, dq[i], d_r, dr[i], d_err, de[i]);
             end
             if (!de[i]) begin
-                expn = (dc[i][1:0] == 0 ? 8 : dc[i][1:0] == 1 ? 16 : dc[i][1:0] == 2 ? 32 : 64) + (dc[i][2] ? 4 : 2);
+                expn = (dc[i][1:0] == 0 ? 8 : dc[i][1:0] == 1 ? 16 : dc[i][1:0] == 2 ? 32 : 64) + (dc[i][2] ? 7 : 2);   // REV44: com sinal = sz+7 (negador unico)
                 if (lat !== expn) errs_c = errs_c + 1;
                 sel = dc[i][2] * 4 + dc[i][1:0];
                 if (lat < cmin[sel]) cmin[sel] = lat; if (lat > cmax[sel]) cmax[sel] = lat;

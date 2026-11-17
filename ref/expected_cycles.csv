@@ -8,10 +8,10 @@
 7;DECW rr;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
 8;DECL rr;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
 9;DECQ rr;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-10;DIVSB AX, t;ED 3D --;R8064;3;1;0;0;0;12;12;4;8;0;16;20;18;;;Divisor iterativo 1 bit/ciclo
-11;DIVSW DX:AX, rr;ED 3D --;R8064;3;1;0;0;0;20;20;4;8;0;24;28;26;;;Divisor iterativo 1 bit/ciclo
-12;DIVSL QA, rr;ED 3D --;R8064;3;1;0;0;0;36;36;4;8;0;40;44;42;;;Divisor iterativo 1 bit/ciclo
-13;DIVSQ QDE:QA, rr;ED 3D --;R8064;3;1;0;0;0;68;68;4;8;0;72;76;74;;;Divisor iterativo 1 bit/ciclo
+10;DIVSB AX, t;ED 3D --;R8064;3;1;0;0;0;15;15;4;8;0;19;23;21;;;Divisor iterativo 1 bit/ciclo
+11;DIVSW DX:AX, rr;ED 3D --;R8064;3;1;0;0;0;23;23;4;8;0;27;31;29;;;Divisor iterativo 1 bit/ciclo
+12;DIVSL QA, rr;ED 3D --;R8064;3;1;0;0;0;39;39;4;8;0;43;47;45;;;Divisor iterativo 1 bit/ciclo
+13;DIVSQ QDE:QA, rr;ED 3D --;R8064;3;1;0;0;0;71;71;4;8;0;75;79;77;;;Divisor iterativo 1 bit/ciclo
 14;DIVUB AX, t;ED 3C --;R8064;3;1;0;0;0;10;10;4;8;0;14;18;16;;;Divisor iterativo 1 bit/ciclo
 15;DIVUW DX:AX, rr;ED 3C --;R8064;3;1;0;0;0;18;18;4;8;0;22;26;24;;;Divisor iterativo 1 bit/ciclo
 16;DIVUL QA, rr;ED 3C --;R8064;3;1;0;0;0;34;34;4;8;0;38;42;40;;;Divisor iterativo 1 bit/ciclo

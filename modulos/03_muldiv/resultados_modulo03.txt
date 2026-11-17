@@ -5,7 +5,7 @@ SIMULACAO FUNCIONAL (Icarus Verilog 14.0, modelo de referencia em inteiros do Py
      6.242 operacoes de 64 bits em sequencia: 0 erros, 4,00 clocks por operacao (iguais ao EX=4 da planilha).
      Latencia (aceitacao ate out_valid): 8/16/32 bits = 5 clocks; 64 bits = 8 clocks.
   Divisor: 20.108 vetores (inclui 2.363 com erro: divisao por zero e estouro, MIN/-1 etc.): 0 erros de q, r e err.
-     Clocks ocupados (sem estouro): sem sinal 10/18/34/66 e com sinal 12/20/36/68 para 8/16/32/64 bits = IGUAIS a coluna ocupacao_X da planilha (DIVUB..DIVUQ, DIVSB..DIVSQ).
+     Clocks ocupados (sem estouro): sem sinal 10/18/34/66 e com sinal 15/23/39/71 (REV44: negador unico, +3 clocks; antes 12/20/36/68) para 8/16/32/64 bits = IGUAIS a coluna ocupacao_X da planilha (atualizada em REV44) (DIVUB..DIVUQ, DIVSB..DIVSQ).
   Mutantes: 6 (versao 1) + 4 (versao final) alteracoes de proposito no RTL; todos detectados (FAIL).
 SINTESE E P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, alvo 100 MHz; com invólucro LFSR, entradas/saidas nao reais):
   Multiplicador, versao 1 (3 estagios): 72 MHz  -> FALHOU. Caminho: soma de 4 termos + acumulador de 128 bits no mesmo clock.
@@ -15,7 +15,7 @@ SINTESE E P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, alvo 100 MH
 IMPLICACOES PARA O PIPELINE
   1) MLTxB/W/L (EX=1) so mantem vazao de 1 por clock; o resultado sai 5 clocks apos a emissao (X+M+W cobrem 3): instrucao dependente precisa esperar ~2 clocks extras
      (ou o pipeline precisa de bypass de multiplicacao/estagios extras). MLTSQ/MLTUQ: 8 clocks de latencia, 4 de ocupacao.
-  2) Divisor ocupa X por sz+2 / sz+4 clocks (planilha ja considerava); em estouro ele termina em 2-3 clocks (excecao de divisao: definir vetor/flag).
+  2) Divisor ocupa X por sz+2 / sz+7 clocks (REV44: negador unico; antes sz+4); em estouro ele termina em 2-3 clocks (excecao de divisao: definir vetor/flag).
   3) Os 4 DSP usados pelo multiplicador sao os mesmos que a FPU (mantissa 64 bits) e a MMU precisarao: compartilhar ou reservar (48 disponiveis).
 PREMISSAS A CONFIRMAR (a planilha nao especifica): resultado das MLT (ex.: MLTSB AL,u -> AX; MLTUW HL,rr -> 32 bits em qual par; MLTUQ QA,rr gera 128 bits e qual metade fica em QA);
   divisao: truncamento para zero, resto com sinal do dividendo, erro por divisor zero ou quociente fora da faixa (como x86); flags das MLT/DIV nao modelados.
