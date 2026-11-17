@@ -8,7 +8,7 @@ module sdram_byte_if(
     input  wire [7:0]  wdata,
     output reg  [7:0]  rdata,
     output reg         ack,
-    // lado sdram_ctrl
+    // sdram_ctrl side
     output wire        s_req, s_we,
     output wire [18:0] s_addr,
     output wire [63:0] s_wdata,

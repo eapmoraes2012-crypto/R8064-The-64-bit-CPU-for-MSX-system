@@ -1,7 +1,7 @@
 Module 14 - 3D unit (prototype). Run: cd sim; python3 gen_vec3d.py .; iverilog -g2012 -o s tb_vec3d.v ../rtl/vec3d_unit.v; vvp s  -> "VEC3D OK".
 Synthesis: pnr/ (pnr_vec_top.v, pins.cst). Results and proposal: resultados_modulo14.txt. rtl/vec3d_unit.v = final version; rtl/*_v?.v = previous versions (reference).
 
-Revisao 10/11/2026: rtl/vec3d_unit.v = v6 (otimizada, sh 4 bits, latencia 4, 10 DSP); v5_lane_alu / v5_completa = versoes anteriores; v7_janelas_descartada = experimento pior.
+Revision 10/11/2026: rtl/vec3d_unit.v = v6 (optimized, sh 4 bits, latency 4, 10 DSP); v5_lane_alu / v5_completa = previous versions; v7_janelas_descartada = worse experiment.
 Measure area: ./ys_unit.sh rtl/vec3d_unit.v (sum of LUT1-4 + ALU; nextpnr also counts the MUX2_LUT). ISA and encoding: ISA_3D.txt. Core test: 09_core_min/sim/tb_vec.v.
 
 [10/11/2026] The 3D unit was REMOVED from the core (see 13_soc/resultado_soc.txt REV30). This module stays as a design archive: nothing instantiates it. Core state with the 3D: 09_core_min/bak/com_vec3d/.

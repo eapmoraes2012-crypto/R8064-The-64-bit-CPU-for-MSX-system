@@ -74,7 +74,7 @@ module tb_msx_if;
             if (irq && int_buf !== 1'b0) begin errs = errs + 1; $display("ERROR: INT did not assert"); end
             if (!irq && int_buf !== 1'b1) begin errs = errs + 1; $display("ERROR: INT asserted without enabling"); end
             z_in(BASE + 2, v); n = v; z_in(BASE + 3, v); n = n + (v << 8);
-            if (n !== len) begin errs = errs + 1; $display("ERROR: len de retorno %0d != %0d", n, len); end
+            if (n !== len) begin errs = errs + 1; $display("ERROR: return len %0d != %0d", n, len); end
             t2 = $time;
             for (k = 0; k < len; k = k + 1) begin
                 z_in(BASE, v); #(T * 23 - 1150 > 0 ? T * 23 - 1150 : 1);
@@ -83,7 +83,7 @@ module tb_msx_if;
             z_out(BASE + 1, 8'h84);     // clears DONE/IRQ, keeps IRQ enabled
             z_out(BASE + 1, 8'h00);
             if (int_buf !== 1'b1) begin errs = errs + 1; $display("ERROR: INT did not deassert"); end
-            if (measure) $display("VAZAO: %0d bytes: MSX->FPGA %0.0f B/s | FPGA->MSX %0.0f B/s (OTIR/INIR a 23 T-states por byte)", len, len * 1e9 / (t1 - t0), len * 1e9 / ($time - t2));
+            if (measure) $display("THROUGHPUT: %0d bytes: MSX->FPGA %0.0f B/s | FPGA->MSX %0.0f B/s (OTIR/INIR at 23 T-states per byte)", len, len * 1e9 / (t1 - t0), len * 1e9 / ($time - t2));
         end
     endtask
     initial begin
@@ -93,14 +93,14 @@ module tb_msx_if;
         block(1, 0, 0); block(7, 1, 0); block(513, 0, 0);
         // 2) 2048-byte block (FIFOs full) with throughput measurement
         block(2048, 1, 1);
-        // 3) estouro e sub-fluxo
+        // 3) overflow and underflow
         z_out(BASE + 1, 8'h02);                                   // clears FIFOs
         for (i = 0; i < 2049; i = i + 1) begin z_out(BASE, i[7:0]); #(T * 3); end
         z_in(BASE + 1, st); if (st[5] !== 1'b1 || st[1] !== 1'b0) begin errs = errs + 1; $display("ERROR overflow/full STATUS=%h", st); end
         z_out(BASE + 1, 8'h02); #1000;
-        z_in(BASE + 1, st); if (st[5] !== 1'b0 || st[1] !== 1'b1) begin errs = errs + 1; $display("ERROR limpeza STATUS=%h", st); end
+        z_in(BASE + 1, st); if (st[5] !== 1'b0 || st[1] !== 1'b1) begin errs = errs + 1; $display("ERROR clear STATUS=%h", st); end
         z_in(BASE, v); z_in(BASE + 1, st);
-        if (v !== 8'h00 || st[6] !== 1'b1) begin errs = errs + 1; $display("ERROR sub-fluxo v=%h STATUS=%h", v, st); end
+        if (v !== 8'h00 || st[6] !== 1'b1) begin errs = errs + 1; $display("ERROR underflow v=%h STATUS=%h", v, st); end
         z_out(BASE + 1, 8'h02);
         // 4) ports out of range and interrupt acknowledge cycle (M1+IORQ): nothing can be driven or written
         for (i = 0; i < 64; i = i + 1) begin
@@ -110,7 +110,7 @@ module tb_msx_if;
         z_in(BASE + 1, st); if (st !== 8'h02) begin errs = errs + 1; $display("ERROR: out-of-range port/M1 changed the state STATUS=%h", st); end
         // 5) short pulses (15 ns noise) on WR/RD with valid address: they must not write
         a = BASE; iorq_n = 0; #50 wr_n = 0; #15 wr_n = 1; #50 wr_n = 0; #15 wr_n = 1; #50 iorq_n = 1; a = 8'hFF; #300;
-        z_in(BASE + 1, st); if (st !== 8'h02) begin errs = errs + 1; $display("ERROR: ruido em WR escreveu STATUS=%h", st); end
+        z_in(BASE + 1, st); if (st !== 8'h02) begin errs = errs + 1; $display("ERROR: noise on WR wrote STATUS=%h", st); end
         // 5b) short pulses also on RD (must not enable the buffer) and on WR in the CMD/DATA register (must not change the state)
         a = BASE + 1; iorq_n = 0; #50 rd_n = 0; #15 rd_n = 1; #30 rd_n = 0; #15 rd_n = 1; #50 wr_n = 0; #15 wr_n = 1; #50 iorq_n = 1; a = 8'hFF; #300;
         a = BASE; iorq_n = 0; #50 wr_n = 0; #15 wr_n = 1; #50 iorq_n = 1; a = 8'hFF; #300;

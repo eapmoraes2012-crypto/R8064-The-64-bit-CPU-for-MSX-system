@@ -1,6 +1,6 @@
 # fpref.py - EXACT reference model (Fraction) of the arithmetic core of the R8064 80-bit FPU.
 # Conventions (x87): rc 0=nearest-even 1=toward -inf 2=toward +inf 3=toward zero; pc 0=24 bits 2=53 bits 3=64 bits (1 = 64).
-# flags: bit0 IE, bit1 DE, bit2 ZE, bit3 OE, bit4 UE, bit5 PE.  up = magnitude incrementada no arredondamento (C1).
+# flags: bit0 IE, bit1 DE, bit2 ZE, bit3 OE, bit4 UE, bit5 PE.  up = magnitude incremented by rounding (C1).
 # cc = (c3,c2,c0) only in CMP.  My decisions: unsupported formats (pseudo-denormal, unnormal, pseudo-NaN/inf) -> IE + indefinite;
 # tininess BEFORE rounding; UE = tiny && inexact; NaN with two NaNs: larger significand (tie -> A); denormal at input -> DE.
 from fractions import Fraction as F
@@ -39,7 +39,7 @@ def flog2(v):
     return E
 
 def round_core(sign, v, rm, p, emin, emax):
-    """v>0 exato. Retorna (res_frac, inexact, inc, tiny, overflow)."""
+    """v>0 exact. Returns (res_frac, inexact, inc, tiny, overflow)."""
     E = flog2(v); Eq = max(E, emin)
     q = F(2) ** (Eq - (p - 1)); n = v / q; k = n.numerator // n.denominator; rem = n - k
     inex = rem != 0
@@ -75,7 +75,7 @@ def pack_ieee(sign, res, fmt):
     return (sign << (fb + ew)) | ((E + eb) << fb) | int(fr)
 
 def round_to(sign, v, rc, p, emin, emax, fmt):
-    """v>0. Retorna (packed, flags, up)."""
+    """v>0. Returns (packed, flags, up)."""
     res, inex, inc, tiny, ovf = round_core(sign, v, rc, p, emin, emax)
     fl = 0; up = inc and inex
     if inex: fl |= PE
@@ -107,7 +107,7 @@ def nan_pick(ca, cb, A, B):
     return qnan(s, m & ~(1 << 62) & M64 | 0) if False else (s << 79) | (0x7FFF << 64) | m, ie
 
 def alu(op, A, B, rc, pc):
-    """Retorna (res, flags, up, cc)."""
+    """Returns (res, flags, up, cc)."""
     name = OPS[op] if isinstance(op, int) else op
     p = pcbits(pc)
     ca = classify(A); cb = classify(B)

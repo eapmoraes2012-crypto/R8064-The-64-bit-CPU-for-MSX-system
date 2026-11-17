@@ -99,14 +99,14 @@ module sdram_model #(
                 4'b0000: begin   // LOAD MODE REGISTER
                     for (k = 0; k < 4; k = k + 1) if (active[k]) err("MRS with an active bank");
                     if (refs_init < MIN_INIT_REF) err("MRS before the 2 initialization AUTO REFRESHes");
-                    if (a[2:0] != 3'b001) err("modo: BL diferente de 2");
-                    if (a[6:4] != 3'd2) err("modo: CL diferente de 2");
+                    if (a[2:0] != 3'b001) err("mode: BL different from 2");
+                    if (a[6:4] != 3'd2) err("mode: CL different from 2");
                     mode_set = 1; t_mrs = cyc; last_ref = cyc;
                 end
                 default: ;
             endcase
             if (cmd != 4'b0000 && cyc - t_mrs < tMRD && t_mrs > 0) err("tMRD");
         end
-        if (mode_set && !gap_flag && cyc - last_ref > MAX_REF_GAP) begin err("refresh atrasado (intervalo maior que MAX_REF_GAP)"); gap_flag = 1; end
+        if (mode_set && !gap_flag && cyc - last_ref > MAX_REF_GAP) begin err("late refresh (interval larger than MAX_REF_GAP)"); gap_flag = 1; end
     end
 endmodule

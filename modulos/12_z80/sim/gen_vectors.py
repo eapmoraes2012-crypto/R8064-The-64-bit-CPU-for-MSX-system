@@ -36,7 +36,7 @@ tot = 0
 for s in range(1, 13):
     m, rg = mk(s, 0, s % 3 != 0)
     k = emit('r%02d' % s, m, rg, 20000); tot += k; print('r%02d' % s, k)
-# ZEXDOC (trecho inicial)
+# ZEXDOC (initial excerpt)
 zc = open('../zexdoc.com', 'rb').read() if os.path.exists('../zexdoc.com') else open('zexdoc.com', 'rb').read()
 m = bytearray(65536); m[0x100:0x100 + len(zc)] = zc; m[5] = 0xC9; m[6] = 0; m[7] = 0xF0
 r = random.Random(7); rg = '0 0 0 0 0 0 0 0 0 0 f000 100 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n'

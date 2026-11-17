@@ -4,7 +4,7 @@
 `timescale 1ns/1ps
 module z80_core(
   input  wire        clk,
-  input  wire        ce,        // um pulso = um T-state
+  input  wire        ce,        // one pulse = one T-state
   input  wire        rst_n,
   output wire [15:0] addr,
   output wire [7:0]  dout,
@@ -67,12 +67,12 @@ module z80_core(
   assign busak = busak_r;
   assign bus_oe = ~busak_r;
 
-  // ---------------- funcoes ----------------
+  // ---------------- functions ----------------
   function par8; input [7:0] v; begin par8 = ~(^v); end endfunction
   function [7:0] szp; input [7:0] v; begin szp = {v[7], (v==8'd0), v[5], 1'b0, v[3], par8(v), 1'b0, 1'b0}; end endfunction
 
-  // Unidade de 8 bits unica (somador compartilhado). cls: 0 ALU(op) 1 ROT(op) 2 INC/DEC(op[0]) 3 DAA/CPL/SCF/CCF(op 0..3)
-  //                                                      4 BIT 5 RES 6 SET 7 rotacoes de A (RLCA,RRCA,RLA,RRA)
+  // Single 8-bit unit (shared adder). cls: 0 ALU(op) 1 ROT(op) 2 INC/DEC(op[0]) 3 DAA/CPL/SCF/CCF(op 0..3)
+  //                                                      4 BIT 5 RES 6 SET 7 rotations of A (RLCA,RRCA,RLA,RRA)
   function [15:0] f_u; input [2:0] cls; input [2:0] op; input [7:0] a_; input [7:0] b_; input [7:0] fo; input [7:0] xy;
     reg [2:0] aop; reg [7:0] bb; reg [8:0] s; reg ci; reg sub; reg [7:0] r; reg [7:0] fl; reg [7:0] res; reg [7:0] flr;
     reg [7:0] tt; reg c; reg h;
@@ -249,7 +249,7 @@ module z80_core(
   wire [15:0] a16_res = a16_o[23:8];
   wire [7:0]  a16_f   = a16_o[7:0];
 
-  // ---------------- requisicao a unidade de 8 bits (compartilhada) ----------------
+  // ---------------- request to the 8-bit unit (shared) ----------------
   reg [2:0] u_cls, u_op, u_rsel; reg [7:0] u_a, u_b, u_xy; reg u_to_a, u_to_reg, u_to_tmp, u_fen, u_rund;
   always @* begin
     u_cls=3'd0; u_op=y; u_a=a; u_b=8'd0; u_xy=8'd0; u_to_a=1'b0; u_to_reg=1'b0; u_to_tmp=1'b0; u_fen=1'b0; u_rsel=y; u_rund=1'b0;
@@ -366,7 +366,7 @@ module z80_core(
       end
       else if (pf_cb) begin
         if (z==3'd6) begin n_ea=hl; n_ctyp=CT_MR; n_caddr=hl; n_st=S_RD1; end
-        else do_fin=1'b1;                                                      // unidade U faz o resto
+        else do_fin=1'b1;                                                      // unit U does the rest
       end
       else if (pf_ed) begin
         if (x==2'd1) begin
@@ -436,7 +436,7 @@ module z80_core(
               n_ctyp=CT_MR; n_caddr=pcm;
               if (y==3'd6 && pfx!=2'd0) n_st=S_D; else begin n_st=S_IMM8; if (y==3'd6) n_ea=hl; end
             end
-            default: do_fin=1'b1;     // x==0,z==7: unidade U
+            default: do_fin=1'b1;     // x==0,z==7: unit U
           endcase
         end
         2'd1: begin
@@ -446,7 +446,7 @@ module z80_core(
         end
         2'd2: begin
           if (z==3'd6) begin n_ctyp=CT_MR; n_caddr=pcm; n_st=S_D; end
-          else do_fin=1'b1;           // unidade U
+          else do_fin=1'b1;           // unit U
         end
         default: begin
           case (z)
@@ -487,14 +487,14 @@ module z80_core(
       end
     end
 
-    // ------------------------------------------------------------------ imediato 8 bits
+    // ------------------------------------------------------------------ 8-bit immediate
     S_IMM8: begin
       n_pc = pc1;
       if (x==2'd0) begin
         if (y!=3'd6) begin w8_en=1'b1; w8_und=1'b1; w8_sel=y; w8_val=dbi; do_fin=1'b1; end
         else begin n_ctyp=CT_MW; n_caddr=ea; n_cdata=dbi; n_st=S_WR1; end
       end else if (z==3'd6) begin
-        do_fin=1'b1;                                                            // ALU n (unidade U)
+        do_fin=1'b1;                                                            // ALU n (unit U)
       end else if (y==3'd2) begin
         n_ctyp=CT_IOW; n_caddr={a, dbi}; n_cdata=a; n_st=S_IO; n_wz={a, dbi+8'd1};
       end else begin
@@ -536,7 +536,7 @@ module z80_core(
       if (pf_ed) w16_sel=p; else w16_sel=2'd2;
       do_fin=1'b1;
     end
-    // ------------------------------------------------------------------ indexado
+    // ------------------------------------------------------------------ indexed
     S_D: begin
       n_pc = pc1;
       n_ea = a16_res; n_wz = a16_res;
@@ -593,7 +593,7 @@ module z80_core(
       n_ctyp=CT_MR; n_caddr=pc1; n_cext=2'd2; n_st=S_DC2;
     end
     S_DC2: begin n_pc=pc1; n_opr=dbi; n_ctyp=CT_MR; n_caddr=ea; n_st=S_DC3; end
-    S_DC3: begin n_ctyp=CT_INT; n_ilen=5'd1; n_st=S_INC1; end                     // U faz o calculo
+    S_DC3: begin n_ctyp=CT_INT; n_ilen=5'd1; n_st=S_INC1; end                     // U does the computation
     // ------------------------------------------------------------------ stack / jumps
     S_PL: begin n_lo8=dbi; n_ctyp=CT_MR; n_caddr=a16_res; n_st=S_PH; n_sp=a16_res; end
     S_PH: begin
@@ -652,7 +652,7 @@ module z80_core(
     S_X2: begin n_ctyp=CT_MW; n_caddr=a16_res; n_cdata=hlx[15:8]; n_st=S_X3; end
     S_X3: begin n_ctyp=CT_MW; n_caddr=sp; n_cdata=hlx[7:0]; n_st=S_X4; end
     S_X4: begin w16_en=1'b1; w16_sel=2'd2; w16_val=tmp16; n_wz=tmp16; n_ctyp=CT_INT; n_ilen=5'd2; n_st=S_FINI; end
-    // ------------------------------------------------------------------ blocos
+    // ------------------------------------------------------------------ blocks
     S_BLD:  begin n_de=a16_res; n_ctyp=CT_INT; n_ilen=5'd1; n_st=S_BLD1; end
     S_BLD1: begin n_hl=a16_res; n_ctyp=CT_INT; n_ilen=5'd1; n_st=S_BLD2; end
     S_BLD2: begin
@@ -700,7 +700,7 @@ module z80_core(
       endcase
     end
 
-    // ----- finalizacao
+    // ----- finalization
     if (do_fin || do_m1) begin
       n_st = S_DISP; n_iack=1'b0; n_pj0=1'b0; n_pj1=1'b0;
       if (do_fin) begin n_pfx=2'd0; n_done=1'b1; n_pf_ed=1'b0; n_pf_cb=1'b0; end
@@ -717,7 +717,7 @@ module z80_core(
     end
   end
 
-  // ---------------- commit sequencial ----------------
+  // ---------------- sequential commit ----------------
   always @(posedge clk) begin
     instr_done <= 1'b0;
     if (!rst_n) begin

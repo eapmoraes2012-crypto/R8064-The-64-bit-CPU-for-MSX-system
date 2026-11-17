@@ -1,4 +1,4 @@
-# gen_vectors.py <seed> <n_per_operation> > vetores.txt   (op rc pc A B -> res flags up cc, all in hex)
+# gen_vectors.py <seed> <n_per_operation> > vectors.txt   (op rc pc A B -> res flags up cc, all in hex)
 import sys, random
 sys.path.insert(0, '.')
 from fpref import *

@@ -1,5 +1,5 @@
 # fpu_stk_ref.py - reference model (Python) of the FPU residual hardware: ST0-ST7 stack, tags, CW, SW. Generates vectors for tb_fpu_stk.v.
-# Comandos: 0 NOP 1 INIT 2 PUSH 3 POP 4 XCH 5 WRST 6 INCSTP 7 DECSTP 8 SETCW 9 CLREX 10 ORFLG 11 SETCC 12 SETSW 13 SETTW 14 FREE
+# Commands: 0 NOP 1 INIT 2 PUSH 3 POP 4 XCH 5 WRST 6 INCSTP 7 DECSTP 8 SETCW 9 CLREX 10 ORFLG 11 SETCC 12 SETSW 13 SETTW 14 FREE
 import random, sys
 INDEF = (1 << 79) | (0x7FFF << 64) | (0xC000 << 48)
 M64 = (1 << 64) - 1
@@ -16,7 +16,7 @@ def fxam(v, empty):
     if ex == 0 and m == 0: return (1, 0, sign, 0)
     if ex == 0x7FFF:
         if m >> 63:
-            return (0, 1, sign, 1) if (m & ((1 << 63) - 1)) == 0 else (0, 0, sign, 1)   # infinito : NaN
+            return (0, 1, sign, 1) if (m & ((1 << 63) - 1)) == 0 else (0, 0, sign, 1)   # infinity : NaN
         return (0, 0, sign, 0)                           # pseudo-NaN/inf: unsupported
     if ex == 0: return (0, 0, sign, 0) if (m >> 63) else (1, 1, sign, 0)   # pseudo-denormal : unsupported ; denormal c3=c2=1
     if not (m >> 63): return (0, 0, sign, 0)             # not normalized
@@ -70,7 +70,7 @@ if __name__ == '__main__':
         k = random.random()
         s = random.getrandbits(1) << 79
         if k < .15: return s                                            # zero
-        if k < .30: return s | (0x7FFF << 64) | (1 << 63)               # infinito
+        if k < .30: return s | (0x7FFF << 64) | (1 << 63)               # infinity
         if k < .40: return s | (0x7FFF << 64) | (0xC000 << 48) | random.getrandbits(40)   # NaN
         if k < .50: return s | random.getrandbits(63)                    # denormal
         if k < .55: return s | (random.getrandbits(15) << 64) | random.getrandbits(63)    # not normalized

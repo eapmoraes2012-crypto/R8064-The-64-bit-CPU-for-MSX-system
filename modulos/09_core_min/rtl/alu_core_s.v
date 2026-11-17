@@ -33,8 +33,8 @@ module alu_core_s(
     // Logic / shift result. The controls are mutually exclusive (one per operation), so the selector is a parallel AND-OR, with no priority
     // chain; DAA only touches the low byte (the rest stays 0) and the shifts share one path to the left and one to the right.
     wire c_lft = c_shl | c_rol, c_rgt = c_shr | c_sar | c_ror;
-    wire in_l = (c_rol & top) | (c_shl & ins);                                  // bit que entra por baixo
-    wire in_r = (c_sar & top) | (c_ror & low) | (c_shr & c_insc & fin[0]);      // bit que entra por cima
+    wire in_l = (c_rol & top) | (c_shl & ins);                                  // bit entering at the bottom
+    wire in_r = (c_sar & top) | (c_ror & low) | (c_shr & c_insc & fin[0]);      // bit entering at the top
     wire [63:0] lr_l = ((x << 1) & m) | {63'd0, in_l};
     wire [63:0] lr_r = (x >> 1) | ({63'd0, in_r} << msb);
     wire [63:0] lr = ({64{c_and}} & (x & bm)) | ({64{c_or}} & (x | bm)) | ({64{c_xor}} & (x ^ bm)) | ({64{c_cpl}} & (~x & m)) |

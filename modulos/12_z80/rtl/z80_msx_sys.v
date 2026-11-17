@@ -60,7 +60,7 @@ module z80_msx_sys #(
             pend <= 1'b0; mp_req <= 1'b0; done <= 1'b1; rbuf <= mp_rdata;
         end
     end
-    // acessos externos
+    // external accesses
     wire xm_acc  = (mrd | mwr) & ~hit;
     wire xio_acc = (iord | iowr | (~iorq_n & ~m1_n)) & ~(io_hit);
     assign xm_rd = mrd & ~hit;  assign xm_wr = mwr & ~hit;  assign xm_addr = a;  assign xm_wdata = dout;

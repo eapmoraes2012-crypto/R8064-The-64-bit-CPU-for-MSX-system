@@ -1,7 +1,7 @@
 FPU stage A - status (updated)
 Architecture: rtl/fpu_half.v = FPU on clk2 = clk/2 (exactly half of the pipeline; toggling divider with reset, in phase with clk).
   Pipeline stays at 100 MHz; fpu_alu core runs at 50 MHz. Domain crossing by toggle (req_t/dt2). Same interface as fpu_alu.
-Functional: sim/tb_half.v + vetores.txt: 39000 vectors, 0 errors (latency in pipeline clocks: ADD med 43, MUL 43, DIV 123, SQRT 125, CMP 21).
+Functional: sim/tb_half.v + vectors.txt: 39000 vectors, 0 errors (latency in pipeline clocks: ADD med 43, MUL 43, DIV 123, SQRT 125, CMP 21).
 Timing (nextpnr GW2AR-LV18QN88C8/I7, router2, default seed): clk2 64.65 MHz (target 50: PASSES, 29% slack); clk 139.4 MHz (target 100: PASSES).
 Note: clk<->clk2 paths are not analyzed by nextpnr (they are in phase; toggle protocol with stable operands).
 Pending: mutation tests of fpu_alu/fpu_half, resultados_modulo08.txt, README, zip; then stage B (fpu_top) and C (CORDIC/FREM).

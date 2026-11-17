@@ -31,7 +31,7 @@ module timing_gov #(
     output wire        phase,         // parity of the R800 cycle (alignment with the external 3.58 MHz bus)
     input  wire        cv,            // commit: the candidate instruction was issued on this clock
     input  wire        alt_ev,        // false condition / end of repeat of the instruction in progress
-    output wire        go,            // 1 = pode emitir
+    output wire        go,            // 1 = may issue
     output wire [12:0] dbg_rem
 );
     reg [31:0] rom [0:2047];
@@ -47,7 +47,7 @@ module timing_gov #(
     wire [6:0] n_a  = is_z80 ? ((z_a == 0) ? n_p : ({1'b0, z_a} + zadd)) : ((r_a == 0) ? n_p : ({1'b0, r_a} + radd));
     wire [6:0] dlt_u = n_p - n_a;
     localparam CPC = CPT / 2;                                  // clocks per R800 cycle
-    function [12:0] scale(input [6:0] n, input z);             // n * (clocks por unidade)
+    function [12:0] scale(input [6:0] n, input z);             // n * (clocks per unit)
         scale = z ? (n * CPT) : (n * CPC);
     endfunction
     // 2nd and 3rd register stages (cut ROM -> adders -> counter): n_p/dlt_u/VDP flag, then time in clocks.

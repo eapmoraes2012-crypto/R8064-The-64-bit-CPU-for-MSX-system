@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 // Scenarios 1-8: MMU faults as an exception. Scenarios 9-12 (MODELO_PRIVILEGIO.txt): 9 user mode with MMU (SCALL + SYSRT, privileged instruction), 10 interrupt in user mode
-// usuario, 11 PROT 1 + RESET, 12 STDBY acordado por interrupcao.
+// user, 11 PROT 1 + RESET, 12 STDBY woken by an interrupt.
 // Full SoC: sequence program (LD SP/PUSH/POP/CALL/RET/OUT/IN) executed from the SDRAM (model with protocol checking) through MMU (bypass) + caches + arbiters.
 module tb_soc_exc;
     wire mmu_en_w, mmu_user_w; integer sc = 1; integer nfi = 0, nfd = 0; reg clk = 0, rst = 1; always #5 clk = ~clk;
@@ -37,7 +37,7 @@ module tb_soc_exc;
     initial begin
         if (!$value$plusargs("sc=%d", sc)) sc = 1;
         for (k = 0; k < 512; k = k + 1) by[k] = 8'h00; p = 0;
-        ldrr(7, 16'h0100); mtcr(5'd15); ldrr(7, 16'h0001); mtcr(5'd14);      // raiz = PPN 100h; MMU ligada
+        ldrr(7, 16'h0100); mtcr(5'd15); ldrr(7, 16'h0001); mtcr(5'd14);      // root = PPN 100h; MMU on
         for (k = 0; k < 64; k = k + 1) ub[k] = 8'h00; up = 0;
         if (sc == 9) begin                                                           // user mode with MMU: user code on page 4000h (PTE with U)
             ldrr(4, 16'h4000); emit(8'hED); emit(8'hB6); emit(8'h18); emit(8'hFE);         // HL=4000 ; JP USER,(HL)
@@ -47,13 +47,13 @@ module tb_soc_exc;
             uemit(8'hED); uemit(8'h22); uemit(8'h77);                                      // 4005: SCALL 77h
             uemit(8'hED); uemit(8'h3B); uemit(8'h51); uemit(8'hAA); uemit(8'hAA);          // 4008: LDW DE,AAAA
             uemit(8'hF3); uemit(8'h18); uemit(8'hFE);                                      // 400D: DI (privileged in user mode) ; loop
-        end else if (sc == 10) begin                                                 // interrupcao em modo usuario
+        end else if (sc == 10) begin                                                 // interrupt in user mode
             ldrr(7, 16'h0001); mtcr(5'd10); ldrr(4, 16'h4000); emit(8'hED); emit(8'hB6); emit(8'h18); emit(8'hFE);   // IE=1 ; JP USER,(HL)
             p = 16'h40; mfcr(5'd18); emit(8'h18); emit(8'hFE);                             // handler: AX=CR18 ; loop
             uemit(8'h03); uemit(8'h18); uemit(8'hFD);                                      // 4000: INC BC ; JR 4000
         end else if (sc == 11) begin                                                 // PROT 1 turns the MMU on; RESET turns everything off and restarts at 0
-            p = 0; ldrr(7, 16'h0100); mtcr(5'd15); emit(8'hED); emit(8'h01);               // raiz ; PROT 1
-            mfcr(5'd5); emit(8'hB7); emit(8'h20); emit(8'h0C);                             // AX=CR5 ; OR A ; JR NZ,segunda passada
+            p = 0; ldrr(7, 16'h0100); mtcr(5'd15); emit(8'hED); emit(8'h01);               // root ; PROT 1
+            mfcr(5'd5); emit(8'hB7); emit(8'h20); emit(8'h0C);                             // AX=CR5 ; OR A ; JR NZ,second pass
             ldrr(7, 16'h0001); mtcr(5'd5); emit(8'hED); emit(8'h25); emit(8'h18); emit(8'hFE);   // CR5=1 ; RESET
             ldrr(2, 16'hCCCC); emit(8'h18); emit(8'hFE);                                   // second pass: DE=CCCC ; loop
         end else if (sc == 12) begin                                                 // STDBY waits for the interrupt (legacy IM: jumps to vector 0040h)
@@ -73,7 +73,7 @@ module tb_soc_exc;
                                emit(8'h31); emit(8'hFE); emit(8'h0F); emit(8'hC1); emit(8'hD1); end                  // LD SP,0FFE ; POP BC ; POP DE
             if (sc == 8) begin emit(8'hED); emit(8'h56); emit(8'hFB); retpc = p; end                                  // IM 1 ; EI ; (the INT pushes the PC at 1FFEh: fault on entry)
             emit(8'h18); emit(8'hFE);
-            if (sc == 5) begin p = 16'h30; emit(8'hC9); end                                                           // sub-rotina: RET
+            if (sc == 5) begin p = 16'h30; emit(8'hC9); end                                                           // subroutine: RET
             p = 16'h40; mfcr(5'd11);
             if (sc == 8) begin emit(8'hFB); emit(8'h18); emit((retpc - 16'h46) & 8'hFF); end                          // exception handler: EI ; JR EPC (the INT is accepted again at the destination)
             else begin emit(8'h18); emit((retpc - 16'h45) & 8'hFF); end                                               // JR to the instruction that faulted
@@ -91,7 +91,7 @@ module tb_soc_exc;
             mdl.mem[2*k] = w[31:0]; mdl.mem[2*k + 1] = w[63:32];
         end
         mdl.mem[2*(24'h100000>>3)] = 32'h00040401; mdl.mem[2*(24'h101000>>3)] = 32'h00040801;
-        mdl.mem[2*(24'h102000>>3)] = 32'h000000CF; mdl.mem[2*((24'h102000>>3)+4)] = 32'h000010CF;   // VA 0000h e 4000h mapeadas; 1000h-3FFFh invalidas
+        mdl.mem[2*(24'h102000>>3)] = 32'h000000CF; mdl.mem[2*((24'h102000>>3)+4)] = 32'h000010CF;   // VA 0000h and 4000h mapped; 1000h-3FFFh invalid
         mdl.mem[2*(24'h5000>>3)] = 32'h1234;
         if (sc >= 9) begin mdl.mem[2*((24'h102000>>3)+4)] = 32'h000010DF; for (k = 0; k < 8; k = k + 1) begin mdl.mem[2*(24'h800+k)] = {ub[8*k+3], ub[8*k+2], ub[8*k+1], ub[8*k]}; mdl.mem[2*(24'h800+k)+1] = {ub[8*k+7], ub[8*k+6], ub[8*k+5], ub[8*k+4]}; end end
         if (sc == 10 || sc == 12) irq_r = 0;
@@ -103,12 +103,12 @@ module tb_soc_exc;
         if ($test$plusargs("r800")) begin dut.u_sys.u_cpu.u_mode.r6 = 2'b00; dut.u_sys.u_cpu.u_mode.is_z80 = 1'b0; dut.u_sys.u_cpu.u_mode.is_rom = 1'b0; end
         if (sc == 1) begin wait (d_fault); repeat (2) @(posedge clk); mdl.mem[2*((24'h102000>>3)+2)] = 32'h000014CF; end   // the "OS" maps page 2000h -> PA 5000h
         if (sc == 10) begin wait (mmu_user_w); repeat (300) @(posedge clk); irq_r = 1; end
-        if (sc == 12) begin repeat (4000) @(posedge clk); de_antes = rf(2); chk("parado no STDBY", dbg_pc, retpc); irq_r = 1; end
+        if (sc == 12) begin repeat (4000) @(posedge clk); de_antes = rf(2); chk("stopped in STDBY", dbg_pc, retpc); irq_r = 1; end
         if (sc >= 4 && sc < 9) begin wait (d_fault); repeat (2) @(posedge clk); mdl.mem[2*((24'h102000>>3)+1)] = 32'h000018CF; end   // the "OS" maps page 1000h -> PA 6000h
         repeat (60000) @(posedge clk);
         $display("scenario %0d: CR43=%h CR44=%h CR45=%h BC=%h DE=%h AX=%h SP=%h faults I=%0d D=%0d pc=%h mmu=%0d", sc, r43, r44, r45,
             dut.u_sys.u_cpu.u_core.u_rf1.mem_a[1], dut.u_sys.u_cpu.u_core.u_rf1.mem_a[2], dut.u_sys.u_cpu.u_core.u_rf1.mem_a[0], dut.u_sys.u_cpu.u_core.u_rf1.mem_a[11], nfi, nfd, dbg_pc, mmu_en_w);
-        chk("MMU ligada", mmu_en_w, 1);
+        chk("MMU on", mmu_en_w, 1);
         if (sc == 1) begin chk("CR43 cause (read, data, page)", r43, 64'h09); chk("CR44", r44, 64'h2000); chk("CR45 EPC", r45, 64'h13);
             chk("BC after restart", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[1], 64'h1234); chk("SP", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[11], 64'h2002);
             chk("DE follows", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[2], 64'hAAAA); chk("AX=cause (MFCR)", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[0], 64'h09); chk("1 D fault", nfd, 1); end

@@ -4,7 +4,7 @@
 `timescale 1ns/1ps
 module z80_core(
   input  wire        clk,
-  input  wire        ce,        // um pulso = um T-state
+  input  wire        ce,        // one pulse = one T-state
   input  wire        rst_n,
   output wire [15:0] addr,
   output wire [7:0]  dout,
@@ -66,7 +66,7 @@ module z80_core(
   assign busak = busak_r;
   assign bus_oe = ~busak_r;
 
-  // ---------------- funcoes ----------------
+  // ---------------- functions ----------------
   function par8; input [7:0] v; begin par8 = ~(^v); end endfunction
   function [7:0] szp; input [7:0] v; begin szp = {v[7], (v==8'd0), v[5], 1'b0, v[3], par8(v), 1'b0, 1'b0}; end endfunction
 
@@ -109,7 +109,7 @@ module z80_core(
     end
   endfunction
 
-  // rotacoes CB: op 0 RLC,1 RRC,2 RL,3 RR,4 SLA,5 SRA,6 SLL,7 SRL -> {res, flags}
+  // CB rotations: op 0 RLC,1 RRC,2 RL,3 RR,4 SLA,5 SRA,6 SLL,7 SRL -> {res, flags}
   function [15:0] f_rot; input [2:0] op; input [7:0] v; input cf;
     reg [7:0] r; reg c;
     begin
@@ -200,8 +200,8 @@ module z80_core(
         ( (x==2'd1 && opr!=8'h76 && (y==3'd6 || z==3'd6)) || (x==2'd2 && z==3'd6) ||
           (x==2'd0 && y==3'd6 && (z==3'd4 || z==3'd5)) );
 
-  // variaveis temporarias
-  reg [2:0] eff;       // codigos: 0 normal ; 1 = S_OP
+  // temporary variables
+  reg [2:0] eff;       // codes: 0 normal ; 1 = S_OP
   reg [5:0] est;
   reg [15:0] t16, t16b; reg [23:0] t24; reg [15:0] t_alu; reg [7:0] t8, t8b, t8c; reg tb;
   reg [15:0] nn;
@@ -416,7 +416,7 @@ module z80_core(
       end
     end
 
-    // ------------------------------------------------------------------ imediato 8 bits
+    // ------------------------------------------------------------------ 8-bit immediate
     S_IMM8: begin
       n_pc = pc1;
       if (x==2'd0) begin   // x==0,z==6
@@ -465,7 +465,7 @@ module z80_core(
       if (pf_ed) w16_sel=p; else w16_sel=2'd2;
       do_fin=1'b1;
     end
-    // ------------------------------------------------------------------ indexado
+    // ------------------------------------------------------------------ indexed
     S_D: begin
       n_pc = pc1;
       t16 = ((pfx==2'd1) ? ix : iy) + {{8{dbi[7]}}, dbi};
@@ -615,7 +615,7 @@ module z80_core(
     S_X2: begin n_ctyp=CT_MW; n_caddr=sp+16'd1; n_cdata=hlx[15:8]; n_st=S_X3; end
     S_X3: begin n_ctyp=CT_MW; n_caddr=sp; n_cdata=hlx[7:0]; n_st=S_X4; end
     S_X4: begin w16_en=1'b1; w16_sel=2'd2; w16_val=tmp16; n_wz=tmp16; n_ctyp=CT_INT; n_ilen=5'd2; n_st=S_FINI; end
-    // ------------------------------------------------------------------ blocos
+    // ------------------------------------------------------------------ blocks
     S_BLD: begin
       // after MW (DE): updates HL/DE/BC, flags
       n_hl = y[0] ? hl - 16'd1 : hl + 16'd1;
@@ -655,7 +655,7 @@ module z80_core(
       endcase
     end
 
-    // ----- finalizacao
+    // ----- finalization
     if (do_fin || do_m1) begin
       n_st = S_DISP; n_iack=1'b0; n_pj0=1'b0; n_pj1=1'b0;
       if (do_fin) begin n_pfx=2'd0; n_done=1'b1; n_pf_ed=1'b0; n_pf_cb=1'b0; end
@@ -673,7 +673,7 @@ module z80_core(
     end
   end
 
-  // ---------------- commit sequencial ----------------
+  // ---------------- sequential commit ----------------
   always @(posedge clk) begin
     instr_done <= 1'b0;
     if (!rst_n) begin

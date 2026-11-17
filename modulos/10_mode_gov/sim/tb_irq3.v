@@ -30,7 +30,7 @@ module tb_irq3;
     initial begin
         repeat (4) @(posedge clk); rst = 0;
         repeat (6000) @(posedge clk);
-        chk("1 interrupcao", n_take, 1); chk("OUT executado", n_ow, 1);
+        chk("1 interrupt", n_take, 1); chk("OUT executed", n_ow, 1);
         chk("A=55 already executed before the interrupt (EI delay)", ow_d[0], 8'h55);
         chk("return pushed = 8 (after LD A)", mem[16'hEFE], 8'h08);
         $display("take=%0d out=%h ret=%h errors=%0d", n_take, ow_d[0], mem[16'hEFE], errs);

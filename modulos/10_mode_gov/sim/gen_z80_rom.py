@@ -6,7 +6,7 @@
 #   [80] bshr8  operand B / write data = register >> 8 (B, D, H)      [81] condx  extended conditions (0 P, 1 tz, 2 not-tz)
 #   [85:82] fop flag rule (1 rotations of A, 2 ADD HL, 3 ADC/SBC HL, 4 SCF, 5 CCF, 6 F := result, 7 BIT)
 #   [86] tzw    tz := (result == 0), without touching flags (DJNZ)            [88:87] immsel 1 = RST vector, 2/3 = bit mask
-#   [89] bfl    operando B = F
+#   [89] bfl    operand B = F
 #   DD/FD prefixes (the core removes the prefix and uses these SAME uops, swapping the HL index for IX/IY):
 #   [90] ns     operands D and B do NOT swap (LD H,(IX+d) uses the real H)   [91] nsa    operand A does not swap (EX DE,HL)
 #   [92] xd     with DD/FD the address adds the displacement d                    [93] ixs    with DD/FD the immediate comes 1 byte later (LD (IX+d),n)
@@ -124,7 +124,7 @@ def aplica(uops,lens):
             elif z==2: chain(op,[dict(br=1,tabs=1,aI=ZERO,ioff=1,isz=1,**CC[y])],3)                       # JP cc,nn
             elif z==3:
                 if   y==0: chain(op,[JPNN],3)                                                             # JP nn
-                elif y==1: chain(op,[dict()],2)                                                           # prefixo CB: comprimento 2; a uop vem da regiao 768+
+                elif y==1: chain(op,[dict()],2)                                                           # CB prefix: length 2; the uop comes from region 768+
                 elif y==2: chain(op,[dict(iowr=1,aI=ZERO,ioff=1,bI=AX)],2)                                # OUT (n),A
                 elif y==3: chain(op,[dict(iord=1,wren=1,dI=AX,aI=ZERO,ioff=1,sz=0)],2)                    # IN A,(n)
                 elif y==4: chain(op,[dict(rd=1,wren=1,dI=TMP,aI=SP,immz=1,sz=1,zx=1),                    # EX (SP),HL
@@ -169,19 +169,19 @@ def aplica(uops,lens):
             if x==1: chain(base,[dict(sz=0,**srcA(z),**core)])
             else:    chain(base,[dict(aD=1,ashr8=R8[z][1],**dst(z),**core)])
     # ---------------- ED page: Z80 opcodes that were missing ----------------
-    edid={0x42:213,0x43:214,0x44:215,0x4A:221,0x4B:222,0x4C:223,0x4F:226,0x52:229,0x53:230,0x54:231,0x5A:237,0x5B:238,0x5C:239,0x5F:242,0x62:245,0x63:246,0x64:247,0x67:250,0x6A:253,0x6B:254,0x6C:255,0x6F:258,0x72:261,0x73:262,0x74:263,0x7A:269,0x7B:270,0x7C:271}      # ids da pagina ED (instr_ids.csv)
+    edid={0x42:213,0x43:214,0x44:215,0x4A:221,0x4B:222,0x4C:223,0x4F:226,0x52:229,0x53:230,0x54:231,0x5A:237,0x5B:238,0x5C:239,0x5F:242,0x62:245,0x63:246,0x64:247,0x67:250,0x6A:253,0x6B:254,0x6C:255,0x6F:258,0x72:261,0x73:262,0x74:263,0x7A:269,0x7B:270,0x7C:271}      # ids of the ED page (instr_ids.csv)
     def ed(b2,ulist): chain(256+edid[b2],ulist)
     for p in range(4):
         ed(0x42+16*p,[dict(alu=SBC,wren=1,dI=HL,aI=HL,bI=RP[p],sz=1,fwe=1,fop=3)])                 # SBC HL,rr
         ed(0x4A+16*p,[dict(alu=ADC,wren=1,dI=HL,aI=HL,bI=RP[p],sz=1,fwe=1,fop=3)])                 # ADC HL,rr
         ed(0x43+16*p,[dict(wr=1,aI=ZERO,ioff=2,isz=1,bI=RP[p],sz=1)])                              # LD (nn),rr
         ed(0x4B+16*p,[dict(rd=1,wren=1,dI=RP[p],aI=ZERO,ioff=2,isz=1,sz=1)])                       # LD rr,(nn)
-    for b2 in range(0x44,0x80,8): ed(b2,[dict(alu=NEG,wren=1,dI=AX,aD=1,sz=0,fwe=1)])              # NEG (e espelhos)
+    for b2 in range(0x44,0x80,8): ed(b2,[dict(alu=NEG,wren=1,dI=AX,aD=1,sz=0,fwe=1)])              # NEG (and mirrors)
     ed(0x4F,[dict(aI=AX,wren=1,dI=RREG,sz=0,zx=1,**MOV)])                                          # LD R,A
     ed(0x5F,[dict(aI=RREG,wren=1,dI=AX,sz=0,**MOV),dict(alu=OR,use_imm=1,immz=1,aI=RREG,sz=0,fwe=1,keepc=1,misc=7)])   # LD A,R (flags like LD A,I)
     OLD=dict(wren=1,sz=0,zx=1)
     nib=lambda d,a,op: dict(alu=op,use_imm=1,immz=1,dI=d,aI=a,**OLD)
-    fin=dict(alu=OR,aI=T2,bI=TMP,wren=1,dI=AX,sz=0,fwe=1,keepc=1)                                  # A := T2 | TMP ; S,Z,P de A, H=N=0, C mantido
+    fin=dict(alu=OR,aI=T2,bI=TMP,wren=1,dI=AX,sz=0,fwe=1,keepc=1)                                  # A := T2 | TMP ; S,Z,P from A, H=N=0, C kept
     ed(0x6F,[LDTMP,nib(T2,AX,SHL4),nib(T2,T2,SHR4),nib(T3,TMP,SHL4),dict(alu=OR,aI=T3,bI=T2,dI=T3,**OLD),   # RLD: (HL) = m<<4 | A&0F ; A = A&F0 | m>>4
              dict(wr=1,aI=HL,immz=1,bI=T3,sz=0),nib(TMP,TMP,SHR4),nib(T2,AX,SHR4),nib(T2,T2,SHL4),fin])
     ed(0x67,[LDTMP,nib(T2,AX,SHL4),nib(T3,TMP,SHR4),dict(alu=OR,aI=T3,bI=T2,dI=T3,**OLD),                    # RRD: (HL) = A<<4 | m>>4 ; A = A&F0 | m&0F

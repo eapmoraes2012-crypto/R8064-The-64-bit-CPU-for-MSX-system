@@ -33,7 +33,7 @@ iverilog -g2012 -o dwin.vvp tb_dma_win.v ..\rtl\r8064_dma.v ..\rtl\r8064_xbuf.v 
 iverilog -g2012 -o slotif.vvp tb_slot_if.v ..\rtl\r8064_slot_if.v ..\rtl\r8064_slot_dec.v %R%\r8064_fifo_if.v && vvp slotif.vvp >> ..\teste_regressao_soc.txt 2>&1
 rem full cartridge top (needs -DSIM for the rPLL model); part 1 = PING/HELLO, part 2 (+p2) = INT and slot /RESET
 iverilog -g2012 -DSIM -o cart.vvp tb_cart_mon.v ..\rtl\r8064_cart_top.v ..\rtl\r8064_clkgen.v ..\rtl\r8064_slot_if.v ..\rtl\r8064_slot_dec.v %SOC% && (vvp cart.vvp & vvp cart.vvp +p2) >> ..\teste_regressao_soc.txt 2>&1
-echo ===== resumo =====
+echo ===== summary =====
 
 findstr /i "RESULT ERROR" ..\teste_regressao_soc.txt
 

@@ -13,7 +13,7 @@ M={
 9:("wire canon1 = (s1_addr[63:39] == {25{s1_addr[38]}});","wire canon1 = 1;"),
 10:("if (lvl == 2'd2 || (lvl == 2'd1 && pppn[8:0] != 0))","if (lvl == 2'd1 && pppn[8:0] != 0)"),
 11:(" || (lvl == 2'd1 && pppn[8:0] != 0)) begin wf_valid"," ) begin wf_valid"),
-12:("else if (pppn[19:10] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; ws <= W_IDLE; end\n                        else begin   // instala","else begin   // instala"),
+12:("else if (pppn[19:10] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; ws <= W_IDLE; end\n                        else begin   // install","else begin   // install"),
 13:("(e_big[i] || e_vpn[i][8:0] == fl_va[20:12])","(e_vpn[i][8:0] == fl_va[20:12])"),
 14:("if (restart || flush_any) begin","if (0) begin"),
 15:("if (fl_asid_en && !e_g[i] && ","if (fl_asid_en && "),
@@ -24,5 +24,5 @@ M={
 20:("mt2 <= ({{(NENT-1){1'b0}}, 1'b1} << vic); s2_stale <= 0;","s2_stale <= 0;"),
 }
 for n,(a,b) in M.items():
-    if s.count(a)!=1: print("m",n,"padrao",s.count(a)); continue
+    if s.count(a)!=1: print("m",n,"pattern",s.count(a)); continue
     with open(os.path.join(H,f'm_{n}.v'),'w') as f: f.write(s.replace(a,b))

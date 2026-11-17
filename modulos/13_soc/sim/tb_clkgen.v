@@ -32,11 +32,11 @@ module tb_clkgen;
         f0 = n0 / 20.0; f1 = n1 / 20.0; f2 = n2 / 20.0; f3 = n3 / 20.0;
         $display("SRC0 (27 MHz x17/8)  = %f MHz", f0);
         $display("SRC1 (3,579545 x16)  = %f MHz", f1);
-        $display("SRC2 (direto)        = %f MHz", f2);
+        $display("SRC2 (direct)        = %f MHz", f2);
         $display("SRC3 (14,318 x4)      = %f MHz", f3);
         $display("SRC1 clk_sdram average delay = %f ns (expected ~4.4)", dph / ndph);
         if (f3 < 57.15 || f3 > 57.40) begin $display("ERROR SRC3"); err = err + 1; end
-        if (dph / ndph < 3.6 || dph / ndph > 5.2) begin $display("ERROR fase sdram"); err = err + 1; end
+        if (dph / ndph < 3.6 || dph / ndph > 5.2) begin $display("ERROR sdram phase"); err = err + 1; end
         if (f0 < 57.2 || f0 > 57.55) begin $display("ERROR SRC0"); err = err + 1; end
         if (f1 < 57.15 || f1 > 57.40) begin $display("ERROR SRC1"); err = err + 1; end
         if (f2 < 57.15 || f2 > 57.40) begin $display("ERROR SRC2"); err = err + 1; end

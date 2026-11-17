@@ -11,7 +11,7 @@ module tb_half;
     reg [1023:0] fname;
     initial begin
         for (k = 0; k < 16; k = k + 1) begin lmin[k] = 99999; lmax[k] = 0; lsum[k] = 0; lcnt[k] = 0; eop[k] = 0; end
-        if (!$value$plusargs("vec=%s", fname)) fname = "vetores.txt";
+        if (!$value$plusargs("vec=%s", fname)) fname = "vectors.txt";
         fd = $fopen(fname, "r");
         repeat (4) @(posedge clk); rst = 0; repeat (2) @(posedge clk);
         while (!$feof(fd)) begin

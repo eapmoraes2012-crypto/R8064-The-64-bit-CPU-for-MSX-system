@@ -1,4 +1,4 @@
-// mul_unit.v - multiplicador do R8064 (4 multiplicadores 18x18 em paralelo, em DSP).
+// mul_unit.v - R8064 multiplier (4 18x18 multipliers in parallel, in DSP).
 //   sz: 0=8, 1=16, 2=32, 3=64 bits; sgn: 1 = signed.
 //   sz<=2 : 2*sz-bit product in ONE pass (pipeline, 1 operation per clock). sz=3: 4 passes (16x64 per pass), 128 bits.
 //   Stages: S1 (operand mux, registers 18-bit x/y) -> S2 (4 36-bit products) -> S3 (weighted sum and accumulator) -> prod/out_valid.
@@ -59,7 +59,7 @@ module mul_unit(
         if (rst) begin
             busy_big <= 0; jc <= 0; v1 <= 0; v2 <= 0; out_valid <= 0; acc <= 0; big1 <= 0; big2 <= 0; j1 <= 0; j2 <= 0;
         end else begin
-            // emissao
+            // issue
             if (issue && sz == 2'd3) begin busy_big <= 1; jc <= 2'd1; ra <= a; rb <= b; rsgn <= sgn; end
             else if (busy_big) begin
                 jc <= jc + 1; if (jc == 2'd3) busy_big <= 0;

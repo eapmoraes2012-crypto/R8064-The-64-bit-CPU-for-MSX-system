@@ -22,7 +22,7 @@ m=m[:65536]
 w=lambda: [r.choice(ok),r.choice(ok)]
 pre=[0x31]+w()+[0x01]+w()+[0xC5,0xF1,0x08]            # LD SP,nn ; LD BC,nn ; PUSH BC ; POP AF ; EX AF,AF'
 pre+=[0x01]+w()+[0x11]+w()+[0x21]+w()+[0xD9]          # LD BC/DE/HL,nn ; EXX
-pre+=[0x01]+w()+[0xC5,0xF1,0x01]+w()+[0x11]+w()+[0x21]+w()   # AF, BC, DE, HL principais
+pre+=[0x01]+w()+[0xC5,0xF1,0x01]+w()+[0x11]+w()+[0x21]+w()   # main AF, BC, DE, HL
 m[0:len(pre)]=bytes(pre)
 open(out,'wb').write(m)
 open(out+'.hex','w').write('\n'.join('%02x'%b for b in m)+'\n')

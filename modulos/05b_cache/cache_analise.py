@@ -118,7 +118,7 @@ def ciclos(prog, ih, im, dh, dm, line, ctrl, pf=False):
     imiss = nb * (1 - hi)                      # with prefetch: fetch accesses = bytes/8; the miss rate comes from the simulation
     wc = (imiss + dm) * (f - 1) + nw
     return clk, w0, wc
-CONF = [(2, 2, 32, 1), (4, 4, 32, 1), (8, 8, 32, 2), (8, 8, 64, 2), (16, 16, 64, 2)]    # (I KB, D KB, linha B, vias)
+CONF = [(2, 2, 32, 1), (4, 4, 32, 1), (8, 8, 32, 2), (8, 8, 64, 2), (16, 16, 64, 2)]    # (I KB, D KB, line B, ways)
 out = []; res = {}
 for kn, prog in KERN.items():
     N = len(prog)

@@ -42,7 +42,7 @@ for k in range(1, 10): K('S%d' % k, pk(F((-1) ** k, fact(2 * k + 1))))
 for k in range(1, 10): K('C%d' % k, pk(F((-1) ** k, fact(2 * k))))
 for k in range(1, 13): K('A%d' % k, pk(F(1, 2 * k + 1)))
 assert len(KLIST) <= 64
-# ---------------- montador ----------------
+# ---------------- assembler ----------------
 KIND = dict(CMD=0, KLD=1, PRED=2, JMP=3, JSR=4, RET=5, END=6, KQ=7, XTR=8, FLG=9, FREM=10, SETDN=11, XINC=12, CC=13)
 CMDN = dict(FILD=6, ADD=14, SUB=15, MUL=16, DIV=17, FCOM=19, FCHS=21, FABS=22, FXCH=23, FLD=24, FSTP=25, FRINT=26, POP=27, FIST=38,
             ADDST=48, SUBST=49, MULST=50, DIVST=51)
@@ -56,7 +56,7 @@ def pred(n): emit('PRED', PRED[n])
 def jmp(l, cond=0): fix.append((len(prog), l)); emit('JMP', 0, cond)
 def jsr(l): fix.append((len(prog), l)); emit('JSR', 0)
 def horner(coefs):
-    """empilha a maior constante e aplica p = p*x + c_k (x em ST1)"""
+    """pushes the largest constant and applies p = p*x + c_k (x in ST1)"""
     kld(coefs[0])
     for c in coefs[1:]:
         cmd('MUL', 1); kld(c); cmd('ADD', 1); cmd('FSTP', 1)
@@ -87,7 +87,7 @@ def trig(name, ep):
     if name == 'FCOS': kld('ONE'); cmd('FSTP', 1)
     if name == 'FSINC': kld('ONE'); cmd('FXCH', 1)
     emit('CC', 0); emit('END')
-    lab(name + '_big'); emit('CC', 4); emit('END')            # reducao incompleta: C2 = 1, ST0 inalterado
+    lab(name + '_big'); emit('CC', 4); emit('END')            # incomplete reduction: C2 = 1, ST0 unchanged
 def ep_sin():
     pred('kq0'); cmd('FXCH', 1, 2); cmd('FSTP', 1); pred('kq1'); cmd('FCHS', 0, 1)
 def ep_cos():
@@ -97,11 +97,11 @@ def ep_tan():
 def ep_sinc():
     pred('kq0'); cmd('FXCH', 1, 2); pred('kq1'); cmd('FCHS', 0, 1); cmd('FXCH', 1); pred('kq01'); cmd('FCHS', 0, 1); cmd('FXCH', 1)
 trig('FSIN', ep_sin); trig('FCOS', ep_cos); trig('FTAN', ep_tan); trig('FSINC', ep_sinc)
-# ---- logaritmos: LOGPOLY [z] -> [2 z (1 + w/3 + ...)], w = z^2
+# ---- logarithms: LOGPOLY [z] -> [2 z (1 + w/3 + ...)], w = z^2
 def logpoly():
     cmd('FLD', 0); cmd('MUL', 1)                              # [w, z]
     horner(AK); cmd('MUL', 2); cmd('ADD', 0); cmd('FSTP', 2); cmd('POP')   # [lnm]
-lab('LOGCORE')                                               # [x] finito > 0 -> [ln m], xin = e
+lab('LOGCORE')                                               # [x] finite > 0 -> [ln m], xin = e
 pred('den'); emit('SETDN', 1, 1); kld('TWO64', 1); cmd('MUL', 1, 1); cmd('FSTP', 1, 1)
 emit('XTR'); kld('SQRT2'); cmd('FCOM', 1); cmd('POP')
 pred('less'); kld('HALF', 1); cmd('MUL', 1, 1); cmd('FSTP', 1, 1); emit('XINC', 0, 1)

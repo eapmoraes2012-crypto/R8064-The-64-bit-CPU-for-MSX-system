@@ -1,6 +1,6 @@
 // fpu_frem.v - exact partial remainder FREM / FREM1 (bit-by-bit long division over the mantissas; up to ~32800 clocks).
 // Finite and non-zero operands (special cases are handled by the macro program). res = x - y*N exact, N = trunc(x/y) (near = 0) or round-nearest-even (near = 1);
-// q = 3 bits baixos de N (C0 = q[2], C3 = q[1], C1 = q[0]).
+// q = 3 low bits of N (C0 = q[2], C3 = q[1], C1 = q[0]).
 module fpu_frem(
     input  wire        clk, rst, start, near,
     input  wire [79:0] x, y,

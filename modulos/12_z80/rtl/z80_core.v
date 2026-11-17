@@ -6,7 +6,7 @@
 `timescale 1ns/1ps
 module z80_core(
   input  wire        clk,
-  input  wire        ce,        // um pulso = um T-state (separados por >= 3 clocks)
+  input  wire        ce,        // one pulse = one T-state (separated by >= 3 clocks)
   input  wire        rst_n,
   output wire [15:0] addr,
   output wire [7:0]  dout,
@@ -190,7 +190,7 @@ module z80_core(
   assign busak = busak_r;
   assign bus_oe = ~busak_r;
 
-  // ---------------- funcoes ----------------
+  // ---------------- functions ----------------
   function par8; input [7:0] v; begin par8 = ~(^v); end endfunction
 
   function ccond; input [2:0] c; input [7:0] fl;
@@ -388,7 +388,7 @@ module z80_core(
   wire       is_alu = (w_cls != C_NONE);
   wire       wen    = is_alu && !(u_cls == C_BIT || (u_cls == C_ALU && a_op == 3'd7));
 
-  // condicoes
+  // conditions
   reg cnd;
   always @* begin
     case (w_cond)
@@ -429,7 +429,7 @@ module z80_core(
   wire [2:0]  bct = (w_bus == BUS_M1) ? CT_M1 : (w_bus == BUS_MR) ? CT_MR : (w_bus == BUS_MW) ? CT_MW :
                     (w_bus == BUS_IOR) ? CT_IOR : (w_bus == BUS_IOW) ? CT_IOW : CT_INT;
 
-  // ---------------- sequencial ----------------
+  // ---------------- sequential ----------------
   always @(posedge clk) begin
     instr_done <= 1'b0;
     if (!rst_n) begin
@@ -457,11 +457,11 @@ module z80_core(
         end else t <= t + 5'd1;
       end
       if (!busrq_n && (cyc_end || !act)) busak_r <= 1'b1;
-      // ---- sequenciador ----
+      // ---- sequencer ----
       case (seq)
         SQ_INIT: begin seq <= SQ_RUN; end
         SQ_WAIT: begin if (cyc_end) seq <= SQ_RUN; end
-        default: begin   // SQ_RUN: executa a microinstrucao 'uw'
+        default: begin   // SQ_RUN: executes the microinstruction 'uw'
           upc <= nupc;
           // address read (LDA)
           if (w_lda) caddr <= {ra, rb};
@@ -497,7 +497,7 @@ module z80_core(
             cack <= (w_bus == BUS_M1) ? iack : 1'b0; cmsx <= msx_w;
             if (w_bus == BUS_MW || w_bus == BUS_IOW) cdata <= ra;
           end
-          // operacoes especiais
+          // special operations
           case (w_sp)
             S_END, S_ENDEI: begin
               instr_done <= 1'b1;

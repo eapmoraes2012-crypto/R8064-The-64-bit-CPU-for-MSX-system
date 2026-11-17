@@ -9,5 +9,5 @@ ASSUMPTIONS TO CONFIRM: (1) ports FC,FD,FE,FF (the request said FC,FC,FE,FF); (2
 Estimated cost (not measured): ~120 LUT4 and ~75 FF per instance, ~240 LUT4 for two cores.
 Pending: connect to the arbiter/SDRAM (module 05), instantiate in the classic Z80 (not yet written) and in the R8064, slot expansion.
 UPDATE 14/11/2026: the items "synthesis not yet done" and "classic Z80 (not yet written)" above became outdated: msx_mem is already instantiated and synthesized
- no Z80 classico (12_z80/rtl/z80_msx_sys.v) and in the R8064 (10_mode_gov/rtl/r8064_msx_sys.v -> 13_soc). Still pending: expanded slots (FFFFh).
+ in the classic Z80 (12_z80/rtl/z80_msx_sys.v) and in the R8064 (10_mode_gov/rtl/r8064_msx_sys.v -> 13_soc). Still pending: expanded slots (FFFFh).
  This module shares the number 10 with 10_mode_gov (different folders; the scripts use both paths, so it was not renumbered).

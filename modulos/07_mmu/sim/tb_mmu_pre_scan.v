@@ -24,11 +24,11 @@ module tb_mmu;
             if (mcnt <= 0) begin m_done <= 1; m_rdata <= rd_lat; mbusy <= 0; nmemrd = nmemrd + 1; end
         end
     end
-    // ---- construtor de tabelas
+    // ---- table builder
     integer nexttbl = 2; reg [19:0] t_, nn_; reg [63:0] pe_; integer ii, lv;
     task clear_tbl(input [19:0] p); integer k; begin for (k = 0; k < 512; k = k + 1) pm[{p[9:0], k[8:0]}] = 64'd0; end endtask
     task newroot(input [19:0] p); begin clear_tbl(p); end endtask
-    // map: folha em 'leaf' (0 = 4KB, 1 = 2MB)
+    // map: leaf at 'leaf' (0 = 4KB, 1 = 2MB)
     task map(input [19:0] rt, input [38:0] va, input [19:0] ppn, input [7:0] flags, input integer leaf);
         reg [8:0] idx;
         begin
@@ -154,39 +154,39 @@ module tb_mmu;
     initial begin
         for (n = 0; n < 524288; n = n + 1) pm[n] = 64'd0;
         repeat (4) @(posedge clk); rst = 0; repeat (2) @(posedge clk);
-        // T1: traducao desligada
-        en = 0; push(64'h123456789ABC, 0, 0); push(64'hFFFF_0000_1234, 1, 1); waitq; rep("T1 en=0 identidade");
-        // T2: mapeamento simples + latencias
+        // T1: translation off
+        en = 0; push(64'h123456789ABC, 0, 0); push(64'hFFFF_0000_1234, 1, 1); waitq; rep("T1 en=0 identity");
+        // T2: simple mapping + latencies
         en = 1; root = 1; newroot(1); map(1, 39'h0000_4000, 20'd300, 8'b1100_1111, 0);   // V R W X, A, D (U=0)
         push(64'h4008, 0, 0); waitq; $display("T2 TLB miss latency (1 page, 3 levels): %0d clocks", rv_cyc - acc_cyc);
-        push(64'h4010, 0, 0); waitq; $display("T2 latencia de acerto: %0d clock(s)", rv_cyc - acc_cyc);
+        push(64'h4010, 0, 0); waitq; $display("T2 hit latency: %0d clock(s)", rv_cyc - acc_cyc);
         rep("T2");
-        // T2b: vazao de acertos
-        T0 = cyc; for (n = 0; n < 200; n = n + 1) push(64'h4000 + 8 * (n % 64), n % 2, 0); waitq; T1 = rv_cyc; $display("T2b 200 acertos seguidos: %0d clocks", T1 - T0 - 1); rep("T2b");
-        // T3: permissoes
+        // T2b: hit throughput
+        T0 = cyc; for (n = 0; n < 200; n = n + 1) push(64'h4000 + 8 * (n % 64), n % 2, 0); waitq; T1 = rv_cyc; $display("T2b 200 consecutive hits: %0d clocks", T1 - T0 - 1); rep("T2b");
+        // T3: permissions
         pulse_all; newroot(1); nexttbl = 2;
         map(1, 39'h1000, 20'd301, 8'b0100_0011, 0);   // V R, A       -> read only
         map(1, 39'h2000, 20'd302, 8'b0100_0111, 0);   // V R W A (D=0)-> write of cause 3
         map(1, 39'h3000, 20'd303, 8'b1101_0111, 0);   // V R W U A D
         map(1, 39'h4000, 20'd304, 8'b1100_1001, 0);   // V X A D
-        map(1, 39'h5000, 20'd305, 8'b1000_0011, 0);   // V R, A=0     -> causa 3
+        map(1, 39'h5000, 20'd305, 8'b1000_0011, 0);   // V R, A=0     -> cause 3
         for (n = 1; n <= 5; n = n + 1) begin for (k2 = 0; k2 < 3; k2 = k2 + 1) begin push(64'h1000 * n + 8, k2, 0); push(64'h1000 * n + 8, k2, 1); end end
-        waitq; rep("T3 permissoes (R,W,X x usuario/supervisor)");
+        waitq; rep("T3 permissions (R,W,X x user/supervisor)");
         pulse_all; for (n = 1; n <= 5; n = n + 1) for (k2 = 0; k2 < 3; k2 = k2 + 1) push(64'h1000 * n + 16, k2, k2 % 2); waitq; rep("T3b repeats after flush");
         // T4: non-canonical, invalid, level-2 leaf, misaligned megapage, outside memory
         push(64'h0001_0000_0000_1000, 0, 0); push(64'h7F00_0000_0000_1000, 0, 0); push(64'hFFFF_FFFF_FFFF_F000, 0, 0);
-        pm[{10'd1, 9'd5}] = 64'h0000_0000_0000_0FCF;                    // folha no nivel 2 (VPN2=5)
-        map(1, 39'h40_0000_0000 >> 0 & 39'h3F_FFFF_FFFF, 20'd400, 8'hCF, 1);   // possivel desalinhada
+        pm[{10'd1, 9'd5}] = 64'h0000_0000_0000_0FCF;                    // leaf at level 2 (VPN2=5)
+        map(1, 39'h40_0000_0000 >> 0 & 39'h3F_FFFF_FFFF, 20'd400, 8'hCF, 1);   // possibly misaligned
         pm[{10'd1, 9'd6}] = {34'd0, 20'd9, 10'd1};                       // level 2 points to empty table 9
         map(1, 39'h2_0000_0000 + 39'h0020_0000, 20'h40001, 8'hCF, 0);   // PPN outside the memory (>= 4 MB)
         push({25'd0, 39'h1_4000_0000}, 0, 0); push({25'd0, 39'h1_8000_0000}, 0, 0); push({25'd0, 39'h2_0020_0000}, 0, 0);
         push(64'h4020_0000, 0, 0); push(64'h6000_1000, 0, 0);
         waitq; rep("T4 miscellaneous faults");
-        // T5: megapagina correta
+        // T5: correct megapage
         pulse_all; wk0 = sw; newroot(1); nexttbl = 2; map(1, 39'h0040_0000, 20'd512, 8'hCF, 1); map(1, 39'h0060_0000, 20'd1024 - 20'd512, 8'hCF, 1);
         for (n = 0; n < 40; n = n + 1) push(64'h0040_0000 + n * 64'h2468 , n % 3, 0); for (n = 0; n < 40; n = n + 1) push(64'h0060_0000 + n * 64'h1230, n % 2, 0);
-        waitq; chk_w(2, "T5 megapagina reaproveitada"); rep("T5 megapaginas");
-        // T6: PGINV e remapeamento
+        waitq; chk_w(2, "T5 megapage reused"); rep("T5 megapages");
+        // T6: PGINV and remapping
         newroot(1); nexttbl = 2; map(1, 39'h8000, 20'd310, 8'hCF, 0); push(64'h8000, 0, 0); waitq;
         map(1, 39'h8000, 20'd311, 8'hCF, 0); pulse_va(64'h8123); push(64'h8000, 0, 0); waitq; rep("T6 PGINV");
         map(1, 39'h8000, 20'd312, 8'hCF, 0); pulse_all; push(64'h8000, 0, 0); waitq; rep("T6b fl_all");
@@ -209,8 +209,8 @@ module tb_mmu;
             lat_min = (seed % 2) ? 1 : 4; lat_max = (seed % 2) ? 3 : 14;
             pulse_all; rand_reqs(qk ? 800 : 3000, 1); waitq;
         end
-        rep("T8 aleatorio");
-        // T9: descargas aleatorias no meio do trafego (alteracao de PTE + fl_all)
+        rep("T8 random");
+        // T9: random flushes in the middle of the traffic (PTE change + fl_all)
         begin : t9
             integer q;
             for (q = 0; q < (qk ? 15 : 40); q = q + 1) begin
@@ -219,7 +219,7 @@ module tb_mmu;
                 map(1, va_, 20'd256 + ($urandom % 700), 8'hCF ^ (($urandom % 4) << 1), 0);
                 pulse_all;
             end
-            rep("T9 remapeamento + fl_all");
+            rep("T9 remapping + fl_all");
         end
         // T10: flush concurrent with the walker (restart)
         begin : t10
@@ -228,7 +228,7 @@ module tb_mmu;
                 pulse_all; lat_min = 8; lat_max = 8;
                 push_dc(64'h8000 + (q % 5) * 64'h1000, 0, 0);
                 repeat (3 + (q % 36)) @(negedge clk);
-                map(1, 39'h8000 + (q % 5) * 39'h1000, 20'd500 + q, 8'hCF, 0);   // muda durante a caminhada
+                map(1, 39'h8000 + (q % 5) * 39'h1000, 20'd500 + q, 8'hCF, 0);   // changes during the walk
                 pulse_all;
                 waitq;
                 push(64'h8000 + (q % 5) * 64'h1000, 0, 0); waitq;
@@ -250,11 +250,11 @@ module tb_mmu;
                 @(negedge clk); push(64'h8010 + pg * 64'h1000, 0, 0); push(64'h8018 + pg * 64'h1000, 1, 0);
                 waitq;
             end
-            rep("T11 PGINV em offsets variados");
+            rep("T11 PGINV at varied offsets");
         end
         // T12: PGINV on a megapage with a 4 KB offset different from the one used in the fill
         asid = 1; root = 1; pulse_all; newroot(1); nexttbl = 2; map(1, 39'h40_0000, 20'd512, 8'hCF, 1); push(64'h40_5000, 0, 0); waitq;
-        map(1, 39'h40_0000, 20'd0, 8'hCF, 1); pulse_va(64'h40_9000); push(64'h40_1000, 0, 0); waitq; rep("T12 PGINV em megapagina");
+        map(1, 39'h40_0000, 20'd0, 8'hCF, 1); pulse_va(64'h40_9000); push(64'h40_1000, 0, 0); waitq; rep("T12 PGINV on a megapage");
         // T13: flush by ASID: only the non-global pages of the ASID disappear
         pulse_all; newroot(1); nexttbl = 2; asid = 1; root = 1; map(1, 39'h50_0000, 20'd320, 8'hCF, 0); map(1, 39'h51_0000, 20'd321, 8'hEF, 0);
         push(64'h50_0000, 0, 0); push(64'h51_0000, 0, 0); waitq; wk0 = sw;

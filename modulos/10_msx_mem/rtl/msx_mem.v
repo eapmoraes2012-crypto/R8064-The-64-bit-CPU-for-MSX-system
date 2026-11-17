@@ -4,15 +4,15 @@
 // ASSUMPTIONS to confirm: (1) ports FC,FD,FE,FF = pages 0..3 (the request said "FC, FC, FE, FF"); (2) MegaRAM: IN 8Eh turns on RAM write mode,
 // OUT 8Eh goes back to ASCII8 mode (banks); in write mode the byte goes to RAM and also updates the bank register if the address is 6000-7FFF.
 module msx_mem #(
-    parameter MAP_BITS  = 6,            // segmentos do mapper = 2**MAP_BITS (6 -> 1 MB, max 8 -> 4 MB)
-    parameter MEGA_BITS = 7,            // bancos de 8 KB = 2**MEGA_BITS (7 -> 1 MB, max 8 -> 2 MB)
+    parameter MAP_BITS  = 6,            // mapper segments = 2**MAP_BITS (6 -> 1 MB, max 8 -> 4 MB)
+    parameter MEGA_BITS = 7,            // 8 KB banks = 2**MEGA_BITS (7 -> 1 MB, max 8 -> 2 MB)
     parameter [23:0] MAP_BASE  = 24'h000000,
     parameter [23:0] MEGA_BASE = 24'h100000,
-    parameter [1:0]  SLOT_MAP  = 2'd3,  // slot primario do mapper
-    parameter [1:0]  SLOT_MEGA = 2'd2   // slot primario da MegaRAM
+    parameter [1:0]  SLOT_MAP  = 2'd3,  // primary slot of the mapper
+    parameter [1:0]  SLOT_MEGA = 2'd2   // primary slot of the MegaRAM
 )(
     input  wire        clk, rst,
-    input  wire        en,              // 1 = modo compatibilidade 16 bits (no R8064: MMU desligada)
+    input  wire        en,              // 1 = 16-bit compatibility mode (in the R8064: MMU off)
     // I/O bus
     input  wire        io_wr, io_rd,
     input  wire [7:0]  io_addr, io_wdata,

@@ -1,25 +1,25 @@
 T1 read miss latency (accept->rvalid) D: 31 clocks
 T1 hit latency (same line) D: 1 clock(s)
 T1 read miss latency I: 33 clocks
-ok   T1 (D: 2 leit 0 esc | I: 1 leit)
+ok   T1 (D: 2 rd 0 wr | I: 1 rd)
 T2 2nd pass of 256 hit reads: 258 clocks (expected ~256)
-ok   T2 (D: 514 leit 0 esc | I: 1 leit)
-ok   T3 (D: 518 leit 4 esc | I: 1 leit)
+ok   T2 (D: 514 rd 0 wr | I: 1 rd)
+ok   T3 (D: 518 rd 4 wr | I: 1 rd)
 ok   T3: SDRAM memory == shadow
-ok   T4 (D: 563 leit 4 esc | I: 1 leit)
-ok   T4b LRU mantem A (3 falhas)
-ok   T4b LRU expulsou B
+ok   T4 (D: 563 rd 4 wr | I: 1 rd)
+ok   T4b LRU keeps A (3 misses)
+ok   T4b LRU evicted B
 ERROR(0): data a60d36b3df1434ad expected 5555aaaa5555aaaa t=61105000
 T5 without inv: read returned the old cache value (expected: deliberate coherence error: 1)
 ok   T5 inv returns the new value
-ok   T6 aleatorio conflitante (D: 2810 leit 1301 esc | I: 672 leit)
+ok   T6 random conflicting (D: 2810 rd 1301 wr | I: 672 rd)
 ok   T6: SDRAM memory == shadow
 ok   T7 random heavy write (D: 7251 rd 5788 wr | I: 31857 rd)
 ok   T7: SDRAM memory == shadow
-ok   T8 conjunto cabe (D: 32701 leit 12150 esc | I: 71857 leit)
+ok   T8 working set fits (D: 32701 rd 12150 wr | I: 71857 rd)
 ok   T8: SDRAM memory == shadow
-Estatisticas D: leit acerto=32701 falha=3050 | esc=12150 acerto=9725
-Estatisticas I: leit acerto=71857 falha=591
+Statistics D: rd hit=32701 miss=3050 | wr=12150 hit=9725
+Statistics I: rd hit=71857 miss=591
 SDRAM: model timing violations = 0
 RESULT: ALL TESTS PASSED
 tb_cache.v:141: $finish called at 1864535000 (1ps)

@@ -1,7 +1,7 @@
 @echo off
 rem Z80 simulation: RTL x C model (per-instruction trace). Run in the OSS CAD Suite terminal.
 cd /d %~dp0
-echo === compilando ===
+echo === compiling ===
 iverilog -g2012 -Wall -o simz80.vvp tb_z80.v ..\rtl\z80_core.v ..\rtl\z80_ucode.v > compila.log 2>&1
 type compila.log
 if errorlevel 1 goto fim

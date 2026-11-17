@@ -30,7 +30,7 @@ module tb_msx_mem;
         // reset: pagina0->seg3, pagina3->seg0
         @(negedge clk); ma_a = 16'h0000; #1; ck(a_hit && a_pa == 24'h00C000, "reset pg0->seg3");
         ma_a = 16'hC123; #1; ck(a_hit && a_pa == 24'h000123, "reset pg3->seg0");
-        // portas FC..FF
+        // ports FC..FF
         out_a(8'hFC, 8'd10); out_a(8'hFD, 8'd11); out_a(8'hFE, 8'd12); out_a(8'hFF, 8'd13);
         @(negedge clk); ma_a = 16'h3FFF; #1; ck(a_pa == 24'h0 + (10*16384 + 16'h3FFF), "FC pag0");
         ma_a = 16'h4000; #1; ck(a_pa == 11*16384, "FD pag1");
@@ -41,24 +41,24 @@ module tb_msx_mem;
         // write/read per page
         wr_a(16'h0000, 8'hA5); rd_a(16'h0000, v); ck(v == 8'hA5, "RAM pag0");
         out_a(8'hFC, 8'd20); rd_a(16'h0000, v); ck(v == 8'h00, "page 0 other segment clear");
-        out_a(8'hFC, 8'd10); rd_a(16'h0000, v); ck(v == 8'hA5, "segmento original preservado");
+        out_a(8'hFC, 8'd10); rd_a(16'h0000, v); ck(v == 8'hA5, "original segment preserved");
         // core B sees the same physical memory, but its own registers
         @(negedge clk); iob_a = 8'hA8; iob_d = 8'hFF; iob_wr = 1; @(negedge clk); iob_wr = 0;
         @(negedge clk); iob_a = 8'hFC; iob_d = 8'd10; iob_wr = 1; @(negedge clk); iob_wr = 0;
         mb_a = 16'h0000; #1; ck(b_hit && pm[b_pa] == 8'hA5, "B sees common memory");
-        mb_a = 16'h4000; #1; ck(b_pa == 24'h000000 + 2*16384, "B regs proprios");
+        mb_a = 16'h4000; #1; ck(b_pa == 24'h000000 + 2*16384, "B own registers");
         // --- slot: page 1 to slot 0 -> mapper does not answer
         out_a(8'hA8, 8'hFC); @(negedge clk); ma_a = 16'h0000; #1; ck(!a_hit, "wrong slot does not respond");
-        // --- MegaRAM no slot 2 (SLOT_MEGA=2): paginas 1 e 2 em slot 2
+        // --- MegaRAM in slot 2 (SLOT_MEGA=2): pages 1 and 2 in slot 2
         out_a(8'hA8, 8'hEB);
         // a8 = 0b11_10_10_11 -> pg0 slot3, pg1 slot2, pg2 slot2, pg3 slot3
         // ASCII8 mode: writes banks
         wr_a(16'h6000, 8'd5); wr_a(16'h6800, 8'd6); wr_a(16'h7000, 8'd7); wr_a(16'h7800, 8'd8);
-        @(negedge clk); ma_a = 16'h4000; #1; ck(a_hit && a_pa == 24'h100000 + 5*8192, "banco 4000");
+        @(negedge clk); ma_a = 16'h4000; #1; ck(a_hit && a_pa == 24'h100000 + 5*8192, "bank 4000");
         ma_a = 16'h5FFF; #1; ck(a_pa == 24'h100000 + 5*8192 + 16'h1FFF, "end of bank 4000");
-        ma_a = 16'h6000; #1; ck(a_pa == 24'h100000 + 6*8192, "banco 6000");
-        ma_a = 16'h8000; #1; ck(a_pa == 24'h100000 + 7*8192, "banco 8000");
-        ma_a = 16'hBFFF; #1; ck(a_pa == 24'h100000 + 8*8192 + 16'h1FFF, "banco A000");
+        ma_a = 16'h6000; #1; ck(a_pa == 24'h100000 + 6*8192, "bank 6000");
+        ma_a = 16'h8000; #1; ck(a_pa == 24'h100000 + 7*8192, "bank 8000");
+        ma_a = 16'hBFFF; #1; ck(a_pa == 24'h100000 + 8*8192 + 16'h1FFF, "bank A000");
         // ROM mode: write does not go to RAM
         ma_a = 16'h4010; #1; ck(!a_wok, "ROM mode blocks writes");
         // IN 8Eh -> write mode
@@ -66,9 +66,9 @@ module tb_msx_mem;
         wr_a(16'h4010, 8'h77); rd_a(16'h4010, v); ck(v == 8'h77 && pm[24'h100000 + 5*8192 + 16] == 8'h77, "writes to the MegaRAM");
         // switch bank and confirm isolation
         wr_a(16'h6000, 8'd9); rd_a(16'h4010, v); ck(v == 8'h00, "bank 9 empty");
-        wr_a(16'h6000, 8'd5); rd_a(16'h4010, v); ck(v == 8'h77, "banco 5 conserva");
+        wr_a(16'h6000, 8'd5); rd_a(16'h4010, v); ck(v == 8'h77, "bank 5 keeps its data");
         // OUT 8Eh -> volta a ROM
-        out_a(8'h8E, 8'h00); @(negedge clk); ma_a = 16'h4010; #1; ck(!a_wok, "OUT 8E volta a modo ROM");
+        out_a(8'h8E, 8'h00); @(negedge clk); ma_a = 16'h4010; #1; ck(!a_wok, "OUT 8E returns to ROM mode");
         // outside 4000-BFFF in the MegaRAM slot it does not answer (pg0 and pg3 are in slot 3 = mapper)
         ma_a = 16'h0000; #1; ck(a_hit && a_pa >= 24'h0 && a_pa < 24'h100000, "pg0 stays in the mapper");
         if (err == 0) $display("PASS: msx_mem 0 errors"); else $display("FAIL: %0d errors", err);

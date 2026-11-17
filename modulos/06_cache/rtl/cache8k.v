@@ -21,7 +21,7 @@ module cache8k #(parameter WR = 1, parameter WBD = 4)(
     input  wire [63:0] m_rdata,
     output reg  [31:0] st_rd_hit, st_rd_miss, st_wr, st_wr_hit
 );
-    // ---------------- arranjos
+    // ---------------- arrays
     reg [63:0] d0 [0:511]; reg [63:0] d1 [0:511];
     // tags with valid bit (bit 10), in 2 copies (A: read with the new address, B: read with that of stage 1) so there is no mux dependent on 'accept'
     reg [10:0] tA0 [0:127]; reg [10:0] tA1 [0:127]; reg [10:0] tB0 [0:127]; reg [10:0] tB1 [0:127];

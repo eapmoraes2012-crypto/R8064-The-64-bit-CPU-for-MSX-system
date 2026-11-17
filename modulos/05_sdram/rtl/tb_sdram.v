@@ -71,7 +71,7 @@ module tb_sdram;
         $display("LATENCY (clocks from the acceptance clock to rvalid/wdone), with no refresh in between:");
         for (i = 0; i < 6; i = i + 1)
             if (cnt[i] > 0) $display("  %-22s %-8s n=%6d min=%2d avg=%5.2f max=%3d (with refresh: %0d)", (i/2 == 0) ? "open page (hit)" : (i/2 == 1) ? "closed bank" : "other row (conflict)", (i % 2) ? "write" : "read", cnt[i], mn[i], sum[i] * 1.0 / cnt[i], mx[i], refl[i]);
-        $display("  pior latencia de um acesso atrasado por refresh: %0d clocks", mxref);
+        $display("  worst latency of an access delayed by refresh: %0d clocks", mxref);
         if (mism == 0 && mdl.viol == 0 && mdl.max_gap <= 800 && mdl.refs_init == 2) $display("PASS"); else $display("FAIL");
         $finish;
     end

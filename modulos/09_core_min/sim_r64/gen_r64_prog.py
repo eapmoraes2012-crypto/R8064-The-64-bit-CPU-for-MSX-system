@@ -76,7 +76,7 @@ def done(pc):                                   # end of an instruction in the m
 def fsw(): return fp['c3'] << 14 | fp['top'] << 11 | fp['c2'] << 10 | fp['c1'] << 9 | fp['c0'] << 8 | fp['sf'] << 6 | fp['exc']
 def femp(): return sum(e << i for i, e in enumerate(fp['emp']))
 def seq(bs): emit(bs); done(code[0])            # sequential instruction: executes (already done by the caller) and advances
-def nops(k):                                    # k NOPs executados em sequencia
+def nops(k):                                    # k NOPs executed in sequence
     for _ in range(k): seq([0x00])
 def filler(k): emit([0x00] * k)                 # k bytes skipped by a taken branch
 # ---------- emitters (encode, execute in the model and record the trace) ----------
@@ -139,7 +139,7 @@ def t_ldidx():
     dd = rnd.randrange(-0x1000, 0x1000); a = (r[REG[x]] + dd) & M64; d2 = le(dd & 0xFFFF, 2); k = rnd.randrange(3)
     low = {'W': 1, 'E': 6, 'Q': 0}[s]
     if k == 0: wrm(a, r[REG[o]], n); seq([0xED, pfx, o << 3 | low] + d2)                                    # LDx (QIX+dd),rr
-    elif k == 1: v = rnd.getrandbits(n); wrm(a, v, n); seq([0xED, pfx, 0x40 | o << 3 | low] + d2 + le(v, n // 8))   # LDx (QIX+dd),imediato
+    elif k == 1: v = rnd.getrandbits(n); wrm(a, v, n); seq([0xED, pfx, 0x40 | o << 3 | low] + d2 + le(v, n // 8))   # LDx (QIX+dd),immediate
     else: wr_reg(REG[o], rdm(a, n), n); seq([0xED, pfx, (0xC0 | o << 3 | 6) if s == 'Q' else (0x80 | o << 3 | low)] + d2)   # LDx rr,(QIX+dd)
 def chk_sp():
     if not 0x9000 <= r['SP'] <= 0xFFE0: ld_sp(rnd.randrange(0xC000, 0xFF00))
@@ -176,7 +176,7 @@ def push_ret(n, ret):
     wrm(r['SP'] - n // 8, ret, n); r['SP'] = (r['SP'] - n // 8) & M64
 def t_call():
     chk_sp(); k = rnd.randrange(0, 5); s = rnd.choice('EQ'); n = BITS[s]; kind = rnd.randrange(3)
-    if kind == 0:                                                                                            # CALLx imediato
+    if kind == 0:                                                                                            # CALLx immediate
         ln = 2 + n // 8; t = code[0] + ln + k; push_ret(n, code[0] + ln)
         branch([0xED, 0x35 if s == 'E' else 0x34] + le(t, n // 8), True, k)
     else:
@@ -198,7 +198,7 @@ def t_ret():
     branch(bs, tk, k)                                                                                        # the target read from the stack = t (low 32 bits in RETL)
 def sgn(v, n): v &= msk(n); return v - (1 << n) if v >> (n - 1) else v
 def r8get(u): name, sh = R8[u]; return (r[name] >> sh) & 0xFF
-def ldx(code_r, val, s):                        # LDW/LDL/LDQ rr, imediato
+def ldx(code_r, val, s):                        # LDW/LDL/LDQ rr, immediate
     n = BITS[s]; wr_reg(REG[code_r], val, n); seq([0xED, LDB2[s], 0x40 | code_r << 3 | 1] + le(val & msk(n), n // 8))
 def mflags(p, n, sg):                           # MLT flags: p = product (Python integer), n = bits of each operand
     lo, hi = p & msk(n), (p >> n) & msk(n)
@@ -257,9 +257,9 @@ def div_emit(s, sg, want_err, te):              # assembles the operands and the
     elif s == 'E': ldx(c, d, 'E'); ldx(7, hi << 32 | lo, 'Q')
     else: ldx(c, d, s); ldx(2, hi, s); ldx(7, lo, s)
     def apply():
-        if s == 'B': wr_reg('AX', (rem & 0xFF) << 8 | (q & 0xFF), 16)                                        # AL = quociente, AH = resto
-        elif s == 'E': r['AX'] = (rem & msk(32)) << 32 | (q & msk(32))                                       # QA = {resto, quociente}
-        else: wr_reg('AX', q, n); wr_reg('DE', rem, n)                                                       # AX = quociente, DE = resto
+        if s == 'B': wr_reg('AX', (rem & 0xFF) << 8 | (q & 0xFF), 16)                                        # AL = quotient, AH = remainder
+        elif s == 'E': r['AX'] = (rem & msk(32)) << 32 | (q & msk(32))                                       # QA = {remainder, quotient}
+        else: wr_reg('AX', q, n); wr_reg('DE', rem, n)                                                       # AX = quotient, DE = remainder
         st['f'] = (st['f'] & (FH | FN)) | ((FP | FC) if e else (FZ if q & msk(n) == 0 else 0) | (FS if sg and q < 0 else 0))
     return [0xED, b2, 'BWEQ'.index(s) << 6 | 1 << 3 | c], apply
 def t_div():                                    # 1 in 5 with error (zero divisor / out-of-range quotient): here the exception is off, only flags and fixed result
@@ -285,7 +285,7 @@ def f_push(v):
     if full: fp['exc'] |= 1; fp['sf'] = 1; fp['c1'] = 1
 def f_pop(k=1):
     for _ in range(k): fp['emp'][fp['top']] = True; fp['top'] = (fp['top'] + 1) & 7
-def f_alu(code, n=0, din=0, pop2=False):        # comandos aritmeticos da unidade; devolve r0
+def f_alu(code, n=0, din=0, pop2=False):        # arithmetic commands of the unit; returns r0
     t = fp['top']; ib = (t + n) & 7; ea, eb = fp['emp'][t], fp['emp'][ib]; memsrc = code in (6, 9, 10); wr0 = code <= 4 or code == 8; r0 = None
     if memsrc and not fp['emp'][(t - 1) & 7]: fp['c1'] = 0; f_push(INDEF)
     elif not memsrc and (ea or (code in (0, 1, 2, 3, 5) and eb)):
@@ -305,11 +305,11 @@ def f_alu(code, n=0, din=0, pop2=False):        # comandos aritmeticos da unidad
 def fval80():                                   # 80-bit value to load: almost always a normal with a moderate exponent, sometimes a special case
     k = rnd.random(); sgn_ = rnd.getrandbits(1) << 79
     if k < .60: return sgn_ | (16383 + rnd.randrange(-40, 41)) << 64 | 1 << 63 | rnd.getrandbits(rnd.choice([63, 63, 20, 5]))
-    if k < .70: return sgn_ | (16383 + rnd.randrange(0, 20)) << 64 | 1 << 63 | (rnd.getrandbits(6) << 57)       # inteiros e meios pequenos
+    if k < .70: return sgn_ | (16383 + rnd.randrange(0, 20)) << 64 | 1 << 63 | (rnd.getrandbits(6) << 57)       # small integers and halves
     if k < .75: return sgn_
     if k < .80: return sgn_ | rnd.getrandbits(rnd.randrange(1, 64)) & ((1 << 63) - 1)                         # denormal (ou zero)
     if k < .85: return sgn_ | 0x7FFF << 64 | 1 << 63
-    if k < .90: return sgn_ | 0x7FFF << 64 | 1 << 63 | rnd.getrandbits(1) << 62 | (rnd.getrandbits(62) or 1)  # NaN quieto ou sinalizador
+    if k < .90: return sgn_ | 0x7FFF << 64 | 1 << 63 | rnd.getrandbits(1) << 62 | (rnd.getrandbits(62) or 1)  # quiet or signalling NaN
     if k < .93: return sgn_ | rnd.randrange(1, 32767) << 64 | rnd.getrandbits(63)                             # unnormal (unsupported)
     return sgn_ | rnd.choice([rnd.randrange(1, 32767), rnd.randrange(1, 70), rnd.randrange(32700, 32767)]) << 64 | 1 << 63 | rnd.getrandbits(63)
 def poke(a, v, nbytes):                         # writes v to memory with instructions (LDQ rr,immediate + LDx (address),rr)
@@ -428,11 +428,11 @@ def t_ftrans():
     nfp['trans'] = nfp.get('trans', 0) + 1
     k = rnd.randrange(9); sg = rnd.getrandbits(1) << 79; esp = rnd.random() < .12                             # esp: uses whatever is on the stack (empties, NaN, ...)
     if not esp:
-        if k < 4: fput(sg | fnum(-20, 8))                                                                     # angulo
+        if k < 4: fput(sg | fnum(-20, 8))                                                                     # angle
         elif k == 4: fput(fnum(-40, 40))                                                                      # FLN x
         elif k == 5: fput(sg | fnum(-10, 10)); fput(fnum(-40, 40))                                            # FYL2X: y, x
-        elif k == 6: fput(sg | fnum(-10, 10)); fput(sg ^ (rnd.getrandbits(1) << 79) | fnum(-30, -2))          # FYL2P: y, x pequeno
-        else: fput(sg | fnum(-8, 8)); fput(fnum(-8, 30) | rnd.getrandbits(1) << 79)                           # FREM: divisor, dividendo
+        elif k == 6: fput(sg | fnum(-10, 10)); fput(sg ^ (rnd.getrandbits(1) << 79) | fnum(-30, -2))          # FYL2P: y, small x
+        else: fput(sg | fnum(-8, 8)); fput(fnum(-8, 30) | rnd.getrandbits(1) << 79)                           # FREM: divisor, dividend
     f_prog([4, 5, 6, 7, 8, 9, 10, 11, 12][k])
     seq([[0xED, 0x97], [0xED, 0x81], [0xED, 0x10], [0xED, 0x15], [0xED, 0x93], [0xED, 0x17], [0xED, 0x16], [0xED, 0x95], [0xED, 0x96]][k])
     if rnd.random() < .5: t_fstore()
@@ -455,7 +455,7 @@ def t_fpu():
     elif k > .93: t_fsave()
     elif k > .80 and d <= 5: t_ftrans()
     else: rnd.choice([t_fload, t_farith, t_farith, t_farith, t_fstack, t_fstore])()
-# ---------- sistema ----------
+# ---------- system ----------
 cr = [0] * 32                                   # CR0-CR7 free; 9 vector, 11 cause, 12 auxiliary, 13 EPC, 14 {TE [2], MMU [0]}, 18 mode {previous [1], user [0]}
 nreg = [0] * 8                                  # N0-N7 (only appear in the test through LDCTX / SVCTX)
 def t_cr():
@@ -499,7 +499,7 @@ def handler(exp, cont=True, force=None, nextvec=False):   # reads cause / auxili
     cr[18] >>= 1; emit([0xED, 0xA4]); done(cr[13])                                                          # SYSRT: mode := previous, PC := EPC
     if cont: assert code[0] == dest
 GAP = 0x70
-ntrap = {}                                      # (causa, auxiliar, modo) -> quantas vezes
+ntrap = {}                                      # (cause, auxiliary, mode) -> how many times
 PRIV = [[0xED, 0x20, 0x4A], [0xED, 0x21, 0x58], [0xED, 0x0A, 0x0E], [0xED, 0x0C, 0x12], [0xED, 0xC4], [0xED, 0xA4], [0xED, 0xB5], [0xED, 0x00], [0xED, 0x01], [0xED, 0x25], [0xED, 0x24], [0xED, 0x23], [0xED, 0x94],
         [0xF3], [0xFB], [0xD3, 0x98], [0xDB, 0x98], [0xED, 0x78], [0xED, 0x79], [0xED, 0x56], [0xED, 0x47], [0xED, 0xA2], [0xED, 0xB3]]   # Z80: DI, EI, E/S, IM, LD I,A
 def one_trap(H, user, te):                      # draws and assembles ONE instruction that causes an exception; returns (cause, auxiliary)
@@ -510,7 +510,7 @@ def one_trap(H, user, te):                      # draws and assembles ONE instru
     if k == 'ill': trap(rnd.choice([[0xED, 0x08], [0xED, 0x0F]]), 7, 0, code[0], H); return 7, 0
     if k == 'unimp': trap([0xED, 0x27, 0x01], 7, 1, code[0], H); return 7, 1
     bs, apply = div_emit(rnd.choice('BWEQ'), rnd.random() < .5, True, True); trap(bs, 6, 0, code[0], H); return 6, 0   # divide error with TE: nothing changes
-def t_trap():                                   # excecao em modo supervisor
+def t_trap():                                   # exception in supervisor mode
     te = rnd.random() < .7; ldcr(14, 4 if te else 0)
     if rnd.random() < .3:                                                                                    # SCALL returning through the natural EPC (the next instruction)
         n = rnd.getrandbits(8); H = code[0] + 14 + 3 + 4; ldcr(9, H); hl = 12 + 2
@@ -537,7 +537,7 @@ USERPOOL = [t_alu, t_incdec, t_shift, t_bit, t_ldrr, t_ldimm, t_mul, t_ldabs]
 io = {'n': 0, 'chk': 0}
 def io_rd8(): v = ((r['BC'] & 0xFF) + 37 * io['n'] + io['chk']) & 0xFF; io['n'] = (io['n'] + 1) & 0xFF; return v
 def io_wr8(d): io['chk'] = ((((io['chk'] << 1) | (io['chk'] >> 7)) & 0xFF) ^ d ^ (r['BC'] & 0xFF))
-def t_io():                                      # INW/INL/INQ rr,(C) e OUTW/OUTL/OUTQ (C),rr: bytes sucessivos na porta C
+def t_io():                                      # INW/INL/INQ rr,(C) and OUTW/OUTL/OUTQ (C),rr: successive bytes on port C
     t = rnd.randrange(3); z = (16, 32, 64)[t]; rr = rnd.choice(R6)
     if rnd.random() < .5:
         v = 0

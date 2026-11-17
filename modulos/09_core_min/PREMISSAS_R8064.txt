@@ -6,12 +6,12 @@ in sim/gen_r64_rom.py (one line per instruction).
 REGISTERS (3-bit field): 000 BC, 010 DE, 011 IY, 100 HL, 101 IX, 111 AX. 001 and 110 are not registers (they serve to distinguish instructions).
 SIZES: W = 16, L = 32, Q = 64 bits. Writing W or L to a register PRESERVES the upper bits (as the Z80 does with 8 bits within 16).
 
-1. ALU rr,rr' (ADD 3E, ADC 3F, SUB 3C, SUBC 3D, AND 38, OR 37, XOR 36, CP 02): b3 = tt ddd sss; tt = 00 W, 01 E, 10 Q; destino ddd, fonte sss.
+1. ALU rr,rr' (ADD 3E, ADC 3F, SUB 3C, SUBC 3D, AND 38, OR 37, XOR 36, CP 02): b3 = tt ddd sss; tt = 00 W, 01 E, 10 Q; destination ddd, source sss.
    ADCW/ADCL/ADCQ appear in the list as "HL,rr / EA,rr / QA,rr", but the ROM accepts any destination: I treated it as rr,rr'.
    Flags (all ALU): S = highest bit of the size; Z; C = carry/borrow of the size; PV = overflow (arithmetic) or parity of the LOW BYTE (logical);
    H = carry from bit 3 to 4; N; X/Y = bits 3 and 5 of the result. AND sets H. CP only changes flags.
 2. INCx / DECx rr (ED 3E / ED 3C, b3 = tt rrr 001): change S, Z, H, PV, N and KEEP C (like Z80 INC r; different from Z80 INC rr, which does not touch flags).
-3. Deslocamentos de 1 bit: SHL (ED 29, tt rrr 110), SHR (ED 28), RLC (ED 06), RRC (ED 07), SAR (ED 29, tt 110 rrr). tt = 00 B, 01 W, 10 E, 11 Q.
+3. 1-bit shifts: SHL (ED 29, tt rrr 110), SHR (ED 28), RLC (ED 06), RRC (ED 07), SAR (ED 29, tt 110 rrr). tt = 00 B, 01 W, 10 E, 11 Q.
    In the B forms the field is an 8-bit register with the Z80 code (B C D E H L - A). Flags: S, Z, PV = parity of the low byte, C = bit shifted out, H = N = 0.
 4. BITW/RESW n,tt (ED 30: 0/1 nnnn ttt), SETW (ED 2F: 0 nnnn ttt), BITL/RESL/SETL (ED 33/32/31: nnnnn ttt). BIT: Z = bit is 0, PV = Z, S = the tested bit when it is the highest of the size, H = 1, N = 0, C kept, X/Y = bits 3 and 5 of the register.
    RES/SET do not change flags.
@@ -45,12 +45,12 @@ SIZES: W = 16, L = 32, Q = 64 bits. Writing W or L to a register PRESERVES the u
 16. ED opcode with no instruction: 2-byte NOP, as on the Z80 (it used to have length 0 and hang execution).
 
 17. DJNZW nn (REV40): the counter is 16-bit BC (before it was only B). No flags.
-18. SISTEMA (REV40): modos supervisor / usuario, excecoes, SCALL, SYSRT, JP USER, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX: tudo em MODELO_PRIVILEGIO.txt.
+18. SYSTEM (REV40): supervisor / user modes, exceptions, SCALL, SYSRT, JP USER, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX: all in MODELO_PRIVILEGIO.txt.
 
 19. FPU (REV41): 34 instructions with microcode (stack, loads, constants, add, subtract, multiply, divide, root, compare, conversions, FSTSW):
     everything in MODELO_FPU.txt. FLUSH (ED 94): flushes the whole TLB and the pipeline; privileged.
 
-20. FPU, segunda parte (REV42): FSIN, FCOS, FSINC, FTAN, FLN, FYL2X, FYL2P, FREM, FREM1, FSAVE, FRSTR: MODELO_FPU.txt, item 5.
+20. FPU, second part (REV42): FSIN, FCOS, FSINC, FTAN, FLN, FYL2X, FYL2P, FREM, FREM1, FSAVE, FRSTR: MODELO_FPU.txt, item 5.
 
 IMPLEMENTED: INW/INL/INQ rr,(C) and OUTW/OUTL/OUTQ (C),rr (ED 27, b3 = size[7:6] rr[5:3] 001/110): 2/4/8 bytes in sequence on the same C port, least significant byte first; the read accumulates in T2 and writes rr at the end (rr may be BC). Byte range in ioff (u[41:39]) with immz.
 

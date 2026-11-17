@@ -26,7 +26,7 @@ module tb_bank;
         chk("N1 (ED 0E DE)", dut.u_rf1.mem_a[17], 64'hABCD);
         chk("N6 (ED 0D HL)", dut.u_rf1.mem_a[22], 64'h2211);
         chk("N3 (LDQ AX)",   dut.u_rf1.mem_a[19], 64'h1122334455667788);
-        chk("N0 intacto",    dut.u_rf1.mem_a[16], 64'd0);
+        chk("N0 intact",    dut.u_rf1.mem_a[16], 64'd0);
         chk("IY illegal",     dut.u_rf1.mem_a[10], 64'd0);
         chk("DE normal",     dut.u_rf1.mem_a[2],  64'd0);
         $display("pc=%h errors=%0d", dbg_pc, errs);

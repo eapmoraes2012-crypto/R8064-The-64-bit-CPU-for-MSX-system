@@ -5,7 +5,7 @@ Synthesis/P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, 100 MHz tar
   Monolithic ALU (1 stage): 1727 LUT4, Fmax 82-83 MHz  -> does NOT reach 100 MHz.
   2-stage ALU (alu_prep in the R stage with mask/inversion/carry; alu_core in X):
       Fmax 110.4 MHz (PASS), ~1100 LUT4 (measured 1306 including the wrapper's LFSR), 66 ALU cells.
-  Banco de registradores: 366 LUT4, 260 DFF, 4 BSRAM, Fmax 116 MHz (PASS).
+  Register file: 366 LUT4, 260 DFF, 4 BSRAM, Fmax 116 MHz (PASS).
 Consequence: the ALU needs a register between R and X (already planned in the 7-stage pipeline); check in module 02.
 ASSUMPTIONS TO CONFIRM: flag semantics (H, PV, X/Y, CPL, 1-bit shifts, INC/DEC keep C) and size order.
 Caveat: nextpnr's Fmax is a pre-silicon estimate, without real I/O constraints.

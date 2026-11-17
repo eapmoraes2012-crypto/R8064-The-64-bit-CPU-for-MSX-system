@@ -29,15 +29,15 @@ module tb_irq;
     always @(posedge clk) if (dut.irq_take) begin n_take <= n_take + 1; bc_take <= dut.u_rf1.mem_a[1]; hl_take <= dut.u_rf1.mem_a[3]; epc_take <= dut.npc; end
     initial begin
         repeat (4) @(posedge clk); rst = 0; @(posedge clk); #1 dut.ie = 1;
-        wait (mem[16'h201] == 8'h42);      // 2 iteracoes ja feitas
+        wait (mem[16'h201] == 8'h42);      // 2 iterations already done
         @(posedge clk); irq = 1; @(posedge clk); irq = 0;
         repeat (20000) @(posedge clk);
         chk("1 interrupt accepted", n_take, 1);
         chk("PC salvo = LDIR (0F)", dut.epc, 64'h0f);
         if (!(bc_take > 0 && bc_take < 5)) begin errs = errs + 1; $display("ERROR: interrupt was not in the middle of the repeat (BC=%0d)", bc_take); end
-        chk("IE desabilitado", dut.ie, 0);
+        chk("IE disabled", dut.ie, 0);
         chk("BC final 0", dut.u_rf1.mem_a[1], 0); chk("HL final", dut.u_rf1.mem_a[3], 64'h105); chk("DE final", dut.u_rf1.mem_a[2], 64'h205);
-        chk("[200]", mem[16'h200], 8'h41); chk("[202]", mem[16'h202], 8'h43); chk("[204]", mem[16'h204], 8'h45); chk("[205] intacto", mem[16'h205], 0);
+        chk("[200]", mem[16'h200], 8'h41); chk("[202]", mem[16'h202], 8'h43); chk("[204]", mem[16'h204], 8'h45); chk("[205] intact", mem[16'h205], 0);
         chk("PC final (JR)", dbg_pc, 64'h11);
         $display("take=%0d BC_at_interrupt=%0d epc=%h pc=%h errors=%0d", n_take, bc_take, dut.epc, dbg_pc, errs);
         if (errs == 0) $display("RESULT: IRQ IN LDIR OK"); else $display("RESULT: %0d ERRORS", errs);

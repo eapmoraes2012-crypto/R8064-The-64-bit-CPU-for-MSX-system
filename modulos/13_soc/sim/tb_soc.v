@@ -29,7 +29,7 @@ module tb_soc;
         // preload: physical address 4000h + 8k -> 64-bit word 800h+k -> model[2*(800h+k)] (low) and [+1] (high)
         for (k = 0; k < 512; k = k + 1) begin mdl.mem[2*k] = pm[k][31:0]; mdl.mem[2*k + 1] = pm[k][63:32]; mdl.mem[2*(16'h0800 + k)] = pm[k][31:0]; mdl.mem[2*(16'h0800 + k) + 1] = pm[k][63:32]; end
         if (0) begin
-            // tabelas Sv39 na SDRAM (PA 100000h, 101000h, 102000h): VA 0000h-0FFFh -> PA 0000h e VA 4000h-4FFFh -> PA 4000h (folhas V R W X A D = CFh)
+            // Sv39 tables in SDRAM (PA 100000h, 101000h, 102000h): VA 0000h-0FFFh -> PA 0000h and VA 4000h-4FFFh -> PA 4000h (leaves V R W X A D = CFh)
             mdl.mem[2*(24'h100000>>3)] = 32'h00040401; mdl.mem[2*(24'h101000>>3)] = 32'h00040801;
             mdl.mem[2*(24'h102000>>3)] = 32'h000000CF; mdl.mem[2*((24'h102000>>3)+4)] = 32'h000010CF;
         end
@@ -42,10 +42,10 @@ module tb_soc;
         chk("SP", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[11], 64'h0F00);
         w = {mdl.mem[2*(16'h4EFE>>3) + 1], mdl.mem[2*(16'h4EFE>>3)]};
         chk("stack in the SDRAM: return (byte 6..7 of the word)", w[63:48], 64'h0008);
-        chk("OUT porta 77h", lw_a, 64'h77); chk("OUT data", lw_d, 64'h41); chk("1 external OUT", n_ow, 1); chk("1 external IN", n_ir, 1);
+        chk("OUT port 77h", lw_a, 64'h77); chk("OUT data", lw_d, 64'h41); chk("1 external OUT", n_ow, 1); chk("1 external IN", n_ir, 1);
         chk("no I fault", i_fault, 0); chk("no D fault", d_fault, 0);
         if ($test$plusargs("mmu")) $display("page table reads: MMU-I=%0d MMU-D=%0d", nwi, nwd);
-        $display("SDRAM violations=%0d | dbg_pc=%h | modo z80=%0d rom=%0d", mdl.viol, dbg_pc, z80, rom);
+        $display("SDRAM violations=%0d | dbg_pc=%h | mode z80=%0d rom=%0d", mdl.viol, dbg_pc, z80, rom);
         if (errs == 0) $display("RESULT: SOC OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end

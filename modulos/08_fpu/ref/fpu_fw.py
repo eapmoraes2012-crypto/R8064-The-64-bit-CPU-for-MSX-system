@@ -1,5 +1,5 @@
 # fpu_fw.py - 80-bit x87 FPU in FIRMWARE (measure A): only 64-bit integer primitives (mul 64x64->128, div 128/64, clz, shifts, add/sub/cmp with carry).
-# Verified bit by bit against the same vectors as the hardware FPU (sim/vetores.txt). Special cases (NaN, inf, zero, unsupported) fall into the table
+# Verified bit by bit against the same vectors as the hardware FPU (sim/vectors.txt). Special cases (NaN, inf, zero, unsupported) fall into the table
 # decision (fpref.alu, branches only, fixed cost SPC clocks). Cost = pipeline clocks counted per primitive (model below).
 import sys
 from math import isqrt
@@ -49,7 +49,7 @@ def rpack(s, E, M, stk, rc, p, emin, emax, fmt):
             if fmt == 80: return (s << 79) | (0x7FFF << 64) | (1 << 63), fl, up
             if fmt == 32: return (s << 31) | (0xFF << 23), fl, up
             return (s << 63) | (0x7FF << 52), fl, up
-        k = (1 << p) - 1; bl = p; Ef = emax   # maior finito
+        k = (1 << p) - 1; bl = p; Ef = emax   # largest finite
     if fmt == 80:
         if Ef < EMIN:
             return (s << 79) | (k << (Eq - (p - 1) - (EMIN - 63))), fl, up
@@ -99,7 +99,7 @@ def k_sqrt(ea, ma):
     return 0, E, M, stk
 
 def fw_alu(op, A, B, rc, pc):
-    """Retorna (res, flags, up, cc) e acumula clocks em cnt."""
+    """Returns (res, flags, up, cc) and accumulates clocks in cnt."""
     global cnt
     cnt = 0
     name = R.OPS[op]; p = R.pcbits(pc)

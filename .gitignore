@@ -28,7 +28,7 @@ bak_*/
 *.bak
 *~
 
-# Sistema
+# System
 Thumbs.db
 .DS_Store
 __pycache__/
@@ -45,8 +45,8 @@ modulos/09_core_min/sim_r64/*.mem
 # Backup copies and PnR/synthesis outputs (generated locally)
 *.bak
 *.bak_*
-*.novo
-*.futuro
+*.new
+*.future
 **/bak/
 **/bak_*/
 pnr_*.log

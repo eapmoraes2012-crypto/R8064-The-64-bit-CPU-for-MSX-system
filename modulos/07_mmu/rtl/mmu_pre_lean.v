@@ -70,13 +70,13 @@ module mmu #(parameter NENT = 16)(
     assign p_cause = !s2_canon ? 3'd1 : wf_valid ? wf_cause : perm_f ? 3'd2 : 3'd3;
     assign p_addr  = !s2_en ? s2_addr[31:0] : h_big ? {h_ppn[19:9], s2_addr[20:0]} : {h_ppn, s2_addr[11:0]};
     wire need_walk = s2_valid && s2_en && s2_canon && !hit && !wf_valid;
-    // PTE recebido
+    // PTE received
     wire [63:0] pte = m_rdata;
     wire pv = pte[0], pr = pte[1], pw = pte[2], px = pte[3];
     wire leaf = pr | pw | px;
     wire [19:0] pppn = pte[29:10];
     wire [8:0] vpn_n = (lvl == 2'd2) ? s2_addr[29:21] : s2_addr[20:12];   // index of the next level
-    // vitima
+    // victim
     reg [$clog2(NENT)-1:0] rr, vic; reg anyfree;
     always @* begin
         vic = rr; anyfree = 0;
@@ -115,7 +115,7 @@ module mmu #(parameter NENT = 16)(
                 end
                 W_REQ: if (m_accept) ws <= W_WAIT;
                 W_WAIT: if (m_done) begin
-                    if (restart || flush_any) begin   // tabelas podem ter mudado: recomeca
+                    if (restart || flush_any) begin   // the tables may have changed: restart
                         restart <= 0; lvl <= 2'd2;
                         if (s2_root[19:10] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; ws <= W_IDLE; end
                         else begin ws <= W_REQ; m_req <= 1; m_addr <= {s2_root[9:0], s2_addr[38:30]}; end
@@ -123,7 +123,7 @@ module mmu #(parameter NENT = 16)(
                     else if (leaf) begin
                         if (lvl == 2'd2 || (lvl == 2'd1 && pppn[8:0] != 0)) begin wf_valid <= 1; wf_cause <= 3'd1; ws <= W_IDLE; end
                         else if (pppn[19:10] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; ws <= W_IDLE; end
-                        else begin   // instala
+                        else begin   // install
                             e_v[vic] <= 1; e_big[vic] <= (lvl == 2'd1); e_g[vic] <= pte[5]; e_r[vic] <= pr; e_w[vic] <= pw; e_x[vic] <= px; e_u[vic] <= pte[4]; e_a[vic] <= pte[6]; e_d[vic] <= pte[7];
                             e_asid[vic] <= s2_asid; e_vpn[vic] <= s2_vpn; mt2 <= ({{(NENT-1){1'b0}}, 1'b1} << vic); s2_stale <= 0; e_ppn[vic] <= pppn; if (!anyfree) rr <= rr + 1; ws <= W_IDLE;
                         end

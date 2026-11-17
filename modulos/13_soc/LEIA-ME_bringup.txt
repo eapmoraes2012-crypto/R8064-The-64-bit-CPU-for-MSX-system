@@ -6,7 +6,7 @@ BRING-UP DO TOPO DE PLACA (Tang Nano 20K) - r8064_board_top
      dbg_init (84) = 1 when the SDRAM finished initialization (init_done)
      dbg_lock (83) = 1 when the PLL locked
      dbg_sig  (82) = registered XOR of several SoC outputs (only "moves" if the core is running)
-     dbg_hb   (81) = batimento: clk/2^25, ~1,7 Hz a 57,3 MHz (use LED ou osciloscopio)
+     dbg_hb   (81) = heartbeat: clk/2^25, ~1.7 Hz at 57.3 MHz (use an LED or an oscilloscope)
    Expected: lock soon after power-on; init a few ms later (INIT_CYC = 20000 clocks ~ 349 us + sequence); hb blinking.
 3) Button (pin 88, active high) = SoC reset (synchronized; the PLL is not restarted).
 4) If init does NOT come up: adjust SDR_PSDA (SDRAM clk phase) in r8064_board_top (parameter, 22.5-degree steps; default 4 = 90 degrees).

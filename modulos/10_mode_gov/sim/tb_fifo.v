@@ -24,7 +24,7 @@ module tb_fifo;
         mw(1, 8'h05);   // START + enable IRQ
         rr(8'hEC, v); chk("FLAGS: START received + busy", v & 8'h07, 8'h03); mr(1, v); chk("MSX STATUS: busy, not done", v & 8'h1C, 8'h04);
         rw(8'hEC, 8'h01);   // clears START
-        rr(8'hEC, v); chk("INICIAR limpo", v[0], 0);
+        rr(8'hEC, v); chk("START cleared", v[0], 0);
         rr(8'hE8, v); chk("dado 1", v, 8'h11); rr(8'hE8, v); chk("dado 2", v, 8'h22); rr(8'hE8, v); chk("dado 3", v, 8'h33);
         rr(8'hE9, v); chk("FIFO MSX->R8064 empty", v[0], 0);
         // R8064 returns 2 bytes and sets DONE
@@ -33,15 +33,15 @@ module tb_fifo;
         chk("INT active", m_irq, 1); mr(2, v); chk("LEN_L on the MSX = 2", v, 2);
         mr(0, v); chk("MSX reads A1", v, 8'hA1); mr(0, v); chk("MSX reads B2", v, 8'hB2); mr(1, v); chk("no data", v[0], 0);
         mw(1, 8'h84); chk("DONE cleared", m_irq, 0); mr(1, v); chk("STATUS after clearing", v & 8'h18, 0);
-        // encher o FIFO MSX->R8064 (2048) e transbordar
+        // fill the MSX->R8064 FIFO (2048) and overflow it
         for (i = 0; i < 2050; i = i + 1) mw(0, i[7:0]);
         repeat (3) @(posedge clk); mr(1, v); chk("FIFO full: no space", v[1], 0);
         for (i = 0; i < 2048; i = i + 1) begin rr(8'hE8, v); if (v !== i[7:0]) begin errs = errs + 1; if (errs < 6) $display("ERROR fifo[%0d]=%h", i, v); end end
-        rr(8'hE9, v); chk("esvaziou", v[0], 0);
-        // limpar FIFOs
+        rr(8'hE9, v); chk("emptied", v[0], 0);
+        // clear FIFOs
         mw(0, 8'h77); mw(1, 8'h02); repeat (3) @(posedge clk); rr(8'hE9, v); chk("CMD clears FIFOs", v[0], 0);
         // R8064 restart
-        mw(1, 8'h08); chk("pulso de reset do R8064", rrst, 1); @(posedge clk); #1 chk("pulso curto", rrst, 0);
+        mw(1, 8'h08); chk("R8064 reset pulse", rrst, 1); @(posedge clk); #1 chk("short pulse", rrst, 0);
         $display("errors=%0d", errs); if (errs == 0) $display("RESULT: FIFO OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end

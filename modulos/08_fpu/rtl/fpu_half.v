@@ -15,11 +15,11 @@ module fpu_half(
     output wire        up,
     output wire [2:0]  cc
 );
-    // ---- divisor por 2 (dominio clk)
+    // ---- divide by 2 (clk domain)
     reg ph = 1'b0;
     always @(posedge clk) ph <= rst ? 1'b0 : ~ph;
     wire clk2 = ph;
-    // ---- lado pipeline (clk): trava operandos e alterna req_t
+    // ---- pipeline side (clk): latches the operands and toggles req_t
     reg [3:0] op_q; reg [1:0] rc_q, pc_q; reg [79:0] a_q, b_q; reg req_t = 1'b0; reg d1 = 1'b0, dseen = 1'b0;
     wire dt2;
     assign busy = (req_t != dseen);
@@ -32,7 +32,7 @@ module fpu_half(
             if (d1 != dseen) begin dseen <= d1; done <= 1'b1; end
         end
     end
-    // ---- lado FPU (clk2)
+    // ---- FPU side (clk2)
     reg rst2 = 1'b1; reg s1 = 1'b0, seen = 1'b0, st2 = 1'b0, dq = 1'b0, dt = 1'b0;
     reg [79:0] res_r; reg [5:0] fl_r; reg up_r; reg [2:0] cc_r;
     wire alu_done; wire [79:0] alu_res; wire [5:0] alu_fl; wire alu_up; wire [2:0] alu_cc; wire alu_busy;

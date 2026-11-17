@@ -29,7 +29,7 @@ module r8064_dma #(parameter PORT_STAT = 8'hEE, parameter PORT_IE = 8'hEF, param
     // physical-memory master (64-bit word index; arbiter protocol: req until acc, then wait for done)
     output wire        m_req, m_we, output wire [19:0] m_addr, output wire [63:0] m_wd, output wire [7:0] m_be,
     input  wire        m_acc, m_done, input wire [63:0] m_rd,
-    // FIFOs (dispositivo)
+    // FIFOs (device)
     input  wire        a_avail, input wire [7:0] a_q, input wire b_space,
     output wire        d_pop, d_push, output wire [7:0] d_wd,
     // MSX window buffer (DMA-side port; read with 1 clock of latency)
@@ -148,7 +148,7 @@ module r8064_dma #(parameter PORT_STAT = 8'hEE, parameter PORT_IE = 8'hEF, param
             end
             if (boot_clr) begin done[0] <= 1'b0; err[0] <= 1'b0; end
             if (boot_go) begin w_src[0] <= 21'h100000; w_dst[0] <= 21'd0; cnt[0] <= boot_cnt; md_r[0] <= 2'd0; done[0] <= 1'b0; err[0] <= 1'b0; act[0] <= 1'b1; end
-            // ---- portas de E/S ----
+            // ---- I/O ports ----
             if (io_we && io_a == PORT_IE) ie <= io_wd[3:0];
             if (io_we && (io_a == PORT_STAT || io_a == PORT_STAT2)) begin
                 if (io_wd[0]) begin done[ioch] <= 1'b0; err[ioch] <= 1'b0; end
@@ -156,7 +156,7 @@ module r8064_dma #(parameter PORT_STAT = 8'hEE, parameter PORT_IE = 8'hEF, param
                 if (io_wd[1] && act[ioch]) begin act[ioch] <= 1'b0; done[ioch] <= 1'b1; err[ioch] <= 1'b1; inv <= 1'b1; end
                 if (io_wd[5] && act[ioch | 2'd1]) begin act[ioch | 2'd1] <= 1'b0; done[ioch | 2'd1] <= 1'b1; err[ioch | 2'd1] <= 1'b1; inv <= 1'b1; end
             end
-            // ---- motor de transferencia ----
+            // ---- transfer engine ----
             if (fin && act[cur]) begin
                 if (md != 2'd2) w_src[cur] <= w_src[cur] + 21'd1;
                 if (md != 2'd1) w_dst[cur] <= w_dst[cur] + 21'd1;

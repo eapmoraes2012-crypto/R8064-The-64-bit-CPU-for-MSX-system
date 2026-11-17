@@ -3,13 +3,15 @@
 64-bit CPU derived from the Z80 (with Z80/R800 timing modes and a native mode), built module by module for an MSX slot.
 Clock target: 57.28 MHz (3.58 MHz x 16).
 
+**Version 0.0 Alpha** (REV47, 17/11/2026). Nothing has been verified on hardware yet.
+
 ## Current status (read before using)
 - The SoC core (`09_core_min`) runs the **complete Z80**: main page, CB, DD/FD (IX/IY, IXH/IXL), DDCB/FDCB and the Z80 ED page.
   Checked instruction by instruction against the model `12_z80/ref/z80ref.c` (`09_core_min/sim_z80`: over 1.1 million instructions, X/Y flags included,
   and the start of ZEXDOC). Since REV36 this is the default ROM (`uop.mem`) of the SoC and of all tests; the old test encoding of the main page is gone.
 - R8064's own instructions (ED page) with microcode: the 16/32/64-bit integer ones (ALU, INC/DEC, shifts, bits, LDx, stack, branches, calls and
   returns), multiply and divide (module 03 blocks wired to the core, with flags and divide error), LDCR/STCR, PGINV, XCHG, CAS and the system ones
-  (JP USER, SYSRT, SCALL, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX). Semantica INFERIDA (`09_core_min/PREMISSAS_R8064.txt`),
+  (JP USER, SYSRT, SCALL, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX). Semantics INFERRED (`09_core_min/PREMISSAS_R8064.txt`),
   checked against a Python model written from those assumptions (`09_core_min/sim_r64`: random programs, no divergences).
 - Privilege and exception model (REV40, `09_core_min/MODELO_PRIVILEGIO.txt`): supervisor / user modes (CR18), single exception entry through the CR9 vector
   with cause / auxiliary / EPC in CR11 / CR12 / CR13, return through SYSRT. It is a DEFINITION made in this revision, not something that already existed in the project: review it.
@@ -24,6 +26,14 @@ Clock target: 57.28 MHz (3.58 MHz x 16).
 - The SoC (`13_soc`) gathers core + governor + MSX memory + MMU + caches + SDRAM. It does not instantiate `msx_if` (04), the FPU (08/11) or the classic Z80 (12).
 - The classic Z80 (`12_z80`) passes ZEXDOC, but the last measured Fmax (44-52 MHz) is below the 57.28 MHz clock.
 - Nothing has been verified on hardware. The board top does not yet connect the MSX bus.
+- **Tang Nano 20K builds (REV47)**: the cartridge (`13_soc/rtl/r8064_cart_top.v`) is built with `R8064_NOFPU` (no FPU), `R8064_DMA2`
+  (2 DMA channels), `R8064_AW32` (32-bit implemented addresses: PC, fetch and effective addresses wrap modulo 2^32, the high bits read as 0)
+  and `R8064_NO_MD64` (MLTSQ/MLTUQ and DIVSQ/DIVUQ are not implemented: unimplemented-instruction exception, cause 7, if CR14.TE = 1).
+  Without these macros the core is the full 64-bit version (simulation). REV47 also rewrote some structures with the same function
+  (load/store rotators, immediate extraction, multiplier accumulator, DMA state, divider registers) and fixed a hold and two timing paths.
+- **Place and route**: with yosys + nextpnr the cartridge does not route reliably (68 % of the LUTs, BSRAM 46/46). With **Gowin EDA**
+  (Education edition) it closes: 59 % of the logic, Fmax 59.94 MHz at 57.27 MHz, no setup/hold violations, bitstream generated
+  (`13_soc/gowin/LEIA-ME_gowin.txt`). The SDRAM interface timing is not analysed (adjust `SDR_PSDA` in hardware).
 - Pending items and history: `modulos/13_soc/resultado_soc.txt` (REV33 lists what is still open).
 
 ## Modules (`modulos/`)
@@ -31,30 +41,31 @@ Clock target: 57.28 MHz (3.58 MHz x 16).
 |---|---|---|
 | `01_alu_regfile` | 64-bit ALU and register file | yes (via 09) |
 | `02_pipeline` | pipeline timing model (study, not synthesizable) | no |
-| `03_muldiv` | multiplicador e divisor | sim (desde a REV39) |
+| `03_muldiv` | multiplier and divider | yes (since REV39) |
 | `04_msx_if` | MSX interface + FIFO (first version) | no |
 | `05_sdram` | SDRAM controller and simulation model | yes |
 | `05b_cache` | cache sizing study (Python) | - |
 | `06_cache` | `cache8k` (2 ways, study) and `cache_dm` (direct mapped, the one used) | `cache_dm` |
 | `07_mmu` | MMU Sv39 | sim |
-| `08_fpu` | FPU: `fpu_unit.v` + `fpu_seq.v` (compacta) | sim (desde a REV41) |
+| `08_fpu` | FPU: `fpu_unit.v` + `fpu_seq.v` (compact) | yes (since REV41) |
 | `08_fpu/rtl/fpu_alu.v`, `11_fpu_stk` | old large FPU and standalone stack (superseded) | no |
 | `09_core_min` | minimal core (uop-ROM decoder) and ROM generators | yes |
 | `10_mode_gov` | timing governor + modes (Z80 ROM, R800 DRAM, native) + MSX system | yes |
 | `10_msx_mem` | MSX memory mapper + MegaRAM | yes |
 | `12_z80` | independent classic Z80 (reference) | no |
-| `13_soc` | SoC: core + MMU + caches + SDRAM; top de placa e fluxo de PnR | - |
+| `13_soc` | SoC: core + MMU + caches + SDRAM; board top and PnR flow | - |
 | `14_vec3d` | 3D unit (archived; outside the core) | no |
 
 ## How to run
-No terminal do OSS CAD Suite:
-- Regressao do core/governador/sistema: `modulos\10_mode_gov\rodar_tudo.bat`
+In the OSS CAD Suite terminal:
+- Core/governor/system regression: `modulos\10_mode_gov\rodar_tudo.bat`
 - SoC (exceptions, basic SoC, clock generator): `modulos\13_soc\rodar_exc.bat`
 - Core in Z80 mode against the reference model: `modulos\09_core_min\sim_z80\rodar_z80core.bat`
 - R8064 16/32/64-bit instructions, system and FPU against the model: `modulos\09_core_min\sim_r64\rodar_r64.bat`
 - FPU arithmetic core against 39,000 vectors: `modulos\08_fpu\rodar_seq.bat`
 - Place-and-route of the board top (4 seeds): `modulos\13_soc\pnr\rodar_pnr_board.bat`
 - Bitstream: `modulos\13_soc\pnr\gerar_bitstream_board.bat 0 <seed>`
+- Cartridge with Gowin EDA (recommended): `python3 modulos/13_soc/gowin/make_gowin_pkg.py <out_dir> <absolute path of out_dir/src>`, then `rodar_gowin.bat` or the Gowin GUI (`modulos/13_soc/gowin/LEIA-ME_gowin.txt`)
 
 ## `.mem` files (they are the project's SOURCE)
 Keep the copies of `sim/` and `pnr/` in modules 09, 10 and 13 identical.
@@ -62,7 +73,7 @@ Keep the copies of `sim/` and `pnr/` in modules 09, 10 and 13 identical.
 |---|---|
 | `uop.mem`, `mainctrl.mem`, `prog*.mem` | `09_core_min/sim/gen_roms.py` (uses `gen_z80_rom.py`, the Z80 microcode) |
 | `ctrl_b.mem` | `09_core_min/sim/gen_bank.py instr_ids.csv ctrl.mem` |
-| `r8064_decode_rom.v` | `09_core_min/sim/gen_decode_rom.py` (a partir de `rom_ed_a.mem` e `amb_idx.mem`) |
+| `r8064_decode_rom.v` | `09_core_min/sim/gen_decode_rom.py` (from `rom_ed_a.mem` and `amb_idx.mem`) |
 | `gov_rom.mem` | `10_mode_gov/sim/gen_gov_rom.py ref/z80_classico_tstates.csv` |
 | `ctrl.mem`, `rom_ed_a.mem`, `rom_ed_b.mem`, `amb_idx.mem` | **no generator in the repository**: they came from the instruction spreadsheet and were edited by hand afterwards (ids 291-295) |
 
@@ -91,7 +102,7 @@ The Z80 pages without ED (main, CB, DD, FD, DDCB, FDCB) have no ROM here; their 
 - NOT COMPLETED: timing of the full design (ALU, FPU, MMU, SDRAM) and the real MSX slot pins.
 - NOT VERIFIED: the format of the `.mi` files (Gowin) follows what I remember of the IP Core Generator; import one and check it.
 
-## Arquivos
+## Files
 | File | Contents |
 |---|---|
 | `rom/rom_ed_a.mem` | 256 × 12 bits, indexed by b2. Bit 10 = "ambiguous page" (look up ROM_B); bits 9:0 = instruction id (direct access) |

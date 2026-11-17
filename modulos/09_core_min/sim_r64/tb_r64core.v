@@ -3,7 +3,7 @@
 // Releases ONE instruction at a time (gov_go), waits for the pipeline to drain and compares PC, AX, BC, DE, HL, IX, IY, SP (64 bits) and F; at the end it compares the 64 KB of memory.
 // With +livre the core runs FREE (gov_go = 1, instructions glued into the pipeline) and only the final state (registers, F, memory) is compared:
 // it catches dependencies between neighboring instructions (forwarding, mode switch, exception vector written right before the exception) that step-by-step hides.
-// Plusargs: +hex=<prefixo>_mem.hex +trace=<prefixo>_trace.txt +fim=<prefixo>_fim.hex [+fpu=<prefixo>_fpu.hex] [+v] [+livre]
+// Plusargs: +hex=<prefix>_mem.hex +trace=<prefix>_trace.txt +fim=<prefix>_fim.hex [+fpu=<prefix>_fpu.hex] [+v] [+livre]
 module tb_r64core;
     reg clk = 0, rst = 1, go = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f, d_be; wire dbg_sig;
@@ -31,7 +31,7 @@ module tb_r64core;
     reg [1023:0] fhex, ftrace, ffim; integer fd, rc, n = 0, errs = 0, idle, tmo, merr = 0, q; reg verb;
     reg [63:0] e [0:7], g [0:7], pc0; reg [7:0] e_f, e_em; reg [15:0] e_sw;
     initial begin
-        if (!$value$plusargs("hex=%s", fhex) || !$value$plusargs("trace=%s", ftrace)) begin $display("faltam +hex= e +trace="); $finish; end
+        if (!$value$plusargs("hex=%s", fhex) || !$value$plusargs("trace=%s", ftrace)) begin $display("missing +hex= and +trace="); $finish; end
         verb = $test$plusargs("v");
         $readmemh(fhex, mem); fd = $fopen(ftrace, "r");
         repeat (4) @(posedge clk); rst = 0;

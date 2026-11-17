@@ -3,7 +3,7 @@
 // the last write is registered (wq_*) and, if it matches the read address, replaces the memory output. It covers the consumer that reads
 // exactly when the producer is in the W stage; the other cases are forwarded by the pipeline. (It is not in the w_data -> read path.)
 // Two copies to infer BSRAM (2 read ports).
-// Indices: 0 QAX,1 QBC,2 QDE,3 QHL,4 QWX,5 QAX',6 QBC',7 QDE',8 QHL',9 QIX,10 QIY,11 QSP,12 QPC,13 temporario; 16..23 = N0..N7; 32..63 = CR00..CR31 (CR18 = modo; ver MODELO_PRIVILEGIO.txt).
+// Indices: 0 QAX,1 QBC,2 QDE,3 QHL,4 QWX,5 QAX',6 QBC',7 QDE',8 QHL',9 QIX,10 QIY,11 QSP,12 QPC,13 temporary; 16..23 = N0..N7; 32..63 = CR00..CR31 (CR18 = mode; see MODELO_PRIVILEGIO.txt).
 module regfile64(
     input  wire        clk,
     input  wire        we,

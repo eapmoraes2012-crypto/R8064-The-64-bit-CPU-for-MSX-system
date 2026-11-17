@@ -28,7 +28,7 @@ module tb_muldiv;
         for (k = 0; k < 4; k = k + 1) begin lmin[k] = 999; lmax[k] = 0; end
         for (k = 0; k < 8; k = k + 1) begin cmin[k] = 999; cmax[k] = 0; end
         repeat (4) @(posedge clk); #1 rst = 0; repeat (2) @(posedge clk);
-        // ================= multiplicador: sequencial (mede latencia)
+        // ================= multiplier: sequential (measures latency)
         for (i = 0; i < NM; i = i + 1) begin
             #1 m_a = ma[i]; m_b = mb[i]; m_sz = mc[i][1:0]; m_sgn = mc[i][2]; m_in = 1;
             @(posedge clk); #1 m_in = 0; lat = 1;

@@ -38,11 +38,11 @@ module tb_soc_nat;
         for (k = 0; k < 16; k = k + 1) emit(8'h00);
         // MMU off. A8h=E8h (page 1,2 = slot 2 MegaRAM; page 3 = slot 3 mapper). Writes by PUSH, reads by POP (the minimal core has no LD (nn),A).
         ldrr(7, 16'h00E8); emit(8'hD3); emit(8'hA8);
-        ldrr(7, 16'h0005); emit(8'hD3); emit(8'hFF);                                   // pag3 = segmento 5
+        ldrr(7, 16'h0005); emit(8'hD3); emit(8'hFF);                                   // page3 = segment 5
         ldrr(0, 16'h0077); emit(8'h31); emit(8'h02); emit(8'hC0); emit(8'hC5);         // PUSH BC em C000h -> PA 014000h
-        ldrr(7, 16'h0006); emit(8'hD3); emit(8'hFF);                                   // pag3 = segmento 6
+        ldrr(7, 16'h0006); emit(8'hD3); emit(8'hFF);                                   // page3 = segment 6
         ldrr(0, 16'h0088); emit(8'h31); emit(8'h02); emit(8'hC0); emit(8'hC5);         // -> PA 018000h
-        ldrr(7, 16'h0005); emit(8'hD3); emit(8'hFF);                                   // volta ao segmento 5
+        ldrr(7, 16'h0005); emit(8'hD3); emit(8'hFF);                                   // back to segment 5
         emit(8'h31); emit(8'h00); emit(8'hC0); emit(8'hD1);                            // POP DE (le C000h) -> 0077
         emit(8'h31); emit(8'h02); emit(8'h30); emit(8'hD5);                            // PUSH DE at 3000h (page 0, no translation)
         emit(8'hDB); emit(8'h8E);                                                      // IN A,(8Eh): MegaRAM in write mode
@@ -63,7 +63,7 @@ module tb_soc_nat;
         chk("pag3 seg5 (PA 014000h)", pb(24'h014000), 8'h77);
         chk("pag3 seg6 (PA 018000h)", pb(24'h018000), 8'h88);
         chk("read via mapper seg5 -> 3000h", pb(24'h003000), 8'h77);
-        chk("MegaRAM banco 3 (PA 406000h) = 99h", pb(24'h406000), 8'h99);
+        chk("MegaRAM bank 3 (PA 406000h) = 99h", pb(24'h406000), 8'h99);
         chk("MegaRAM ASCII8: write ignored, read -> 3002h", pb(24'h003002), 8'h99);
         chk("R800 mode (not native)", nat, 0); chk("R800", z80, 0);
         $display("pc=%h a8=%h mreg3=%h breg0=%h z80=%b rom=%b nwd=%0d AX=%h SP=%h BC=%h DE=%h", dbg_pc, dut.u_sys.u_mmd.a8, dut.u_sys.u_mmd.mreg[3], dut.u_sys.u_mmd.breg[0], z80, rom, nwd, rf(0), rf(11), rf(1), rf(2));

@@ -32,8 +32,8 @@ module tb_xing;
     initial begin
         repeat (4) @(posedge clk); rst = 0;
         repeat (6000) @(posedge clk);
-        chk("PUSH: byte 7 da 1a transacao = 34", wd_log[0][63:56], 8'h34); chk("PUSH: byte 0 da 2a transacao = 12", wd_log[1][7:0], 8'h12);
-        chk("PUSH: bytes vizinhos intactos [EFE]", mem[16'h0EFE], 8'h00); chk("[F01] intacto", mem[16'h0F01], 8'h00);
+        chk("PUSH: byte 7 of the 1st transaction = 34", wd_log[0][63:56], 8'h34); chk("PUSH: byte 0 of the 2nd transaction = 12", wd_log[1][7:0], 8'h12);
+        chk("PUSH: neighbouring bytes intact [EFE]", mem[16'h0EFE], 8'h00); chk("[F01] intact", mem[16'h0F01], 8'h00);
         chk("POP DE crossing the word", dut.u_rf1.mem_a[2][15:0], 16'h1234);
         chk("1st PUSH transaction: be = 80 (only byte 7)", be_log[0], 8'h80); chk("1st transaction: address EF8", ad_log[0], 64'h0EF8);
         chk("2nd PUSH transaction: be = 01", be_log[1], 8'h01); chk("2nd transaction: address F00", ad_log[1], 64'h0F00);

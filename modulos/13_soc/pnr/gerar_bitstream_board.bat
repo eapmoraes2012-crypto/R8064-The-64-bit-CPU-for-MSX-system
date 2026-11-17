@@ -1,7 +1,7 @@
 @echo off
 rem Generates the board-top bitstream (Tang Nano 20K) and, optionally, programs the board.
 rem Usage: gerar_bitstream_board.bat [SRC] [SEED] [gravar]
-rem   SRC: 0 = 27 MHz board clock (padrao) | 1 = 3.579545 MHz on clk_ext (pino 13) | 2 = 57.27 MHz (pino 10) | 3 = 14.31818 MHz (pino 80)
+rem   SRC: 0 = 27 MHz board clock (default) | 1 = 3.579545 MHz on clk_ext (pin 13) | 2 = 57.27 MHz (pin 10) | 3 = 14.31818 MHz (pin 80)
 rem   SEED: use the one that closed best in PnR (default 3). "gravar" = loads into the FPGA SRAM with openFPGALoader (lost at power-off).
 rem Run INSIDE the OSS CAD Suite terminal.
 cd /d "%~dp0"

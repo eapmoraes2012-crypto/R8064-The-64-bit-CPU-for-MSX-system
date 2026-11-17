@@ -34,7 +34,7 @@ K_ONE, K_TWO, K_2OPI, K_P1, K_P2, K_P3, K_L2E, K_LN2, K_S, K_C, K_L = 0, 1, 2, 3
 K_LN2H, K_LN2L = 8 + NS + NC + NL, 8 + NS + NC + NL + 1
 ADD, SUB, MUL, DIV, FILD, FIST, RND = 0, 1, 2, 3, 6, 7, 8
 T = lambda i: 8 + i                             # temporaries: positions 8..15 of the stack memory
-ST = lambda i: 16 + i                           # relativo ao topo
+ST = lambda i: 16 + i                           # relative to the top
 # step = dict(k, aop, rc, dst, a, bsel, b, q): k 0 ALU, 1 loads constant, 2 splits (mantissa -> dst, exponent -> integer), 3 chooses by quadrant
 # (b = 0 sine, 1 cosine), 4 pushes a, 5 loop (b = destination), 6 prepares loop (a = turns, b = initial constant), 7 end (a = pops), 8 branches by variant
 PROG = []
@@ -53,7 +53,7 @@ horner(T(5), T(3), K_C, NC); alu(T(5), T(5), MUL, b=T(3)); alu(T(5), T(5), ADD, 
 st(8)                                                                                                                     # variant: 0 FSIN, 1 FCOS, 2 FSINC, 3 FTAN (4 steps each)
 st(3, dst=ST(0), b=0); st(7); st(7); st(7)
 st(3, dst=ST(0), b=1); st(7); st(7); st(7)
-st(3, dst=T(6), b=0); st(3, dst=ST(0), b=1); st(4, a=T(6)); st(7)                                                         # FSINC: ST0 = seno, ST1 = cosseno
+st(3, dst=T(6), b=0); st(3, dst=ST(0), b=1); st(4, a=T(6)); st(7)                                                         # FSINC: ST0 = sine, ST1 = cosine
 st(3, dst=T(6), b=0); st(3, dst=T(7), b=1); alu(ST(0), T(6), DIV, b=T(7)); st(7)
 def lnpoly(): alu(T(4), T(3), MUL, b=T(3)); horner(T(5), T(4), K_L, NL); alu(T(5), T(5), MUL, b=T(3))                      # f em T3 -> ln em T5
 def split(): st(2, dst=T(2), a=ST(0)); alu(T(0), 0, FILD); alu(T(3), T(2), SUB, c=K_ONE); alu(T(4), T(2), ADD, c=K_ONE); alu(T(3), T(3), DIV, b=T(4))

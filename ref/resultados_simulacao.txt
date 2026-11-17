@@ -1,5 +1,5 @@
 Simulation and synthesis results of the ED decoder (rtl/r8064_decode.v)
-Data: 02/11/2026. Ferramentas: OSS CAD Suite 20261102 (Icarus Verilog 14.0 devel, Verilator 5.055 devel, Yosys 0.70+290), em Ubuntu 22.04 (VM).
+Date: 02/11/2026. Tools: OSS CAD Suite 20261102 (Icarus Verilog 14.0 devel, Verilator 5.055 devel, Yosys 0.70+290), on Ubuntu 22.04 (VM).
 
 1) RTL simulation of the exhaustive testbench (tb_r8064_decode.v)
    Icarus   : "Vectors (b2,b3): 65536 | id errors: 0 | combinations with cycles checked: 44549 | cycle errors: 0"  -> PASS

@@ -23,7 +23,7 @@ module r8064_mdu(
     function bitw(input [63:0] x, input [1:0] w); bitw = (w == 2'd0) ? x[7] : (w == 2'd1) ? x[15] : (w == 2'd2) ? x[31] : x[63]; endfunction   // bit W-1
     reg [3:0] st; reg [6:0] cnt;
     reg [63:0] rA, rH, rB, rQ, rR; reg aneg, bneg, sg, dv, c;
-    // somador unico: s = x + y + ci (66 bits)
+    // single adder: s = x + y + ci (66 bits)
     reg [65:0] ax, ay; reg aci; wire [65:0] asum = ax + ay + {65'd0, aci};
     localparam IDLE=0, ABSA0=1, ABSA1=2, ABSB=3, PRE=4, LOOPM=5, MFIN=6, NEGP0=7, NEGP1=8, LOOPD=9, QFIX=10, NEGQ=11, NEGR=12, FIN=13;
     always @* begin
@@ -43,7 +43,7 @@ module r8064_mdu(
     end
     // sign and extension
     function [63:0] sx(input [63:0] x, input [1:0] w); sx = bitw(x, w) ? (x | ~mW) : (x & mW); endfunction
-    // dividendo de 2W bits: W=8: d_a[15:0] | W=16: {h_q[15:0], d_a[15:0]} | W=32: d_a | W=64: {h_q, d_a}
+    // dividend of 2W bits: W=8: d_a[15:0] | W=16: {h_q[15:0], d_a[15:0]} | W=32: d_a | W=64: {h_q, d_a}
     wire [127:0] Dr = (w_q == 2'd0) ? {112'd0, d_a[15:0]} : (w_q == 2'd1) ? {96'd0, h_q[15:0], d_a[15:0]} : (w_q == 2'd2) ? {64'd0, d_a} : {h_q, d_a};
     wire dsg = (w_q == 2'd0) ? Dr[15] : (w_q == 2'd1) ? Dr[31] : (w_q == 2'd2) ? Dr[63] : Dr[127];      // sign of the dividend (bit 2W-1)
     wire [127:0] Ds = (op[0] && dsg) ? (Dr | ~m2) : Dr;

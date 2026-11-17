@@ -3,12 +3,12 @@
 // 'dout' is combinational from gsel (GET commands >= 48) and always reads stable registers (rdr, sw, cw, tw).
 // Pass-through register xin (80 bits): SETLO/SETHI assemble it; LD32/LD64/FILD/LD80/WRC consume it. rdr (80 bits) receives ST(i) (RDI/RD0/RDC) or the result of CVT32/CVT64/FIST.
 // Counter cnt (3 bits): CLRCNT clears it; RDC and WRC read/write ST(cnt) and increment (FSAVE/FRSTR without needing a constant index).
-// Comandos: 0 NOP | 1 SETLO | 2 SETHI | 3 LD80 | 4 LD32 | 5 LD64 | 6 FILD | 8 FLD1 | 9 FLDZ | 10 FLDPI | 11 FLDL2T | 12 FLDLG2 | 13 FLDLN2
+// Commands: 0 NOP | 1 SETLO | 2 SETHI | 3 LD80 | 4 LD32 | 5 LD64 | 6 FILD | 8 FLD1 | 9 FLDZ | 10 FLDPI | 11 FLDL2T | 12 FLDLG2 | 13 FLDLN2
 //  14 FADD | 15 FSUB | 16 FMUL | 17 FDIV (ST0 := ST0 op STn) | 18 FSQRT | 19 FCOM STn | 20 FCOPP | 21 FCHS | 22 FABS | 23 FXCH | 24 FLD STn | 25 FSTP STn | 26 FRINT
 //  27 POP | 28 FINIT | 29 SETCW | 30 SETSW | 31 SETTW | 32 RDI | 33 RDC | 34 WRC | 35 CLRCNT | 36 CVT32 | 37 CVT64 | 38 FIST | 39 RD0
 //  MACROS (ROM de firmware, ver 08_fpu/macro/fpu_macro.py): 40 FSIN | 41 FCOS | 42 FSINC | 43 FTAN | 44 FLN | 45 FYL2X | 46 FYL2P | 47 FREM | 7 FREM1
 //  macro internals: 48..51 ADDST SUBST MULST DIVST (STn := STn op ST0) | 63 KLD (pushes a constant from the ROM)
-//  GET: 48 lo(rdr) | 49 hi(rdr) | 50 SW | 51 CW | 52 TW | 53 CC no formato de F ({C1,C3,000,C2,0,C0})
+//  GET: 48 lo(rdr) | 49 hi(rdr) | 50 SW | 51 CW | 52 TW | 53 CC in the F format ({C1,C3,000,C2,0,C0})
 // During a macro: rounding = nearest, precision = 64 bits, only the PE exception is accumulated by the internal operations.
 module fpu_top(
     input  wire        clk, rst,
@@ -36,12 +36,12 @@ module fpu_top(
     wire [79:0] ra, rb; wire [1:0] tag_a, tag_b; wire [15:0] cw, sw, tw; wire [3:0] fxam; wire es, stk_busy;
     fpu_stk u_stk(.clk(clk), .rst(rst), .go(s_go), .cmd(s_cmd), .idx(s_idx), .wdata(s_wd), .flags_in(s_fl), .ra_idx(ra_idx), .rb_idx(rb_idx),
                   .ra(ra), .rb(rb), .tag_a(tag_a), .tag_b(tag_b), .cw(cw), .sw(sw), .tw(tw), .fxam(fxam), .es(es), .busy(stk_busy));
-    // ---- aritmetica
+    // ---- arithmetic
     reg a_start; reg [3:0] a_op; reg [79:0] a_a, a_b;
     wire a_busy, a_done, a_up; wire [79:0] a_res; wire [5:0] a_fl; wire [2:0] a_cc;
     fpu_half u_alu(.clk(clk), .rst(rst), .start(a_start), .op(a_op), .rc(m_run ? 2'd0 : cw[11:10]), .pc(m_run ? 2'd3 : cw[9:8]), .a(a_a), .b(a_b), .busy(a_busy), .done(a_done), .res(a_res), .flags(a_fl), .up(a_up), .cc(a_cc));
     wire [5:0] a_flm = m_run ? (a_fl & 6'h20) : a_fl;
-    // ---- resto parcial
+    // ---- partial remainder
     reg fr_start; wire fr_busy, fr_done; wire [79:0] fr_res; wire [2:0] fr_q; reg [2:0] frq;
     fpu_frem u_frem(.clk(clk), .rst(rst), .start(fr_start), .near(m_arg[0]), .x(ra), .y(rb), .busy(fr_busy), .done(fr_done), .res(fr_res), .q(fr_q));
     assign busy = (st != S_IDLE) || stk_busy || a_busy || m_run || fr_busy;
@@ -70,7 +70,7 @@ module fpu_top(
         begin
             ex0 = (v[78:64] == 15'd0); exf = (v[78:64] == 15'h7FFF); m63 = v[63]; mz = (v[62:0] == 63'd0);
             clsf[0] = exf ? !(m63 && mz) : (ex0 ? m63 : !m63);       // nan / unsupported
-            clsf[1] = exf && m63 && mz;                                // infinito
+            clsf[1] = exf && m63 && mz;                                // infinity
             clsf[2] = ex0 && !m63 && (v[62:0] == 63'd0);               // zero
             clsf[3] = ex0 && !m63 && !(v[62:0] == 63'd0);              // denormal
             clsf[4] = 1'b0;
@@ -210,7 +210,7 @@ module fpu_top(
                         6'd20: begin st <= S_ALU; pk <= P_CMP2; end
                         6'd36, 6'd37, 6'd38: begin st <= S_ALU; pk <= P_OUT; end
                         6'd25: begin st <= S_POST; pk <= P_POP; ps <= 0; end
-                        6'd7, 6'd40, 6'd41, 6'd42, 6'd43, 6'd44, 6'd45, 6'd46, 6'd47: ;          // macros: so ligam m_run
+                        6'd7, 6'd40, 6'd41, 6'd42, 6'd43, 6'd44, 6'd45, 6'd46, 6'd47: ;          // macros: only turn on m_run
                         default: st <= S_ONE;
                     endcase
                 end

@@ -21,7 +21,7 @@ module cache8k #(parameter WR = 1, parameter WBD = 4)(
     input  wire [63:0] m_rdata,
     output reg  [31:0] st_rd_hit, st_rd_miss, st_wr, st_wr_hit
 );
-    // ---------------- arranjos
+    // ---------------- arrays
     reg [63:0] d0 [0:511]; reg [63:0] d1 [0:511]; reg [9:0] t0 [0:127]; reg [9:0] t1 [0:127];
     reg [127:0] v0, v1, lru;
     // stage 1

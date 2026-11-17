@@ -43,7 +43,7 @@ module tb_soc_dma;
             mdl.mem[2*k] = w[31:0]; mdl.mem[2*k + 1] = w[63:32];
         end
         for (k = 0; k < 8; k = k + 1) begin
-            mdl.mem[2*(16'h880 + k)] = src(k); mdl.mem[2*(16'h880 + k) + 1] = src(k) >> 32;               // fonte: 1000h
+            mdl.mem[2*(16'h880 + k)] = src(k); mdl.mem[2*(16'h880 + k) + 1] = src(k) >> 32;               // source: 1000h
             mdl.mem[2*(16'h900 + k)] = 32'hDEAD5A00 + k; mdl.mem[2*(16'h900 + k) + 1] = 32'hBEEF0000 + k; // destination: 2000h (old value)
         end
         mdl.mem[2*(16'h908)] = 32'h77777777; mdl.mem[2*(16'h908) + 1] = 32'h88888888;                // word right after the destination: intact
@@ -53,7 +53,7 @@ module tb_soc_dma;
         repeat (40000) @(posedge clk);
         
         chk("HL = old value (line entered the cache)", rf(3) & 64'hFFFF, 64'h5A00); chk("DE = new value (cache invalidated)", rf(2) & 64'hFFFF, src(0) & 64'hFFFF);
-        for (k = 0; k < 8; k = k + 1) begin w = {mdl.mem[2*(16'h900 + k) + 1], mdl.mem[2*(16'h900 + k)]}; chk("destino", w, src(k)); end
+        for (k = 0; k < 8; k = k + 1) begin w = {mdl.mem[2*(16'h900 + k) + 1], mdl.mem[2*(16'h900 + k)]}; chk("destination", w, src(k)); end
         w = {mdl.mem[2*16'h908 + 1], mdl.mem[2*16'h908]}; chk("next word intact", w, 64'h8888888877777777);
         chk("8 DMA reads + 8 writes", ndma, 16); chk("1 inv pulse", ninv, 1);
         chk("no I fault", i_fault, 0); chk("no D fault", d_fault, 0); chk("SDRAM violations", mdl.viol, 0);

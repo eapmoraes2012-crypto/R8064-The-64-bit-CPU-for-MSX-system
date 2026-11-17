@@ -1,7 +1,7 @@
 // r8064_mode.v - R8064 mode registers.
 //   Port 3DH: read = 64H (ID); write 0A5H arms ONE write to 3EH (any other value disarms).
 //   Port 3EH: R8064_MODE  bit0 NATIVE64 | bits2:1 CLK (RESERVED since REV23: single 57.27 MHz clock; the bit is stored and read back, with no effect on the governor) | bit3 BUSY (read only).
-//   Portas E4H/E5H: S1990 emulated only in register 6 (bit5 0 = R800 / 1 = Z80; bit6 0 = DRAM / 1 = ROM). Reset = 60H (Z80 ROM).
+//   Ports E4H/E5H: S1990 emulated only in register 6 (bit5 0 = R800 / 1 = Z80; bit6 0 = DRAM / 1 = ROM). Reset = 60H (Z80 ROM).
 //   Other S1990 registers are NOT handled here (they only pass through: s1990_idx / s1990_other_we).
 // The mode switch is applied at the instruction boundary (boundary = 1 when the pipeline is empty / instruction issued).
 module r8064_mode(

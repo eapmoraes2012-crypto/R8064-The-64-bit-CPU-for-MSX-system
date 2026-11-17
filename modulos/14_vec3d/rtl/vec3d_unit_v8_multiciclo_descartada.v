@@ -1,12 +1,12 @@
 // vec3d_unit.v (v6, area-optimized) - R8064 3D manipulation unit. Vectors = 4 int16 lanes (x,y,z,w) in a 64-bit register,
 // fixed point with output shift "sh" (0..15): product = (a*b + rounding) >>> sh. 10 16x16 multipliers (DSP 18x18), S3/S4 phases shared by pairs of lanes, latency 5, one operation every 2 clocks (at minimum).
 //  op 0 VMUL   : lane_i = sat16((a_i*b_i) >>> sh)
-//  op 1 VDOT4  : escalar 64 b = (a0*b0+a1*b1+a2*b2+a3*b3) >>> sh
+//  op 1 VDOT4  : 64-bit scalar = (a0*b0+a1*b1+a2*b2+a3*b3) >>> sh
 //  op 2 VDOT3  : same without lane 3 (w)
-//  op 3 VCROSS3: (a1*b2-a2*b1, a2*b0-a0*b2, a0*b1-a1*b0, 0) >>> sh, saturado
+//  op 3 VCROSS3: (a1*b2-a2*b1, a2*b0-a0*b2, a0*b1-a1*b0, 0) >>> sh, saturated
 //  op 4 VADD   : lane_i = sat16(a_i + b_i)     op 5 VSUB: sat16(a_i - b_i)
 //  op 6 VMIN   : lane_i = min(a_i,b_i)         op 7 VMAX: max
-//  op 8 VSHUF  : lane_i = a[imm[2i+1:2i]]  (permutacao/swizzle; b ignorado)
+//  op 8 VSHUF  : lane_i = a[imm[2i+1:2i]]  (permutation/swizzle; b ignored)
 //  op 9 VNEG   : lane_i = sat16(-a_i)          op 10 VABS: sat16(|a_i|)      (done in the multipliers: a_i * (-1) and a_i * sign(a_i))
 module vec3d_unit #(parameter LANE_ALU = 1)(   // LANE_ALU=0: without VADD/VSUB/VMIN/VMAX (those opcodes return 0)
     input  wire        clk,
@@ -59,11 +59,11 @@ module vec3d_unit #(parameter LANE_ALU = 1)(   // LANE_ALU=0: without VADD/VSUB/
         endcase
     end
     // ---- S3 (2 passes): pair (r0,r1) and then pair (r2,r3) in the SAME shifter/rounder; new inputs only every >= 2 clocks ----
-    reg ph; always @(posedge clk) ph <= v2;                            // ph=1: segunda passada
+    reg ph; always @(posedge clk) ph <= v2;                            // ph=1: second pass
     wire do_shift = (o2 <= 4'd3);
     wire [3:0] ss = do_shift ? s2 : 4'd0;
     wire signed [33:0] ra = ph ? {r2[32], r2} : r0;                    // slot A (wide: receives the VDOT result on pass 0)
-    wire signed [32:0] rbv = ph ? r3 : r1;                             // fenda B
+    wire signed [32:0] rbv = ph ? r3 : r1;                             // slot B
     reg signed [33:0] ta; reg signed [32:0] tb; reg rba, rbb, dot4, v3, ph3;
     always @(posedge clk) begin
         ta <= ra >>> ss; tb <= rbv >>> ss;

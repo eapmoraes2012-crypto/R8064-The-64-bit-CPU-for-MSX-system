@@ -23,7 +23,7 @@ module alu_core(
     wire [63:0] bm  = yb;
     wire [63:0] y   = yy;
 
-    // ---- caminho aritmetico (cadeia de vai-um)
+    // ---- arithmetic path (carry chain)
     wire [64:0] sum  = {1'b0, x} + {1'b0, y} + {64'd0, ci};
     wire [63:0] sres = sum[63:0] & m;
     wire        cout = (sz == 2'd0) ? sum[8] : (sz == 2'd1) ? sum[16] : (sz == 2'd2) ? sum[32] : sum[64];
@@ -52,7 +52,7 @@ module alu_core(
     assign res = (undef ? 64'd0 : r) & m;
     wire par = ~^lr[7:0];
     wire zl  = ((lr & m) == 64'd0);        // Z of the non-arithmetic path
-    wire za  = (sres == 64'd0);            // Z do caminho aritmetico
+    wire za  = (sres == 64'd0);            // Z of the arithmetic path
     wire c_o = arith ? (keep_c ? fin[0] : (is_sub ? ~cout : cout)) : (is_shift ? sh_out : 1'b0);
     wire s_o = arith ? rs : lr[msb];
     wire z_o = arith ? za : zl;

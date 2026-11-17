@@ -32,13 +32,13 @@ module tb_sys;
     initial begin
         repeat (4) @(posedge clk); rst = 0;
         rio(8'h3D, v); chk("ID 3DH", v, 8'h64);
-        rio(8'h77, v); chk("porta externa", v, 8'h5A);
+        rio(8'h77, v); chk("external port", v, 8'h5A);
         wio(8'hA8, 8'hFF); wio(8'hFC, 8'h01); rio(8'hFC, v); chk("FCH read back (8-bit mapper: all valid)", v, 8'h01); rio(8'hA8, v); chk("A8H read back", v, 8'hFF);
         if ($test$plusargs("r800")) begin wio(8'hE4, 8'h06); wio(8'hE5, 8'h00); end
         go_mem = 1;
         repeat (60000) @(posedge clk);
         chk("AX", dut.u_cpu.u_core.u_rf1.mem_a[0], 64'd15); chk("DE", dut.u_cpu.u_core.u_rf1.mem_a[2], 64'd15); chk("HL", dut.u_cpu.u_core.u_rf1.mem_a[3], 64'h68);
-        chk("m40 (fisico 4040h)", mem[(16'h4040)/8 & 4095], 5); chk("m60 (fisico 4060h)", mem[(16'h4060)/8 & 4095], 15);
+        chk("m40 (physical 4040h)", mem[(16'h4040)/8 & 4095], 5); chk("m60 (physical 4060h)", mem[(16'h4060)/8 & 4095], 15);
         chk("fetches outside physical 4xxx", bad_i, 0); chk("data outside physical 4xxx", bad_d, 0);
         $display("mode z80=%0d rom=%0d | instructions=%0d | final loop at %0d clocks | dbg_pc=%h", z80, rom, n_iss, tfin, dbg_pc);
         if (errs == 0) $display("RESULT: MSX SYSTEM OK"); else $display("RESULT: %0d ERRORS", errs);

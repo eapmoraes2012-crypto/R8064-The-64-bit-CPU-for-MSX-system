@@ -21,12 +21,12 @@ module tb_msx_big;
         // MegaRAM in slot 2 of pages 1 and 2 (A8 = 1010_1010 -> slot 2 in all)
         wio(8'hA8, 8'hAA);
         wio(8'hFC, 8'd0);
-        mem_wr = 0; mem_rd = 1; mem_addr = 16'h4000; #1 chk("MegaRAM banco 0 -> 400000", pa, 24'h400000);
+        mem_wr = 0; mem_rd = 1; mem_addr = 16'h4000; #1 chk("MegaRAM bank 0 -> 400000", pa, 24'h400000);
         // write mode (IN 8Eh) and write to bank register 6800h (bank of 6000-7FFF) with bank 255
         mem_rd = 0; rio(8'h8E);
         @(posedge clk); #1 mem_wr = 1; mem_addr = 16'h6800; mem_wdata = 8'd255; @(posedge clk); #1 mem_wr = 0;
-        mem_rd = 1; mem_addr = 16'h6000; #1 chk("MegaRAM banco 255 em 6000h -> 5FE000", pa, 24'h5FE000);
-        mem_addr = 16'h7FFF; #1 chk("topo da MegaRAM -> 5FFFFF", pa, 24'h5FFFFF);
+        mem_rd = 1; mem_addr = 16'h6000; #1 chk("MegaRAM bank 255 at 6000h -> 5FE000", pa, 24'h5FE000);
+        mem_addr = 16'h7FFF; #1 chk("top of the MegaRAM -> 5FFFFF", pa, 24'h5FFFFF);
         if (errs == 0) $display("RESULT: MSX 4MB+2MB OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end

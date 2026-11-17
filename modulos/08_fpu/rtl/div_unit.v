@@ -46,7 +46,7 @@ module div_unit(
     wire [DW-1:0] nout = (~nin + {{(DW-1){1'b0}}, ncin}) & M;
     // POST
     wire        qneg = sd ^ sv;
-    wire        qtop = (s == 2'd0) ? ql[7] : (s == 2'd1) ? ql[15] : (s == 2'd2) ? ql[31] : ql[DW-1];   // ql >= half  <=>  bit alto do tamanho
+    wire        qtop = (s == 2'd0) ? ql[7] : (s == 2'd1) ? ql[15] : (s == 2'd2) ? ql[31] : ql[DW-1];   // ql >= half  <=>  top bit of the size
     wire        qlow = |(ql & (M >> 1));                                                            // ql >  half  <=>  high bit and some bit below
     wire        qbad = qtop & (qneg ? qlow : 1'b1);
     always @(posedge clk) begin
@@ -63,8 +63,8 @@ module div_unit(
                 if (top_hi) rl <= nout;
                 st <= PRE2;
             end
-            PRE2: begin if (sd) rh <= nout; st <= PRE3; end      // nega o alto (carry = baixo era zero)
-            PRE3: begin if (sv) rd <= nout; st <= LOAD; end      // nega o divisor
+            PRE2: begin if (sd) rh <= nout; st <= PRE3; end      // negates the high part (carry = the low part was zero)
+            PRE3: begin if (sv) rd <= nout; st <= LOAD; end      // negates the divisor
             LOAD: begin
                 cnt <= nbits(s); rem <= {1'b0, rh}; ql <= rl;
                 if (rd == {DW{1'b0}} || ge) begin err <= 1; ql <= 0; rem <= 0; st <= DONE; end

@@ -7,7 +7,7 @@ def sx(v, n): v &= (1 << n) - 1; return v - (1 << n) if v >> (n - 1) else v
 def rbits(n):
     k = rnd.choice([0, 1, 2, n // 4 or 1, n // 2, n - 1, n, n, n]); k = max(0, min(n, k))
     return rnd.getrandbits(k) if k else 0
-# ---- multiplicador
+# ---- multiplier
 mul = []
 for sz in range(4):
     n = BITS[sz]; M = (1 << n) - 1
@@ -44,7 +44,7 @@ for sz in range(4):
                 if d == -lim * 2: d = -lim
                 if not (-lim <= sx(d, n) < lim): d = sx(d, n)
             add(N, d, sz, sgn)
-        for _ in range(300):   # aleatorios totais (muitos estouros)
+        for _ in range(300):   # random totals (many overflows)
             add(rnd.getrandbits(2 * n), rnd.getrandbits(rnd.randint(1, n)), sz, sgn)
         # cantos
         if sgn:

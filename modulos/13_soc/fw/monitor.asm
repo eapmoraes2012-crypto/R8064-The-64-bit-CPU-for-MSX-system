@@ -8,8 +8,8 @@ FLENL  equ 0EAh
 FLENH  equ 0EBh
 FFLG   equ 0ECh
 DSTAT  equ 0EEh
-SCR_S  equ 2100h      ; 8 bytes alinhados: origem fisica do DMA (bytes 4..7 = 0)
-SCR_D  equ 2108h      ; destino fisico do DMA
+SCR_S  equ 2100h      ; 8 aligned bytes: physical source of the DMA (bytes 4..7 = 0)
+SCR_D  equ 2108h      ; physical destination of the DMA
 SCR_C  equ 2110h      ; DMA CTRL: [0..1] = words, [3] = 80h (START), rest 0
 V_ADDR equ 2120h      ; 4 bytes
 V_REM  equ 2124h      ; 4 bytes
@@ -20,9 +20,9 @@ V_W    equ 212Eh
 V_SIZE equ 2130h
 V_LEN  equ 2132h
 V_TMP  equ 2134h
-V_EXIT equ 2138h      ; 8 bytes alinhados
+V_EXIT equ 2138h      ; 8 aligned bytes
 MSGB   equ 2200h      ; received message (up to 2048 bytes)
-STG    equ 3000h      ; area de passagem do DMA (2 KB)
+STG    equ 3000h      ; DMA staging area (2 KB)
 STACK  equ 2FF0h
 TLO    equ 0800h      ; CRC table, low byte (256-aligned)
 THI    equ 0900h      ; CRC table, high byte
@@ -48,7 +48,7 @@ main:   in a,(FFLG)
         ld b,a
         cp 08h
         jr c,lenok
-        ld bc,0800h           ; limita a 2048 bytes
+        ld bc,0800h           ; limits to 2048 bytes
 lenok:  ld a,c
         ld (V_LEN),a
         ld a,b
@@ -135,7 +135,7 @@ hl1:    ld a,(hl)
         jp fin
 hello_d: db 'R8064'
         db 01h,00h,08h,00h,40h,07h   ; version 1, max msg 2048, block 16384, features: window|EXEC|CRC
-; ---------------------------------------------------------------- utilitarios
+; ---------------------------------------------------------------- utilities
 chka:   inc hl                ; HL -> 4 bytes of physical address; Z = valid (8 MB: byte3 = 0, bit 23 = 0)
         inc hl
         ld a,(hl)
@@ -538,7 +538,7 @@ op_exec: ld a,(V_LEN+1)
         jp nz,err_par
         ld a,(MSGB+10)
         cp 05h
-        jp nc,err_par         ; modos 00h..04h
+        jp nc,err_par         ; modes 00h..04h
         ld hl,MSGB+4
         ld b,6
         xor a
@@ -561,7 +561,7 @@ ex1:    or (hl)
         ld a,(MSGB+10)
         cp 04h
         jr z,ex64
-        ld hl,(MSGB+11)       ; argumento (16 bits)
+        ld hl,(MSGB+11)       ; argument (16 bits)
         ret                   ; "calls" the entry; the program returns at ret_a
 ex64:   ld de,MSGB+11
         db 0EDh,39h,22h       ; LDQ HL,(DE): 64-bit argument

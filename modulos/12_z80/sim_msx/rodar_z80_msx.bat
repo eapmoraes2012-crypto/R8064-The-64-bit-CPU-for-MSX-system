@@ -4,7 +4,7 @@ cd /d %~dp0
 set R=..\rtl
 set M=..\..\10_msx_mem\rtl\msx_mem.v
 set S=..\..\05_sdram\rtl
-echo === compilando ===
+echo === compiling ===
 iverilog -g2012 -Wall -o simmsx.vvp tb_z80_msx.v %R%\z80_msx_top.v %R%\z80_msx_sys.v %R%\sdram_byte_if.v %R%\z80_top.v %R%\z80_ce.v %R%\z80_core.v %R%\z80_ucode.v %M% %S%\sdram_ctrl.v %S%\sdram_model.v > compila_msx.log 2>&1
 type compila_msx.log
 if errorlevel 1 goto fim

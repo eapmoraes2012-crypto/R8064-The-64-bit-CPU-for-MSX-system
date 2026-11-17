@@ -28,7 +28,7 @@ for pg,opc,mn,doc,ts,alt,nb in rows:
     if p==5 and 0: pass
     io=1 if re.match(r'^(IN|OUT|INI|IND|OUTI|OUTD|INIR|INDR|OTIR|OTDR)\b',mn) else 0
     tab[(p,o)]=(z,za,rt,ra,m1,io)
-# entradas ausentes
+# missing entries
 rom=[0]*(7*256)
 for p in range(7):
     for o in range(256):
@@ -36,7 +36,7 @@ for p in range(7):
         elif p in (3,4):   # DD/FD without IX/IY: prefix (4 T / 1 R800 cycle) + main page instruction
             z,za,rt,ra,m1,io=tab[(0,o)] if (0,o) in tab else (4,0,1,0,0,0)
             z+=4; za=za+4 if za else 0; rt+=1; ra=ra+1 if ra else 0; m1=1
-        elif p==2: z,za,rt,ra,m1,io=8,0,(14 if MUL.get(o)=='MULUB' else 36 if MUL.get(o)=='MULUW' else 2),0,1,0   # ED indefinido = NOP de 2 bytes (R800: MULUB/MULUW)
+        elif p==2: z,za,rt,ra,m1,io=8,0,(14 if MUL.get(o)=='MULUB' else 36 if MUL.get(o)=='MULUW' else 2),0,1,0   # undefined ED = 2-byte NOP (R800: MULUB/MULUW)
         elif p==0: z,za,rt,ra,m1,io=4,0,1,0,0,0     # (should not occur)
         else: z,za,rt,ra,m1,io=8,0,2,0,1,0
         assert z<64 and za<64 and rt<64 and ra<64,(p,o,z,za,rt,ra)

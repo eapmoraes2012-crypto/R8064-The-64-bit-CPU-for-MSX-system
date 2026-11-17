@@ -54,7 +54,7 @@ module msx_if #(parameter [7:0] BASE = 8'h40, parameter PORT_BASE = 8'hF0)(
     fifo2k fi(.clk(clk), .rst(rst), .clr(clr_f), .push(msx_push), .din(s_d1), .pop(r_pop), .dout(fi_q), .empty(fi_empty), .full(fi_full), .level(fi_lvl));
     fifo2k fo(.clk(clk), .rst(rst), .clr(clr_f), .push(r_push), .din(r_wdata), .pop(msx_pop), .dout(fo_q), .empty(fo_empty), .full(fo_full), .level(fo_lvl));
 
-    // ---- registradores
+    // ---- registers
     reg [15:0] len_in, len_out; reg start_f, busy, done, irq_en, irq_p, ovf, unf;
     wire [7:0] status = {1'b0, unf, ovf, irq_p, done, busy, !fi_full, !fo_empty};
     always @(posedge clk) begin

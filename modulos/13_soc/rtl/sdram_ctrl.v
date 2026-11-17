@@ -6,7 +6,7 @@
 module sdram_ctrl #(
     parameter INIT_CYC = 20000,            // 200 us a 100 MHz
     parameter tRCD = 2, tRP = 2, tRAS = 5, tRC = 7, tRFC = 7, tWR = 2, tMRD = 2, CL = 2,
-    parameter REF_INT = 400                // clocks entre pedidos de refresh (400 a 57,28 MHz = 6,98 us < 7,8 us)
+    parameter REF_INT = 400                // clocks between refresh requests (400 at 57.28 MHz = 6.98 us < 7.8 us)
 )(
     input  wire        clk, rst,
     input  wire        req, we,
@@ -18,7 +18,7 @@ module sdram_ctrl #(
     output reg  [63:0] rdata,
     output reg         wdone,
     output wire        init_done,
-    // pinos da SDRAM
+    // SDRAM pins
     output reg         s_cke, s_cs_n, s_ras_n, s_cas_n, s_we_n,
     output reg  [3:0]  s_dqm,
     output reg  [1:0]  s_ba,
@@ -31,7 +31,7 @@ module sdram_ctrl #(
     localparam [3:0] ST_INIT = 0, ST_IPRE = 1, ST_IREF = 2, ST_IMRS = 3, ST_IDLE = 4, ST_PRE = 5, ST_ACT = 6, ST_RW = 7, ST_WR2 = 8, ST_RD = 9, ST_RPRE = 10, ST_REF = 11, ST_WAIT = 12, ST_WEND = 13;
     reg [3:0] st, nst;
     reg [15:0] icnt; reg [1:0] iref;
-    // comandos {cs_n,ras_n,cas_n,we_n}
+    // commands {cs_n,ras_n,cas_n,we_n}
     localparam [3:0] C_NOP = 4'b0111, C_ACT = 4'b0011, C_RD = 4'b0101, C_WR = 4'b0100, C_PRE = 4'b0010, C_REF = 4'b0001, C_MRS = 4'b0000;
     task cmd(input [3:0] c); begin {s_cs_n, s_ras_n, s_cas_n, s_we_n} <= c; end endtask
     // row/bank/column: 32-bit word w = {addr, 0}: col = w[7:0], bank = w[9:8], row = w[20:10]
@@ -73,7 +73,7 @@ module sdram_ctrl #(
     wire all_ok_pre = (&ras_ok) && (&wr_ok);
     wire [3:0] est = take ? (hit_in ? ST_RW : miss_in ? ST_PRE : ST_ACT) : st;   // effective state: the first step already occurs in the acceptance clock
     always @(posedge clk) begin
-        // contadores
+        // counters
         for (i = 0; i < 4; i = i + 1) begin
             if (c_rcd_v[4*i +: 4] != 0) c_rcd_v[4*i +: 4] <= c_rcd_v[4*i +: 4] - 1;
             if (c_ras_v[4*i +: 4] != 0) c_ras_v[4*i +: 4] <= c_ras_v[4*i +: 4] - 1;
@@ -83,7 +83,7 @@ module sdram_ctrl #(
         end
         if (c_rfc != 0) c_rfc <= c_rfc - 1; if (c_mrd != 0) c_mrd <= c_mrd - 1;
         cmd(C_NOP); rvalid <= 0; wdone <= 0; rpipe <= {rpipe[6:0], 1'b0};
-        // refresh periodico
+        // periodic refresh
         if (st >= ST_IDLE) begin
             if (refc == REF_INT - 1) begin refc <= 0; if (pend != 15) pend <= pend + 1; end else refc <= refc + 1;
         end

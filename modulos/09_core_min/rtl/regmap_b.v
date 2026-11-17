@@ -1,6 +1,6 @@
 // regmap.v - rr field (3 bits) -> physical index, with bank swap (EXX / EX AF,AF') and prefix banks.
 // rr: 000 BC, 010 DE, 011 IY, 100 HL, 101 IX, 111 AX; 001 and 110 are NOT registers (valid=0).
-// bank: 00 normal | 01 sombra (ED 0B: inverte swap_main/swap_af = EXX; instr; EXX) | 10 N0-N3 (ED 0E) | 11 N4-N7 (ED 0D)
+// bank: 00 normal | 01 shadow (ED 0B: toggles swap_main/swap_af = EXX; instr; EXX) | 10 N0-N3 (ED 0E) | 11 N4-N7 (ED 0D)
 //   N0..N7 = physical indices 16..23. codes BC/DE/HL/AX -> N(0/1/2/3 + 4*bank[0]). IX/IY/SP/PC are never banked (valid=0 with bank != 0).
 module regmap_b(
     input  wire [2:0] rr,
@@ -12,7 +12,7 @@ module regmap_b(
 );
     wire sm = (bank == 2'b01) ? ~swap_main : swap_main;
     wire sa = (bank == 2'b01) ? ~swap_af   : swap_af;
-    wire nb = bank[1];                 // banco N
+    wire nb = bank[1];                 // bank N
     wire hi = bank[0];                 // 0: N0-N3, 1: N4-N7
     always @* begin
         valid = 1'b1;

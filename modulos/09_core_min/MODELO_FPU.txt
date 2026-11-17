@@ -34,13 +34,13 @@ transcendentals and remainders in another stage; FSTSW writes to F; FIST/FISTP w
 4. BASIC INSTRUCTIONS (34)                                        code            effect
    FLD STn                                                                ED BC 10+n        pushes a copy of STn
    FXCH STn                                                               ED BC 08+n        swaps ST0 with STn
-   FSTP STn                                                               ED BC 18+n        STn := ST0; desempilha
+   FSTP STn                                                               ED BC 18+n        STn := ST0; pops
    FADD / FSUB / FMUL / FDIV ST0,STn                                      ED BC 00+n / ED 18+n / ED 98+n / ED 88+n      ST0 := ST0 op STn
    FSQRT / FRINT / FCHS / FABS                                            ED 11 / ED BC 43 / ED BC 40 / ED BC 41       ST0 := f(ST0)
    FCOM STn                                                               ED BC 20+n        compares ST0 with STn: C3 C2 C0 = 000 greater, 001 less, 100 equal, 111 unordered
    FCOPP                                                                  ED 80             compares ST0 with ST1 and pops both
    FSTSW                                                                  ED 14             F := {S=0, Z=C3, 0, H=0, 0, PV=C2, N=0, C=C0}   (JR Z = equal, JR C = less, JP PE = unordered)
-   FLD1 FLDZ FLDPI FLDL2 FLDLG FLDLN                                      ED BC 42, ED 92, ED 91, ED 86, ED 87, ED 90  empilha 1, 0, pi, log2(10), log10(2), ln(2)
+   FLD1 FLDZ FLDPI FLDL2 FLDLG FLDLN                                      ED BC 42, ED 92, ED 91, ED 86, ED 87, ED 90  push 1, 0, pi, log2(10), log10(2), ln(2)
    FINIT                                                                  ED 82
    FILD (QHL)                                                             ED BC 48          pushes the signed 64-bit integer at (QHL)
    FLD32 / FLD64 / FLD80 (QHL)                                            ED BC 49 / ED BC 4A / ED 85                 pushes the 32 / 64 / 80-bit (10 bytes) value at (QHL)
@@ -54,7 +54,7 @@ transcendentals and remainders in another stage; FSTSW writes to F; FIST/FISTP w
 5. TRANSCENDENTAIS, RESTOS, FSAVE / FRSTR (REV42)
    FSIN ED 97, FCOS ED 81: ST0 := sin / cos (ST0).   FTAN ED 15: ST0 := tan(ST0) (does not push the x87's 1.0).
    FSINC ED 10: ST0 := sin, ST1 := cos of the old ST0 (the stack grows by one), as in the list.   [on the x87 the order is the opposite]
-   FLN ED 93: ST0 := ln(ST0).   FYL2X ED 17: ST1 := ST1 * log2(ST0), desempilha.   FYL2P ED 16: ST1 := ST1 * log2(ST0 + 1), desempilha.
+   FLN ED 93: ST0 := ln(ST0).   FYL2X ED 17: ST1 := ST1 * log2(ST0), pops.   FYL2P ED 16: ST1 := ST1 * log2(ST0 + 1), pops.
         [CHOICE] The list said "ST0 <- ...": I did it like the x87 (the result takes the place of ST1 and the stack goes down), which gives ST0 = result at the end.
    FREM ED 95, FREM1 ED 96: ST0 := ST0 - ST1 * int(ST0 / ST1), int = truncate (FREM) or round (FREM1). It is the formula of the list to the letter, with the
         division rounded: it is NOT the exact x87 remainder (no partial reduction nor C2; for quotients above 2^64 the result is meaningless).
@@ -63,7 +63,7 @@ transcendentals and remainders in another stage; FSTSW writes to F; FIST/FISTP w
    ACCURACY measured against exact references (08_fpu/ref/confere_precisao.py, 120 points per function): maximum error in units of the last place of the
         64-bit significand: sine 0.8; cosine 1.2; tangent 1.7; FYL2X 1.9; FYL2P 2.1; FLN 8.9 (worse when the result is near zero).
         The results are NOT correctly rounded; angles above ~2^31 lose accuracy (and above 2^63 the result is worthless).
-   [ESCOLHA] CASOS ESPECIAIS: FLN / FYL2X so aceitam ST0 normal e positivo; zero, negativo, denormal, infinito ou NaN dao IE + INDEFINIDO (o x87 da
+   [CHOICE] SPECIAL CASES: FLN / FYL2X only accept a positive normal ST0; zero, negative, denormal, infinity or NaN give IE + INDEFINITE (the x87 gives
         -infinity with ZE for zero). In the others, infinity and NaN follow through the operations and come out as NaN/INDEFINITE with IE. Empty operand: IE + SF + INDEFINITE.
         The exception marks accumulate those of ALL the internal steps (PE is almost always set); C1 is that of the last step.
    FSAVE (uu) ED AF 08 BC | 0A DE | 0C HL | 0F AX   writes 88 bytes: 8 of state ([15:0] status word, [23:16] empties) + the 8 PHYSICAL registers

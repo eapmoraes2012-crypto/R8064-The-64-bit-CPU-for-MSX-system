@@ -13,7 +13,7 @@ module tb_gov;
         begin
             pg = p; op = o; prt = port; repeat (6) @(posedge clk);
             while (!go) @(posedge clk);
-            tc = $time/10; cv = 1; @(posedge clk); cv = 0; pg = 0; op = 0; k = 0;           // commit neste clock
+            tc = $time/10; cv = 1; @(posedge clk); cv = 0; pg = 0; op = 0; k = 0;           // commit on this clock
             #1;
             while (!go) begin
                 k = k + 1; if (k == alt_at) alt = 1; if (k == add_at) aev = 1; @(posedge clk); #1; alt = 0; aev = 0;
@@ -37,7 +37,7 @@ module tb_gov;
         issue(0, 8'h00, 0, 0, sp); expect_sp("Z80 NOP (4T+1 wait)", sp, 5*16);
         issue(0, 8'h3A, 0, 0, sp); expect_sp("Z80 LD A,(nn) (13T+1)", sp, 14*16);
         issue(2, 8'h44, 0, 0, sp); expect_sp("Z80 NEG ED 44 (8T+2)", sp, 10*16);
-        issue(0, 8'h20, 0, 0, sp); expect_sp("Z80 JR NZ tomado (12T+1)", sp, 13*16);
+        issue(0, 8'h20, 0, 0, sp); expect_sp("Z80 JR NZ taken (12T+1)", sp, 13*16);
         issue(0, 8'h20, 0, 3, sp); expect_sp("Z80 JR NZ not taken (7T+1)", sp, 8*16);
         issue(0, 8'hD3, 8'h98, 0, sp); expect_sp("Z80 OUT (98H),A (11T+1)", sp, 12*16);
         issue(0, 8'hD3, 8'h98, 0, sp); expect_sp("Z80 OUT (98H),A 2x: no VDP pause", sp, 12*16);
@@ -71,12 +71,12 @@ module tb_gov;
         clk_sel = 1; rst = 1; repeat (2) @(posedge clk); rst = 0; repeat (6) @(posedge clk);
         issue(0, 8'hD3, 8'h9A, 0, sp); tc1 = tc; issue(0, 8'hD3, 8'h9B, 0, sp);
         expect_rng("VDP with clk_sel=1 (9AH->9BH) >= 459 clocks", tc - tc1, 459, 463); clk_sel = 0;
-        // ---- refresh R800: NOPs seguidos por ~10000 clocks (periodo 1680 + parada de 200 clocks) ----
+        // ---- R800 refresh: consecutive NOPs for ~10000 clocks (period 1680 + stop of 200 clocks) ----
         rst = 1; repeat (2) @(posedge clk); rst = 0; repeat (3) @(posedge clk);
         longs = 0; t = $time/10;
         while ($time/10 - t < 10000) begin issue(0, 8'h00, 0, 0, sp); if (sp > 150) longs = longs + 1; end
         if (longs < 4 || longs > 6) begin errs = errs + 1; $display("ERROR R800 refresh: %0d stops in 10000 clocks (expected ~5)", longs); end
-        else $display("ok   refresh R800: %0d paradas de ~200 clocks em 10000 clocks", longs);
+        else $display("ok   refresh R800: %0d stops of ~200 clocks in 10000 clocks", longs);
         // Z80: no refresh
         is_z80 = 1; repeat (3) @(posedge clk); longs = 0; t = $time/10;
         while ($time/10 - t < 10000) begin issue(0, 8'h00, 0, 0, sp); if (sp > 150) longs = longs + 1; end

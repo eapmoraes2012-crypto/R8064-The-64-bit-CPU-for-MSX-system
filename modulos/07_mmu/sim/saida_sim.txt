@@ -1,8 +1,8 @@
 ok   T1 en=0 identity (2 translations checked so far, 0 faults)
 T2 TLB miss latency (1 page, 3 levels): 31 clocks
-T2 latencia de acerto: 2 clock(s)
+T2 hit latency: 2 clock(s)
 ok   T2 (4 translations checked so far, 0 faults)
-T2b 200 acertos seguidos: 202 clocks
+T2b 200 consecutive hits: 202 clocks
 ok   T2b (204 translations checked so far, 0 faults)
 ok   oes (R,W,X x user/supervisor) (234 translations checked so far, 23 faults)
 ok   T3b repeats after flush (249 translations checked so far, 33 faults)

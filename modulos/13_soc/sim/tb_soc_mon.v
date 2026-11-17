@@ -23,7 +23,7 @@ module tb_soc_mon;
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
         if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
-    // ---- lado MSX ----
+    // ---- MSX side ----
     task fmw(input [1:0] a, input [7:0] d); begin @(posedge clk); #1 fm_a = a; fm_wd = d; fm_we = 1; @(posedge clk); #1 fm_we = 0; end endtask
     task fmr(input [1:0] a, output [7:0] d); begin @(posedge clk); #1 fm_a = a; fm_re = 1; #1 d = fm_rd; @(posedge clk); #1 fm_re = 0; end endtask
     task sbw(input [13:0] a, input [7:0] d); begin @(posedge clk); #1 sb_a = a; sb_wd = d; sb_we = 1; @(posedge clk); #1 sb_we = 0; end endtask
@@ -69,7 +69,7 @@ module tb_soc_mon;
         chk("HELLO len", rlen, 14); chk("HELLO op", rsp[0], 8'h81); chk("HELLO 'R'", rsp[3], 8'h52); chk("HELLO '4'", rsp[7], 8'h34); chk("HELLO ver", rsp[8], 1);
         chk("HELLO msgmax", {rsp[10], rsp[9]}, 16'h0800); chk("HELLO block", {rsp[12], rsp[11]}, 16'h4000); chk("HELLO rec", rsp[13], 8'h07);
         $display("HELLO ok");
-        // 3. OP desconhecida
+        // 3. unknown OP
         req(8'h55, 8'h07); send(2); waitdone(4000);
         chk("op desc st", rsp[2], 8'h01); chk("op desc seq", rsp[1], 8'h07);
         // 4. WIN_PUT -> 10000h (psz = 4096 by default; +big = full 16 KB block)
@@ -94,7 +94,7 @@ module tb_soc_mon;
         req(8'h13, 8'h0B); put32(2, 32'h0002_0000); msg[6] = 16; msg[7] = 0; send(8); waitdone(60000);
         chk("PEEK len", rlen, 19); chk("PEEK st", rsp[2], 0);
         for (k = 0; k < 16; k = k + 1) chk("PEEK byte", rsp[3 + k], (k >= 3 && k < 8) ? (8'hA0 + k - 3) : 8'h00);
-        chk("SDRAM 20003h", sdb(32'h20003), 8'hA0); chk("SDRAM 20007h", sdb(32'h20007), 8'hA4); chk("SDRAM 20008h intacto", sdb(32'h20008), 8'h00);
+        chk("SDRAM 20003h", sdb(32'h20003), 8'hA0); chk("SDRAM 20007h", sdb(32'h20007), 8'hA4); chk("SDRAM 20008h intact", sdb(32'h20008), 8'h00);
         $display("POKE/PEEK ok");
         // 7. CRC de 100 bytes em 10008h
         req(8'h30, 8'h0C); put32(2, 32'h0001_0008); put32(6, 32'd100); send(10); waitdone(60000);
@@ -103,7 +103,7 @@ module tb_soc_mon;
         $display("CRC ok");
         // 8. errors: misaligned WIN_PUT, EXEC mode 1
         req(8'h10, 8'h0D); put32(2, 32'h0001_0004); msg[6] = 0; msg[7] = 0; send(8); waitdone(60000);
-        chk("desalinhado st", rsp[2], 8'h03);
+        chk("misaligned st", rsp[2], 8'h03);
         // 9. EXEC: program at 4000h (via WIN_PUT): LD A,77h; LD (5000h),A; LD HL,0ABCDh; RET
         msg[0] = 8'h3E; msg[1] = 8'h77; msg[2] = 8'h32; msg[3] = 8'h00; msg[4] = 8'h50; msg[5] = 8'h21; msg[6] = 8'hCD; msg[7] = 8'hAB; msg[8] = 8'hC9;
         for (k = 0; k < 16; k = k + 1) sbw(k[13:0], k < 9 ? msg[k] : 8'h00);

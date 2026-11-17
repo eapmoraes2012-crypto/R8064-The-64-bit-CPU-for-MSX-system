@@ -7,6 +7,6 @@ LATENCY (clocks from the acceptance clock to rvalid/wdone), with no refresh in b
   closed bank            write n=   539 min= 3 avg= 3.00 max=  3 (with refresh: 0)
   other row (conflict)   read  n= 38668 min= 9 avg= 9.00 max=  9 (with refresh: 564)
   other row (conflict)   write n= 10576 min= 5 avg= 5.00 max=  5 (with refresh: 132)
-  pior latencia de um acesso atrasado por refresh: 13 clocks
+  worst latency of an access delayed by refresh: 13 clocks
 PASS
 tb_sdram.v:76: $finish called at 5867115000 (1ps)

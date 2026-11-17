@@ -1,20 +1,20 @@
 // r8064_cart_top.v - MSX CARTRIDGE top for the V9968_Cartridge board (Tang Nano 20K): clkgen + SoC + embedded SDRAM + slot I/O interface (r8064_slot_if).
 // The board connects only A0-A7, D0-D7, /IORQ, /RD, /WR, /RESET, WAIT, INT and DIR/BUSDIR to the FPGA: the R8064 is an MSX I/O peripheral (ports 0Bh/0Ch/0Dh, layer 1 of the protocol:
 // FIFOs + state + length). Layer 2 (16 KB window at 8000h-BFFFh) requires /SLTSL, A8-A15 and /MERQ, which the board does NOT have; window accesses are disabled (sb_* = 0).
-// Clock: o cristal de 14,31818 MHz da placa (pino 80) -> rPLL x4 = 57,2727 MHz (SRC = 3).
+// Clock: the board's 14.31818 MHz crystal (pin 80) -> rPLL x4 = 57.2727 MHz (SRC = 3).
 // SoC reset = PLL + button + slot /RESET (synchronized) + "restart the R8064" command (CMD.b3 of the FIFO), stretched by 16 clocks. Any reset redoes the SDRAM and the boot (BOOT=1).
 module r8064_cart_top #(parameter SRC = 3, parameter [3:0] SDR_PSDA = 4'd4, parameter BOOT = 1)(
     input  wire        clk27,                 // Tang Nano 27 MHz crystal (pin 4), not used with SRC = 3
-    input  wire        clk14m,                // oscilador de 14,31818 MHz da placa (pino 80)
-    input  wire        btn_rst,               // botao KEY1 (pino 88): pressionado = 1
+    input  wire        clk14m,                // board 14.31818 MHz oscillator (pin 80)
+    input  wire        btn_rst,               // KEY1 button (pin 88): pressed = 1
     // slot MSX
     input  wire        slot_reset_n, slot_iorq_n, slot_rd_n, slot_wr_n,
     input  wire [7:0]  slot_a,
     inout  wire [7:0]  slot_d,
     output wire        slot_data_dir, slot_wait, slot_intr, oe_n,
-    // observacao (pinos livres na placa)
+    // observation (free pins on the board)
     output wire        dbg_sig, dbg_hb,
-    // SDRAM embutida
+    // embedded SDRAM
     output wire        O_sdram_clk, O_sdram_cke, O_sdram_cs_n, O_sdram_ras_n, O_sdram_cas_n, O_sdram_wen_n,
     output wire [3:0]  O_sdram_dqm,
     output wire [10:0] O_sdram_addr,
@@ -26,7 +26,7 @@ module r8064_cart_top #(parameter SRC = 3, parameter [3:0] SDR_PSDA = 4'd4, para
     r8064_clkgen #(.SRC(SRC), .SDR_PSDA(SDR_PSDA)) u_clk(.clk_in(clk_in), .rst_in(1'b0), .clk(clk), .clk_sdram(clk_sd), .locked(locked), .rst(rst_pll));
     assign oe_n = 1'b0;                       // level converters always enabled
 
-    // resets: botao, /RESET do slot (2 FF), pulso do FIFO esticado
+    // resets: button, slot /RESET (2 FF), stretched FIFO pulse
     reg [1:0] bs = 2'b00, rs = 2'b00; reg [4:0] rst_str = 5'd0; wire fifo_rst;
     always @(posedge clk) begin
         bs <= {bs[0], btn_rst}; rs <= {rs[0], ~slot_reset_n};

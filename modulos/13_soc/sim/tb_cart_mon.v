@@ -60,7 +60,7 @@ module tb_cart_mon;
         chk("HELLO len", rlen, 14); chk("HELLO op", rsp[0], 8'h81); chk("HELLO 'R'", rsp[3], 8'h52); chk("HELLO '4'", rsp[7], 8'h34);
         chk("HELLO msgmax", {rsp[10], rsp[9]}, 16'h0800); chk("HELLO block", {rsp[12], rsp[11]}, 16'h4000);
         $display("HELLO ok");
-        // 3. OP desconhecida
+        // 3. unknown OP
         msg[0] = 8'h55; msg[1] = 8'h07; send(2); waitdone(2000);
         chk("op desc st", rsp[2], 8'h01); chk("op desc seq", rsp[1], 8'h07);
         end else begin
@@ -70,7 +70,7 @@ module tb_cart_mon;
         k = 0; while (intr !== 1'b1 && k < 3000) begin #1000; k = k + 1; end
         chk("INT active on completion", intr, 1);
         waitdone(2000); zout(8'h0B, 8'h00); #1000; chk("INT cleared (DONE cleared)", intr, 0);
-        // 5. /RESET do MSX: a SoC reinicia e refaz o boot; o monitor volta a responder
+        // 5. MSX /RESET: the SoC restarts and redoes the boot; the monitor answers again
         nrst = 0; reset_n = 0; #1000 reset_n = 1; #1000; chk("restart by slot /RESET", nrst >= 1, 1);
         wait (dut.u_soc.init_done); wait (!dut.u_soc.boot_busy); #200000;
         msg[0] = 8'h00; msg[1] = 8'h0A; send(2); waitdone(2000);

@@ -1,13 +1,13 @@
 // r8064_board_top.v - bring-up top for the Tang Nano 20K (GW2AR-18, embedded 32-bit SDRAM): clkgen + SoC + SDRAM + button reset.
 // The external MSX bus (io_*, fm_*, io_x_*) is NOT yet connected to pins: inputs at 0. Observation outputs on 4 free pins.
-// SRC (clock): 0 = 27 MHz da placa (pino 4) -> 57,375 MHz | 1 = 3,579545 MHz em clk_ext (pino 13, LPLL2_T_in) x16 | 2 = 57,27 MHz em clk_ext (pino 10, GCLKT_6)
+// SRC (clock): 0 = board 27 MHz (pin 4) -> 57.375 MHz | 1 = 3.579545 MHz on clk_ext (pin 13, LPLL2_T_in) x16 | 2 = 57.27 MHz on clk_ext (pin 10, GCLKT_6)
 //              3 = 14.31818 MHz on clk_ext (e.g. clk14m, pin 80) x4.   Pins per the pin report of a VDP cartridge for Tang Nano 20K (see tangnano20k_*.cst).
 module r8064_board_top #(parameter SRC = 0, parameter [3:0] SDR_PSDA = 4'd4, parameter BOOT = 1)(   // BOOT=1: the monitor (monitor_l0..7.hex, 16 KB) is copied from the buffer to SDRAM 0 before the core leaves reset
-    input  wire        clk27,        // cristal da placa (pino 4)
+    input  wire        clk27,        // board crystal (pin 4)
     input  wire        clk_ext,      // external clock (depends on SRC)
     input  wire        btn_rst,      // button (active high, pressed = 1)
     output wire        dbg_init, dbg_lock, dbg_sig, dbg_hb,
-    // SDRAM embutida (nomes fixos do GW2AR: o nextpnr as posiciona sozinho)
+    // embedded SDRAM (fixed GW2AR names: the placer places them by itself)
     output wire        O_sdram_clk, O_sdram_cke, O_sdram_cs_n, O_sdram_ras_n, O_sdram_cas_n, O_sdram_wen_n,
     output wire [3:0]  O_sdram_dqm,
     output wire [10:0] O_sdram_addr,
@@ -18,7 +18,7 @@ module r8064_board_top #(parameter SRC = 0, parameter [3:0] SDR_PSDA = 4'd4, par
     wire clk, clk_sd, locked, rst_pll;
     r8064_clkgen #(.SRC(SRC), .SDR_PSDA(SDR_PSDA)) u_clk(.clk_in(clk_in), .rst_in(1'b0), .clk(clk), .clk_sdram(clk_sd), .locked(locked), .rst(rst_pll));
 
-    // botao sincronizado
+    // synchronized button
     reg [1:0] bs = 2'b00; always @(posedge clk) bs <= {bs[0], btn_rst};
     wire rst = rst_pll | bs[1];
 

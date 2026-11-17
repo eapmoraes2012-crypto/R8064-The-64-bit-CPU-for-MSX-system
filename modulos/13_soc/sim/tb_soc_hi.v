@@ -33,7 +33,7 @@ module tb_soc_hi;
     initial begin
         if (!$value$plusargs("sc=%d", sc)) sc = 1;
         for (k = 0; k < 512; k = k + 1) by[k] = 8'h00; p = 0;
-        ldrr(7, 16'h0100); mtcr(5'd15); ldrr(7, 16'h0001); mtcr(5'd14);      // raiz = PPN 100h; MMU ligada
+        ldrr(7, 16'h0100); mtcr(5'd15); ldrr(7, 16'h0001); mtcr(5'd14);      // root = PPN 100h; MMU on
         emit(8'h31); emit(8'h00); emit(8'h48); ldrr(0, 16'h1234); emit(8'hC5); emit(8'hD1);   // LD SP,4800h (VA 4000h -> PA 700000h) ; BC=1234 ; PUSH BC ; POP DE
         emit(8'h31); emit(8'h00); emit(8'h40); emit(8'hC1);                                    // LD SP,4000h ; POP BC (le 4000h = PA 700000h)
         emit(8'h18); emit(8'hFE);
@@ -42,16 +42,16 @@ module tb_soc_hi;
             mdl.mem[2*k] = w[31:0]; mdl.mem[2*k + 1] = w[63:32];
         end
         mdl.mem[2*(24'h100000>>3)] = 32'h00040401; mdl.mem[2*(24'h101000>>3)] = 32'h00040801;
-        mdl.mem[2*(24'h102000>>3)] = 32'h000000CF; mdl.mem[2*((24'h102000>>3)+4)] = 32'h001C00CF;   // VA 0000h e 4000h mapeadas; 1000h-3FFFh invalidas
+        mdl.mem[2*(24'h102000>>3)] = 32'h000000CF; mdl.mem[2*((24'h102000>>3)+4)] = 32'h001C00CF;   // VA 0000h and 4000h mapped; 1000h-3FFFh invalid
         repeat (4) @(posedge clk); rst = 0;
         wait (init_done);
         repeat (60000) @(posedge clk);
         w = {mdl.mem[2*24'h0E00FF + 1], mdl.mem[2*24'h0E00FF]};
-        chk("PUSH gravou em PA 7007FE (MMU alcanca >4 MB)", w >> 48, 64'h1234);
+        chk("PUSH wrote to PA 7007FE (MMU reaches >4 MB)", w >> 48, 64'h1234);
         chk("DE (POP = PUSH, via cache)", rf(2), 64'h1234);
         chk("BC (POP de PA 700000h)", rf(1), 64'h0);
         chk("SP", rf(11), 64'h4002);
-        w = {mdl.mem[2*24'h0008FF + 1], mdl.mem[2*24'h0008FF]}; chk("PA 47F8 (alias de 4 MB) intacto", w, 64'h0);
+        w = {mdl.mem[2*24'h0008FF + 1], mdl.mem[2*24'h0008FF]}; chk("PA 47F8 (4 MB alias) intact", w, 64'h0);
         chk("no I fault", nfi, 0); chk("no D fault", nfd, 0); chk("SDRAM violations", mdl.viol, 0);
         $display("pc=%h", dbg_pc);
         if (errs == 0) $display("RESULT: MMU 8MB OK"); else $display("RESULT: %0d ERRORS", errs);

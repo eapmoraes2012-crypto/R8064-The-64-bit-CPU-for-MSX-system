@@ -23,7 +23,7 @@ module r8064_slot_if #(parameter P_ST = 8'h0B, parameter P_DT = 8'h0C, parameter
     output wire       slot_data_dir,
     output wire       slot_wait,
     output wire       slot_int,
-    // lado FIFO (m_*) do r8064_fifo_if
+    // FIFO side (m_*) of r8064_fifo_if
     output wire       fm_we, fm_re, output wire [1:0] fm_a, output wire [7:0] fm_wd, input wire [7:0] fm_rd,
     input  wire       irq
 );

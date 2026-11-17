@@ -21,14 +21,14 @@ module tb_mode;
         // wrong key
         wr(8'h3D, 8'h5A); wr(8'h3E, 8'h01); repeat (2) @(posedge clk); ck("wrong key: native 0", nat, 0);
         // right key
-        bnd = 0; wr(8'h3D, 8'hA5); wr(8'h3E, 8'h05);          // NATIVE64 + CLK=10 (campo reservado: so guarda o bit)
+        bnd = 0; wr(8'h3D, 8'hA5); wr(8'h3E, 8'h05);          // NATIVE64 + CLK=10 (reserved field: only stores the bit)
         rdp(8'h3E, v); ck("busy until the boundary", v[3], 1); ck("not yet native", nat, 0);
         bnd = 1; repeat (2) @(posedge clk); bnd = 0;
         ck("native after boundary", nat, 1); ck("clk_sel (1x -> B)", csel, 1);
         rdp(8'h3E, v); ck("read 3EH (clk B, native)", v, 8'h03);
         // the key disarms after a write
         wr(8'h3E, 8'h00); bnd = 1; repeat (2) @(posedge clk); bnd = 0; ck("2nd write without re-arming: ignored", nat, 1);
-        wr(8'h3D, 8'hA5); wr(8'h3E, 8'h00); bnd = 1; repeat (2) @(posedge clk); bnd = 0; ck("volta ao classico", nat, 0); ck("clk A", csel, 0);
+        wr(8'h3D, 8'hA5); wr(8'h3E, 8'h00); bnd = 1; repeat (2) @(posedge clk); bnd = 0; ck("back to classic", nat, 0); ck("clk A", csel, 0);
         // S1990 reg 6: R800 DRAM = 00H
         wr(8'hE4, 8'h06); wr(8'hE5, 8'h00); bnd = 1; repeat (2) @(posedge clk); bnd = 0; ck("R800", z80, 0); ck("DRAM", rom, 0);
         rdp(8'hE5, v); ck("read E5H (reg 6)", v, 8'h00);

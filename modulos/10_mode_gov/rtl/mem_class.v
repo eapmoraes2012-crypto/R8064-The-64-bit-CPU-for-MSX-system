@@ -9,12 +9,12 @@
 module mem_class #(parameter WAIT_ROM = 3)(
     input  wire        clk, rst,
     input  wire        active,        // R800 mode (not Z80, not native)
-    input  wire        is_rom,        // modo ROM (R800 ROM)
+    input  wire        is_rom,        // ROM mode (R800 ROM)
     input  wire        phase,         // R800 cycle phase (governor)
     input  wire [7:0]  a8,            // primary slot register (port A8H)
     input  wire        map_we,        // table programming
     input  wire [3:0]  map_idx,       // {page[1:0], slot[1:0]}
-    input  wire [1:0]  map_val,       // 0 RAM, 1 ROM, 2 externa
+    input  wire [1:0]  map_val,       // 0 RAM, 1 ROM, 2 external
     input  wire [15:0] f_pc,
     input  wire [3:0]  f_len,
     output reg  [3:0]  f_xcyc,         // registered: valid 1 clock after (f_pc, f_len)

@@ -1,12 +1,12 @@
 // vec3d_unit.v - R8064 3D manipulation unit (measurement prototype). Vectors = 4 int16 lanes (x,y,z,w) in a 64-bit register,
 // fixed point with output shift "sh" (Qn): product = (a*b + rounding) >>> sh. 6 16x16 multipliers (DSP 18x18), 1 operation per clock, latency 5.
 //  op 0 VMUL   : lane_i = sat16((a_i*b_i) >>> sh)
-//  op 1 VDOT4  : escalar 64 b = (a0*b0+a1*b1+a2*b2+a3*b3) >>> sh
+//  op 1 VDOT4  : 64-bit scalar = (a0*b0+a1*b1+a2*b2+a3*b3) >>> sh
 //  op 2 VDOT3  : same without lane 3 (w)
-//  op 3 VCROSS3: (a1*b2-a2*b1, a2*b0-a0*b2, a0*b1-a1*b0, 0) >>> sh, saturado
+//  op 3 VCROSS3: (a1*b2-a2*b1, a2*b0-a0*b2, a0*b1-a1*b0, 0) >>> sh, saturated
 //  op 4 VADD   : lane_i = sat16(a_i + b_i)     op 5 VSUB: sat16(a_i - b_i)
 //  op 6 VMIN   : lane_i = min(a_i,b_i)         op 7 VMAX: max
-//  op 8 VSHUF  : lane_i = a[imm[2i+1:2i]]  (permutacao/swizzle; b ignorado)
+//  op 8 VSHUF  : lane_i = a[imm[2i+1:2i]]  (permutation/swizzle; b ignored)
 //  op 9 VNEG   : lane_i = sat16(-a_i)          op 10 VABS: sat16(|a_i|)
 module vec3d_unit(
     input  wire        clk,
@@ -24,7 +24,7 @@ module vec3d_unit(
     wire signed [15:0] a0 = a[15:0], a1 = a[31:16], a2 = a[47:32], a3 = a[63:48];
     wire signed [15:0] b0 = b[15:0], b1 = b[31:16], b2 = b[47:32], b3 = b[63:48];
     wire is_cr = (op == 4'd3);
-    // ---- S1: seleciona operandos e multiplica (DSP) ----
+    // ---- S1: selects operands and multiplies (DSP) ----
     reg signed [15:0] xa0, xb0, xa1, xb1, xa2, xb2, xa3, xb3, xa4, xb4, xa5, xb5;
     reg [3:0] o1; reg [4:0] s1; reg [7:0] i1; reg v1; reg [63:0] a1r, b1r;
     always @(posedge clk) begin
@@ -36,7 +36,7 @@ module vec3d_unit(
         xa5 <= a1;  xb5 <= b0;
         o1 <= op; s1 <= sh; i1 <= imm; v1 <= in_valid; a1r <= a; b1r <= b;
     end
-    // ---- S2: produtos ----
+    // ---- S2: products ----
     reg signed [31:0] p0, p1, p2, p3, p4, p5; reg [3:0] o2; reg [4:0] s2; reg [7:0] i2; reg v2; reg [63:0] a2r, b2r;
     always @(posedge clk) begin
         p0 <= xa0 * xb0; p1 <= xa1 * xb1; p2 <= xa2 * xb2; p3 <= xa3 * xb3; p4 <= xa4 * xb4; p5 <= xa5 * xb5;
@@ -68,7 +68,7 @@ module vec3d_unit(
           default: begin r0 <= ya0[15] ? d0 : ya0; r1 <= ya1[15] ? d1 : ya1; r2 <= ya2[15] ? d2 : ya2; r3 <= ya3[15] ? d3 : ya3; end   // VABS
         endcase
     end
-    // ---- S4a: deslocamento aritmetico + bit de arredondamento ----
+    // ---- S4a: arithmetic shift + rounding bit ----
     wire do_shift = (o3 <= 4'd3);
     wire [4:0] ss = do_shift ? s3 : 5'd0;
     // rounding = bit (ss-1) after the shift: (r + 2^(ss-1)) >>> ss == (r >>> ss) + r[ss-1]

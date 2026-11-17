@@ -28,8 +28,8 @@ module tb_mem;
         @(posedge clk); #1 mi = 4'b0000; mv = 2'd2; map_we = 1; @(posedge clk); #1 map_we = 0; pc = 16'h0010; len = 1; phase = 0; @(posedge clk); #1; ck("table reprogrammed: page 0 slot 0 external +4", fx, 4);
         @(posedge clk); #1 mv = 2'd1; map_we = 1; @(posedge clk); #1 map_we = 0;
         // data
-        phase = 0; dacc(16'h8000, 0, 0, e, n); ck("dado externo: evento", e, 1); ck("dado externo: +4", n, 4);
-        phase = 1; dacc(16'h8000, 0, 0, e, n); ck("dado externo fase 1: +5", n, 5);
+        phase = 0; dacc(16'h8000, 0, 0, e, n); ck("external data: event", e, 1); ck("external data: +4", n, 4);
+        phase = 1; dacc(16'h8000, 0, 0, e, n); ck("external data phase 1: +5", n, 5);
         phase = 0; dacc(16'h00FF, 1, 0, e, n); ck("2 B read in ROM crossing a page: 3+1", n, 4);
         dacc(16'h0020, 0, 0, e, n); ck("ROM read (ROM mode): +3", n, 3);
         dacc(16'h0020, 0, 1, e, n); ck("write to ROM: no extra, no event", e, 0);

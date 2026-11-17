@@ -1,4 +1,4 @@
-// Tang Nano 20K na placa V9968_Cartridge (4a revisao): topo r8064_cart_top. Pinos conforme fpga/V9968_Cartridge_TangNano20K/src/tangnano20k_vdp_cartridge.cst
+// Tang Nano 20K on the V9968_Cartridge board (4th revision): top r8064_cart_top. Pins as in fpga/V9968_Cartridge_TangNano20K/src/tangnano20k_vdp_cartridge.cst
 // (board wiring facts: A0-A7 and D0-D7 through SN74LVC8T245, /IORQ /RD /WR /RESET input only, WAIT/INT/BUSDIR through MOSFET). Embedded SDRAM: no IO_LOC.
 IO_LOC "clk27" 4;
 IO_PORT "clk27" IO_TYPE=LVCMOS33 PULL_MODE=NONE;

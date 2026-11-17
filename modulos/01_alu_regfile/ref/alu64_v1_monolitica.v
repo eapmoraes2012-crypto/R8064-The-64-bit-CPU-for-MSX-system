@@ -1,12 +1,12 @@
-// alu64.v - ALU do R8064 (combinacional): 8/16/32/64 bits.
-// Semantica de flags (PREMISSAS minhas, extensao natural do Z80; confirmar - pendencia P03/P28):
+// alu64.v - R8064 ALU (combinational): 8/16/32/64 bits.
+// Flag semantics (MY ASSUMPTIONS, natural extension of the Z80; to confirm - open items P03/P28):
 //   F = {S,Z,Y,H,X,PV,N,C}  (bits 7..0, as in the "Registers and codes" tab)
 //   ADD/ADC/SUB/SBC/CP/INC/DEC/NEG: C=carry (borrow on subtraction), H=carry from bit 3 to 4,
 //     PV=signed overflow at the operation size, N=0 (add) or 1 (subtract), S=msb, Z=zero result.
 //   INC/DEC preserve C. CP: the SUB result is not written (the caller discards it); X,Y come from operand b.
 //   AND/OR/XOR: C=0, N=0, H=1 only on AND, PV=even parity of the low byte.
 //   SHL/SHR/SAR/ROL/ROR (1 bit): C=bit shifted out, N=0, H=0, PV=parity of the low byte.
-//   CPL: preserva S,Z,PV,C; H=1, N=1.
+//   CPL: preserves S,Z,PV,C; H=1, N=1.
 //   X and Y = copy of bits 3 and 5 of the result.
 module alu64(
     input  wire [63:0] a,

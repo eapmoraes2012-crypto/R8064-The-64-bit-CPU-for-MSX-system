@@ -37,7 +37,7 @@ module tb_seq;
         chk("stack EFE = return address", {mem[12'hEFF], mem[12'hEFE]}, 64'h0008);
         chk("stack EFC = DE", {mem[12'hEFD], mem[12'hEFC]}, 64'h0022);
         chk("stack EFA = HL", {mem[12'hEFB], mem[12'hEFA]}, 64'h0033);
-        chk("OUT: porta", last_ow_a, 64'h77); chk("OUT: dado", last_ow_d, 64'h41);
+        chk("OUT: port", last_ow_a, 64'h77); chk("OUT: data", last_ow_d, 64'h41);
         chk("OUT: 1 write", n_ow, 1); chk("IN: 1 read", n_ir, 1);
         chk("PC in the final loop (8 or 0A depending on the phase)", (dbg_pc == 64'h08) ? 64'h0A : dbg_pc, 64'h0A);
         $display("pc=%h I/O writes=%0d I/O reads=%0d errors=%0d", dbg_pc, n_ow, n_ir, errs);

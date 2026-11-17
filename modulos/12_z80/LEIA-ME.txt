@@ -1,4 +1,4 @@
-MODULO 12 - Z80 CLASSICO INDEPENDENTE (R8064)                                      atualizado 06/11/2026
+MODULE 12 - INDEPENDENT CLASSIC Z80 (R8064)                                        updated 06/11/2026
 ==========================================================================================================
 STATUS: RTL written and VERIFIED in simulation (Icarus, by the user): ZEXDOC (67 tests), 12 random programs (DD/FD/ED/CB/DDCB prefixes mixed),
         runs with random WAIT and slow ce, all identical to the C model instruction by instruction (PC, registers, shadow set, I/R, IFF, IM, MEMPTR and T-states).

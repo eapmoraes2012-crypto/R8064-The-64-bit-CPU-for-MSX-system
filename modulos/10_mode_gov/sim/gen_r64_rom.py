@@ -34,8 +34,8 @@ def aplica(uops, livre):
         k = dict(ulist[0])
         if nxt is not None: k['more'] = 1; k['nxt'] = nxt
         uops[256 + i] = uop(**k)
-    D1 = dict(dF=1, fpos=1)                       # destino = b3[5:3]
-    D0 = dict(dF=1, fpos=0)                       # destino = b3[2:0]
+    D1 = dict(dF=1, fpos=1)                       # destination = b3[5:3]
+    D0 = dict(dF=1, fpos=0)                       # destination = b3[2:0]
     MOV = dict(alu=ADD, use_imm=1, immz=1)        # result = operand A
     SZ = {'W': 1, 'E': 2, 'Q': 3}
     def tri(ids): return zip('WEQ', ids)
@@ -43,7 +43,7 @@ def aplica(uops, livre):
     for a, ids in ((ADD, (4, 5, 6)), (ADC, (1, 2, 3)), (SUB, (34, 35, 36)), (SBC, (31, 32, 33)), (AND, (107, 108, 109)), (OR, (110, 111, 112)), (XOR, (113, 114, 115))):
         for s, i in tri(ids): chain(i, [dict(alu=a, aD=1, bF=1, wren=1, fwe=1, sz=SZ[s], **D1)])
     for s, i in tri((37, 38, 39)): chain(i, [dict(alu=CP, aD=1, bF=1, fwe=1, sz=SZ[s], **D1)])                    # CPx: so flags
-    for s, i in tri((18, 19, 20)): chain(i, [dict(alu=INC, aD=1, wren=1, fwe=1, sz=SZ[s], **D1)])                 # INCx rr (C mantido)
+    for s, i in tri((18, 19, 20)): chain(i, [dict(alu=INC, aD=1, wren=1, fwe=1, sz=SZ[s], **D1)])                 # INCx rr (C kept)
     for s, i in tri((7, 8, 9)):    chain(i, [dict(alu=DEC, aD=1, wren=1, fwe=1, sz=SZ[s], **D1)])                 # DECx rr
     # ---- 1-bit shifts: SAR (reg in b3[2:0]); SHL, SHR, RLC, RRC (reg in b3[5:3]); B = 8-bit Z80 register ----
     for a, fp, ids in ((SAR, D0, (143, 144, 145, 146)), (SHL, D1, (147, 148, 149, 150)), (SHR, D1, (151, 152, 153, 154)), (ROL, D1, (None, 156, 157, 158)), (ROR, D1, (None, 160, 161, 162))):
@@ -58,7 +58,7 @@ def aplica(uops, livre):
     for s, (rr, imm, ld, st, stabs, ldabs) in (('W', (77, 76, 75, 72, 67, 78)), ('E', (89, 88, 87, 84, 79, 90)), ('Q', (101, 100, 99, 96, 91, 102))):
         z = SZ[s]
         chain(rr,    [dict(aF=1, wren=1, sz=z, **MOV, **D1)])                                                     # LDx rr, rr'
-        chain(imm,   [dict(alu=ADD, use_imm=1, aI=ZERO, ioff=3, isz=z, wren=1, sz=z, **D1)])                      # LDx rr, imediato
+        chain(imm,   [dict(alu=ADD, use_imm=1, aI=ZERO, ioff=3, isz=z, wren=1, sz=z, **D1)])                      # LDx rr, immediate
         chain(ld,    [dict(rd=1, aF=1, immz=1, wren=1, sz=z, **D1)])                                              # LDx rr, (rr')
         chain(st,    [dict(wr=1, aF=1, fpos=0, immz=1, bF=1, sz=z)])                                              # LDx (rr), rr'   (address b3[5:3], data b3[2:0])
         chain(stabs, [dict(aF=1, fpos=0, wren=1, dI=TMP, sz=3, **MOV), dict(wr=1, aI=ZERO, ioff=3, isz=3, bI=TMP, sz=z)])   # LDx (nnnnnnnn), rr
@@ -66,14 +66,14 @@ def aplica(uops, livre):
     for s, x, (st, sti, ld) in (('W', IX, (68, 69, 73)), ('W', IY, (70, 71, 74)), ('E', IX, (80, 81, 85)), ('E', IY, (82, 83, 86)), ('Q', IX, (92, 93, 97)), ('Q', IY, (94, 95, 98))):
         z = SZ[s]; ea = dict(aI=x, ioff=3, isz=1, sext=1)                                                         # address = QIX/QIY + dd (signed 16 bits)
         chain(st,  [dict(aF=1, fpos=0, wren=1, dI=TMP, sz=3, **MOV), dict(wr=1, bI=TMP, sz=z, **ea)])             # LDx (QIX+dd), rr
-        chain(sti, [dict(alu=ADD, use_imm=1, aI=ZERO, ioff=5, isz=z, wren=1, dI=TMP, sz=3), dict(wr=1, bI=TMP, sz=z, **ea)])   # LDx (QIX+dd), imediato
+        chain(sti, [dict(alu=ADD, use_imm=1, aI=ZERO, ioff=5, isz=z, wren=1, dI=TMP, sz=3), dict(wr=1, bI=TMP, sz=z, **ea)])   # LDx (QIX+dd), immediate
         chain(ld,  [dict(rd=1, wren=1, sz=z, **ea, **D1)])                                                        # LDx rr, (QIX+dd)
     # ---- 32/64-bit stack (QSP): the write to [SP-n] comes before changing SP (restartable) ----
     def spadj(z, a): return dict(alu=a, use_imm=1, immc=1, isz=z, wren=1, dI=SP, aI=SP, sz=3)                     # ADD: SP - n ; SUB: SP + n
     for z, (pop, push) in ((2, (103, 105)), (3, (104, 106))):
         chain(pop,  [dict(rd=1, aI=SP, immz=1, wren=1, sz=z, **D0), spadj(z, SUB)])                               # POPx rr
         chain(push, [dict(wr=1, aI=SP, immc=1, isz=z, bF=1, sz=z), spadj(z, ADD)])                                # PUSHx rr
-    # ---- desvios ----
+    # ---- branches ----
     CCF = dict(ccf=1)
     chain(134, [dict(br=1, cond=0, rel=1, ioff=2, isz=1, sext=1)])                                                # JRW nn
     chain(133, [dict(br=1, rel=1, ioff=3, isz=1, sext=1, **CCF)])                                                 # JRW cc, nn
@@ -89,11 +89,11 @@ def aplica(uops, livre):
     chain(136, [T32(1), dict(**JTMP, **CCF)])                                                                     # JPL cc, (vv)  vv = b3[2:0]
     chain(140, [dict(br=1, aF=1, fpos=1, immz=1, **CCF)])                                                         # JPQ cc, (vv)
     # ---- calls and returns (4- or 8-byte return address) ----
-    SKIP = dict(br=1, rel=1, immz=1, ccf=1, ccinv=1, altinv=1)                                                    # condicao falsa: pula o resto da cadeia
+    SKIP = dict(br=1, rel=1, immz=1, ccf=1, ccinv=1, altinv=1)                                                    # false condition: skips the rest of the chain
     for z, (cimm, creg, ccreg, ret, retcc, ioffimm) in ((2, (118, 116, 117, 124, 122, 2)), (3, (121, 119, 120, 125, 123, 2))):
         push = [dict(wr=1, aI=SP, immc=1, isz=z, bpcn=1, sz=z), spadj(z, ADD)]
         jreg = ([T32(1), dict(cond=0, **JTMP)] if z == 2 else [dict(br=1, cond=0, aF=1, fpos=1, immz=1)])         # target = register b3[2:0]
-        chain(cimm,  push + [dict(br=1, cond=0, tabs=1, aI=ZERO, ioff=ioffimm, isz=z)])                           # CALLx imediato
+        chain(cimm,  push + [dict(br=1, cond=0, tabs=1, aI=ZERO, ioff=ioffimm, isz=z)])                           # CALLx immediate
         chain(creg,  push + jreg)                                                                                 # CALLx (rr)
         chain(ccreg, [SKIP] + push + jreg)                                                                        # CALLx cc, (rr)
         rseq = [dict(rd=1, aI=SP, immz=1, wren=1, dI=TMP, sz=z, zx=1), spadj(z, SUB), dict(cond=0, **JTMP)]
@@ -101,7 +101,7 @@ def aplica(uops, livre):
         chain(retcc, [SKIP] + rseq)                                                                               # RETx cc
     # ---- multiplication (R800 MLTUB: ED C1..F9; MLTUW HL,BC / HL,SP: ED C3 / F3; others: tt 001 rrr) and division; they do not change flags ----
     def START(op, z, **k): return dict(mdu=1, alu=op, sz=z, fwe=1, **k)                    # op: 0 MULU, 1 MULS, 2 DIVU, 3 DIVS
-    def READ(sel, d, z, **k): return dict(mdu=1, alu=8 | sel, wren=1, dI=d, sz=z, **k)  # sel: 0 baixo/quociente, 1 alto/resto, 2 produto[31:16], 3 {resto32, quociente32}
+    def READ(sel, d, z, **k): return dict(mdu=1, alu=8 | sel, wren=1, dI=d, sz=z, **k)  # sel: 0 low/quotient, 1 high/remainder, 2 product[31:16], 3 {remainder32, quotient32}
     def SETHI(a, z, **k): return dict(mdu=1, alu=16, aI=a, sz=z, **k)
     chain(25, [START(0, 0, aI=AX, r8b=1, bb2=1), READ(0, HL, 1)])                                                 # MLTUB A,u    -> HL = A * u
     chain(26, [START(0, 1, aI=HL, bI=BC), READ(0, HL, 1), READ(2, DE, 1)])                                        # MLTUW HL,BC  -> DE:HL
@@ -112,10 +112,10 @@ def aplica(uops, livre):
         chain(ie, [START(sg, 2, aI=AX, bF=1), READ(0, AX, 3)])                                                    # MLTxL        -> QA (64 bits)
         chain(iq, [START(sg, 3, aI=AX, bF=1), READ(0, AX, 3)] + ([READ(1, DE, 3)] if sg else []))                 # MLTUQ -> QA ; MLTSQ -> QDE:QA
     for sg, (ib, iw, ie, iq) in ((0, (14, 15, 16, 17)), (1, (10, 11, 12, 13))):
-        chain(ib, [SETHI(AX, 0, ashr8=1), START(2 | sg, 0, aI=AX, r8b=1), READ(0, AX, 0), READ(1, AX, 0, hb=1)])  # DIVxB AX,t   -> AL = quociente, AH = resto
-        chain(iw, [SETHI(DE, 1), START(2 | sg, 1, aI=AX, bF=1), READ(0, AX, 1), READ(1, DE, 1)])                  # DIVxW DX:AX  -> AX = quociente, DE = resto
-        chain(ie, [SETHI(AX, 2), START(2 | sg, 2, aI=AX, bF=1), READ(3, AX, 3)])                                  # DIVxL QA     -> QA = {resto, quociente}
-        chain(iq, [SETHI(DE, 3), START(2 | sg, 3, aI=AX, bF=1), READ(0, AX, 3), READ(1, DE, 3)])                  # DIVxQ QDE:QA -> QA = quociente, QDE = resto
+        chain(ib, [SETHI(AX, 0, ashr8=1), START(2 | sg, 0, aI=AX, r8b=1), READ(0, AX, 0), READ(1, AX, 0, hb=1)])  # DIVxB AX,t   -> AL = quotient, AH = remainder
+        chain(iw, [SETHI(DE, 1), START(2 | sg, 1, aI=AX, bF=1), READ(0, AX, 1), READ(1, DE, 1)])                  # DIVxW DX:AX  -> AX = quotient, DE = remainder
+        chain(ie, [SETHI(AX, 2), START(2 | sg, 2, aI=AX, bF=1), READ(3, AX, 3)])                                  # DIVxL QA     -> QA = {remainder, quotient}
+        chain(iq, [SETHI(DE, 3), START(2 | sg, 3, aI=AX, bF=1), READ(0, AX, 3), READ(1, DE, 3)])                  # DIVxQ QDE:QA -> QA = quotient, QDE = remainder
     # ---- control registers, TLB, swap and compare-and-swap ----
     chain(180, [dict(aF=1, fpos=1, crd=1, crk=1, wren=1, sz=3, priv=1, **MOV)])                                           # LDCR kk,rr : CR[kk] := rr
     chain(181, [dict(cra=1, crk=1, dF=1, fpos=0, wren=1, sz=3, priv=1, **MOV)])                                           # STCR rr,kk : rr := CR[kk]
@@ -124,19 +124,19 @@ def aplica(uops, livre):
         chain(ix, [dict(aF=1, fpos=0, wren=1, dI=T2, sz=3, **MOV), dict(rd=1, aF=1, fpos=1, immz=1, wren=1, dI=TMP, sz=z, zx=1),   # XCHGx rr,(rr')
                    dict(wr=1, aF=1, fpos=1, immz=1, bI=T2, sz=z), dict(aI=TMP, wren=1, sz=z, **MOV, **D1)])
         chain(ic, [dict(rd=1, aF=1, fpos=0, immz=1, wren=1, dI=TMP, sz=z, zx=1), dict(alu=CP, aI=AX, bI=TMP, fwe=1, sz=z),         # CASx (rr'),rr: se (rr') == A:
-                   dict(aI=TMP, wren=1, dI=AX, sz=z, **MOV), dict(br=1, rel=1, immz=1, cond=2, altinv=1),                         #   (rr') := rr, Z = 1 ; senao A := (rr'), Z = 0
+                   dict(aI=TMP, wren=1, dI=AX, sz=z, **MOV), dict(br=1, rel=1, immz=1, cond=2, altinv=1),                         #   (rr') := rr, Z = 1 ; else A := (rr'), Z = 0
                    dict(wr=1, aF=1, fpos=0, immz=1, bF=1, sz=z)])
-    # ---- sistema (MODELO_PRIVILEGIO.txt). CR: 10 = indice 42 (IE), 13 = 45 (EPC), 14 = 46 (MMU/TE), 18 = 50 (modo) ----
+    # ---- system (MODELO_PRIVILEGIO.txt). CR: 10 = index 42 (IE), 13 = 45 (EPC), 14 = 46 (MMU/TE), 18 = 50 (mode) ----
     CR10, CR13, CR14, CR18 = 42, 45, 46, 50
-    chain(292, [dict(alu=ADD, use_imm=1, immz=1, wren=1, dI=AX, cra=1, sz=3, priv=1)])                            # MFCR n (ED 0A n): AX := CR[n]   (agora privilegiada)
+    chain(292, [dict(alu=ADD, use_imm=1, immz=1, wren=1, dI=AX, cra=1, sz=3, priv=1)])                            # MFCR n (ED 0A n): AX := CR[n]   (now privileged)
     chain(293, [dict(alu=ADD, use_imm=1, immz=1, wren=1, crd=1, aI=AX, sz=3, priv=1)])                            # MTCR n (ED 0C n): CR[n] := AX
     chain(182, [dict(scall=1)])                                                                                   # SCALL n: exception cause 5, CR12 = n, EPC = next instruction
     chain(183, [dict(alu=SHR, aI=CR18, wren=1, dI=CR18, sz=3, priv=1), dict(br=1, cond=0, aI=CR13, immz=1, misc=3)])   # SYSRT: mode := previous; IFF1 := IFF2; PC := EPC
-    chain(175, [dict(alu=INC, aI=ZERO, wren=1, dI=CR18, sz=3, priv=1), dict(br=1, cond=0, ju=1, immz=1)])         # JP USER,(uu): modo := usuario; PC := uu
+    chain(175, [dict(alu=INC, aI=ZERO, wren=1, dI=CR18, sz=3, priv=1), dict(br=1, cond=0, ju=1, immz=1)])         # JP USER,(uu): mode := user; PC := uu
     chain(176, [dict(alu=AND, use_imm=1, immsel=3, ioff=1, aI=CR14, wren=1, dI=TMP, sz=3, priv=1),                # PROT 0 / PROT 1 (ED 00 / ED 01): turns the MMU off / on
                 dict(alu=ADD, use_imm=1, aI=ZERO, ioff=1, isz=0, wren=1, dI=T2, sz=3), dict(alu=OR, aI=TMP, bI=T2, wren=1, dI=CR14, sz=3)])   #   (CR14 bit 0 := bit 0 do opcode)
     Z0 = lambda d: dict(aI=ZERO, wren=1, dI=d, sz=3, **MOV)
-    chain(177, [dict(priv=1, **Z0(CR14)), Z0(CR18), Z0(CR10), dict(br=1, cond=0, tabs=1, aI=ZERO, immz=1)])       # RESET: MMU desligada, supervisor, IE = 0, PC := 0
+    chain(177, [dict(priv=1, **Z0(CR14)), Z0(CR18), Z0(CR10), dict(br=1, cond=0, tabs=1, aI=ZERO, immz=1)])       # RESET: MMU off, supervisor, IE = 0, PC := 0
     chain(178, [dict(br=1, cond=0, tself=1, aI=ZERO, priv=1)])                                                    # STDBY: waits for an interrupt (repeats itself, like HALT)
     chain(179, [dict(priv=1)])                                                                                    # WAKE: NOP (single core)
     # context: block of 16 8-byte words at (uu): AX BC DE HL IX IY SP F N0..N7 (the visible registers; the alternate set and EXX are not included)

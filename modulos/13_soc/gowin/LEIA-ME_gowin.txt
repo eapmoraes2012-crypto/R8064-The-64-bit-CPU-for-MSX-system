@@ -1,0 +1,20 @@
+GOWIN EDA FLOW FOR THE CARTRIDGE (r8064_cart_top, Tang Nano 20K, GW2AR-LV18QN88C8/I7 version C)
+
+Why: with the open-source flow (yosys + nextpnr-himbaechel) the cartridge does not route reliably (REV47: 68 % of the LUTs and
+congestion around the 46/46 BSRAMs). Gowin EDA (the Education edition is enough) closes it: REV47 result (17/11/2026):
+  Logic 12,188/20,736 (59 %: 9,794 LUT + 1,236 ALU + 193 RAM16), registers 5,600 (36 %), BSRAM 46/46, DSP 4/24, rPLL 1/2.
+  Timing: clk (rPLL CLKOUT, 57.273 MHz) Fmax 59.94 MHz, setup slack +0.777 ns, hold slack +0.201 ns, TNS 0. Bitstream generated.
+  Not analysed: the SDRAM interface (CLKOUTP clock, no paths constrained) - adjust SDR_PSDA in hardware if needed.
+
+1) Generate the package (on any machine with Python 3):
+     python3 modulos/13_soc/gowin/make_gowin_pkg.py <out_dir> C:/Users/<you>/Documents/R8064_gowin/src/
+   (the 2nd argument is the absolute path of <out_dir>/src as Gowin will see it; it is written into the $readmemh paths).
+2) Command line: rodar_gowin.bat in <out_dir> (finds gw_sh.exe in C:\Gowin\*\IDE\bin or uses GWSH). Not yet validated: if
+   create_project fails, use the GUI.
+3) GUI: New Project -> FPGA Design Project; device GW2AR-LV18QN88C8/I7, version C; Add Files: src\r8064_cart_all.v,
+   src\tangnano20k_cart.cst, src\r8064_cart.sdc. Project -> Configuration: Synthesize -> Top Module r8064_cart_top, Verilog
+   SystemVerilog 2017; Place & Route -> Dual-Purpose Pin: use MSPI, SSPI, READY, DONE and RECONFIG_N as regular IO (NOT JTAG).
+   Run All. Bitstream: impl\pnr\<project>.fs (openFPGALoader -b tangnano20k <file>.fs ; add -f for the flash).
+Notes: Gowin synthesis rejects a net declaration list mixing initialized and uninitialized names (EX3436) and a PSDA_SEL string
+built by arithmetic (EX0205); both are fixed in the RTL (REV47). The warnings "Entry size 108 ... memory width 107" (uop.mem) and
+"Entry size 12 ... width 10" (rom_ed_b.mem) are harmless (the extra top bits are 0).

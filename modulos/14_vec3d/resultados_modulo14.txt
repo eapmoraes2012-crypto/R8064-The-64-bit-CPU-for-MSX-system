@@ -1,11 +1,11 @@
 MODULE 14 - vec3d_unit (3D manipulation, measurement prototype) - 09/11/2026
 =======================================================================
 FORMAT: vector = 4 int16 lanes (x,y,z,w) in a 64-bit register; fixed point with output shift sh (0-31) and rounding to nearest.
-OPERACOES (11): VMUL, VDOT4, VDOT3, VCROSS3, VADD, VSUB, VMIN, VMAX, VSHUF (swizzle por imm8), VNEG, VABS. VMUL/VCROSS3/VADD/VSUB/VNEG saturam em int16;
+OPERATIONS (11): VMUL, VDOT4, VDOT3, VCROSS3, VADD, VSUB, VMIN, VMAX, VSHUF (swizzle by imm8), VNEG, VABS. VMUL/VCROSS3/VADD/VSUB/VNEG saturate to int16;
   VDOT4/VDOT3 return a 64-bit scalar (sum of 32-bit products, no overflow) shifted by sh. 1 operation per clock, latency 5.
 VERIFIED (simulation, Icarus): 30,000 random+corner vectors (op, sh 0-16, imm), Python integer reference model (seed 8064), 0 errors, outputs 1 per clock.
 MEASURED (Yosys synth_gowin, isolated unit):
-  completa (LANE_ALU=1): 863 LUT4 + 452 ALU (= 1.315 LUT4 eq.), 935 FF, 6 MULT18X18, 0 BSRAM
+  full (LANE_ALU=1): 863 LUT4 + 452 ALU (= 1,315 LUT4 eq.), 935 FF, 6 MULT18X18, 0 BSRAM
   minimal   (LANE_ALU=0, without VADD/VSUB/VMIN/VMAX/VNEG/VABS): 762 LUT4 + 309 ALU (= 1.071), 855 FF, 6 MULT18X18
 MEASURED (nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, LFSR wrapper, target 100 MHz): 100.75 / 88.61 MHz (seeds 1/2) -> PASSES at 57.28 MHz with margin.
   History: v1 (separate adders and comparators per op, saturation by comparator) 4,436 LUT4 + 922 ALU; v2/v3 (shared adder, saturation by sign extension) 894+442 at 67 MHz (FAILS 100);
@@ -31,7 +31,7 @@ OPTIMIZED (v6, no loss of function; verified with the same 30,000 vectors):
   Result: Yosys LUT1-4 1,659 + MUX2 267 + ALU 409 = ~2,335 LUT4-eq (-17%); isolated nextpnr 2,080 LUT4 + 466 ALU (-19% vs 3,150), 10 DSP, Fmax 114.9 MHz (target 70).
   Variant without VADD/VSUB/VMIN/VMAX (LANE_ALU=0): -250 LUT4-eq (not adopted: loses function).
   In the SoC (board top, random ROMs, Yosys): +1,419 LUT(1-4+MUX2) +441 ALU = ~+1,860 LUT4-eq, +10 DSP, BSRAM the same (reference without the unit: 11,807 LUT + 919 ALU).
-CUSTO POR FUNCAO na v6 (experimentos de eliminacao, LUT4-eq): deslocador+arredondamento 676 | VSHUF 228 | VDOT 237 | VCROSS3 166 | VADD/VSUB 174 | VMIN/VMAX 109.
+COST PER FUNCTION in v6 (elimination experiments, LUT4-eq): shifter+rounding 676 | VSHUF 228 | VDOT 237 | VCROSS3 166 | VADD/VSUB 174 | VMIN/VMAX 109.
 TRIED AND DISCARDED: v7 (16-bit window shifter + thermometer saturation test on lanes 1-3): +120..+180 (ABC already optimizes the naive version better).
 NOT DONE (ideas with estimates, not measured): DOT/CROSS in the MULTADDALU18X18 blocks of the DSP (~-200 ALU, requires Gowin primitives + simulation model);
   multicycle unit (1-2 lanes/clock: ~-180..-300 LUT4-eq, throughput 1 op per 2-4 clocks; the current front-end only issues 1 instruction every >=6 clocks).

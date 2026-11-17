@@ -28,7 +28,7 @@ iverilog -g2012 -o sl.vvp tb_sys_ldir.v %SYS% && (vvp sl.vvp & vvp sl.vvp +r800)
 iverilog -g2012 -o si.vvp tb_sys_irq.v %SYS% && (vvp si.vvp & vvp si.vvp +r800) > ..\teste_tempo_irq.txt 2>&1
 iverilog -g2012 -o sx.vvp tb_xing.v %CORE% && vvp sx.vvp > ..\teste_cruzamento.txt 2>&1
 echo Done: teste_sistema_seq.txt teste_sistema.txt teste_modo.txt teste_governador.txt teste_cpu_gov.txt
-rem FIFO MSX<->R8064 (portas E8h-ECh)
+rem FIFO MSX<->R8064 (ports E8h-ECh)
 iverilog -g2012 -o t.vvp tb_fifo.v %R%\r8064_fifo_if.v && vvp t.vvp > ..\teste_fifo.txt 2>&1
 iverilog -g2012 -o t.vvp tb_sys_fifo.v %SYS% && vvp t.vvp > ..\teste_sys_fifo.txt 2>&1
 rem EXINI: returns the main group and AF to the reset state

@@ -1,12 +1,12 @@
 // vec3d_unit.v (v6, area-optimized) - R8064 3D manipulation unit. Vectors = 4 int16 lanes (x,y,z,w) in a 64-bit register,
 // fixed point with output shift "sh" (0..15): product = (a*b + rounding) >>> sh. 10 16x16 multipliers (DSP 18x18), 1 operation per clock, latency 4.
 //  op 0 VMUL   : lane_i = sat16((a_i*b_i) >>> sh)
-//  op 1 VDOT4  : escalar 64 b = (a0*b0+a1*b1+a2*b2+a3*b3) >>> sh
+//  op 1 VDOT4  : 64-bit scalar = (a0*b0+a1*b1+a2*b2+a3*b3) >>> sh
 //  op 2 VDOT3  : same without lane 3 (w)
-//  op 3 VCROSS3: (a1*b2-a2*b1, a2*b0-a0*b2, a0*b1-a1*b0, 0) >>> sh, saturado
+//  op 3 VCROSS3: (a1*b2-a2*b1, a2*b0-a0*b2, a0*b1-a1*b0, 0) >>> sh, saturated
 //  op 4 VADD   : lane_i = sat16(a_i + b_i)     op 5 VSUB: sat16(a_i - b_i)
 //  op 6 VMIN   : lane_i = min(a_i,b_i)         op 7 VMAX: max
-//  op 8 VSHUF  : lane_i = a[imm[2i+1:2i]]  (permutacao/swizzle; b ignorado)
+//  op 8 VSHUF  : lane_i = a[imm[2i+1:2i]]  (permutation/swizzle; b ignored)
 //  op 9 VNEG   : lane_i = sat16(-a_i)          op 10 VABS: sat16(|a_i|)      (done in the multipliers: a_i * (-1) and a_i * sign(a_i))
 module vec3d_unit #(parameter LANE_ALU = 1)(   // LANE_ALU=0: without VADD/VSUB/VMIN/VMAX (those opcodes return 0)
     input  wire        clk,
@@ -57,7 +57,7 @@ module vec3d_unit #(parameter LANE_ALU = 1)(   // LANE_ALU=0: without VADD/VSUB/
           default: begin r0 <= $signed(a1r[16*i1[1:0] +: 16]); r1 <= $signed(a1r[16*i1[3:2] +: 16]); r2 <= $signed(a1r[16*i1[5:4] +: 16]); r3 <= $signed(a1r[16*i1[7:6] +: 16]); end   // VSHUF
         endcase
     end
-    // ---- S3: deslocamento aritmetico + bit de arredondamento ----
+    // ---- S3: arithmetic shift + rounding bit ----
     wire do_shift = (o2 <= 4'd3);
     wire [3:0] ss = do_shift ? s2 : 4'd0;
     // rounding = bit (ss-1) after the shift: (r + 2^(ss-1)) >>> ss == (r >>> ss) + r[ss-1]

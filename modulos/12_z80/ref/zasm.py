@@ -61,7 +61,7 @@ class Asm:
                 while not re.match(r'^\s*endm\b', lines[i], re.I): body.append(lines[i]); i += 1
                 i += 1; self.macros[name] = (params, body); continue
             res.append(ln)
-        # segunda fase: chamadas
+        # second phase: calls
         final = []
         for ln in res: final.extend(self.call_macros(ln))
         return final

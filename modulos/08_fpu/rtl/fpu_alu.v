@@ -1,5 +1,5 @@
 // fpu_alu.v - arithmetic core of the R8064 80-bit FPU (extended x87).
-// Operacoes (op): 0 ADD, 1 SUB, 2 MUL, 3 DIV, 4 SQRT, 5 CMP, 6 FILD(int64), 7 FIST(int64), 8 RNDINT, 9 LD32, 10 LD64, 11 ST32, 12 ST64.
+// Operations (op): 0 ADD, 1 SUB, 2 MUL, 3 DIV, 4 SQRT, 5 CMP, 6 FILD(int64), 7 FIST(int64), 8 RNDINT, 9 LD32, 10 LD64, 11 ST32, 12 ST64.
 // a = ST0 (or memory data), b = second operand. rc: 0 nearest-even, 1 -inf, 2 +inf, 3 zero. pc: 0=24, 2=53, 3=64 bits (ADD/SUB/MUL/DIV/SQRT only).
 // Result: res, flags {PE,UE,OE,ZE,DE,IE}, up (rounded up = C1), cc {c3,c2,c0} (CMP only). Masked exceptions = default response; whoever masks/propagates is the stack (fpu_top).
 module fpu_alu(
@@ -94,7 +94,7 @@ module fpu_alu(
     reg [67:0] sh_out; always @(posedge clk) sh_out <= sh_o;
     wire [67:0] lf_out  = lf_in << lf_amt;
     reg [67:0] lf_r; always @(posedge clk) lf_r <= lf_out;
-    // ---------------- arredondamento (R1..R3)
+    // ---------------- rounding (R1..R3)
     reg r_s; reg signed [17:0] r_E, r_emin, r_emax; reg [63:0] r_m; reg r_g, r_st; reg [6:0] r_p; reg [1:0] r_fmt, r_rc;
     reg [65:0] r1_F; reg signed [17:0] r1_E; reg r1_tiny;
     reg [63:0] r2_m; reg signed [17:0] r2_E; reg r2_inex, r2_inc, r2_tiny;
@@ -105,14 +105,14 @@ module fpu_alu(
     mul_unit u_mul(.clk(clk), .rst(rst), .in_valid(mu_in), .sz(2'd3), .sgn(1'b0), .a(a_m), .b(b_m), .ready(mu_ready), .out_valid(mu_ov), .prod(mu_p));
     reg dv_start; wire dv_busy, dv_done, dv_err; wire [63:0] dv_q, dv_r; reg [63:0] dv_hi, dv_lo; reg dv_ge; reg [63:0] dq, dr;
     div_unit u_div(.clk(clk), .rst(rst), .start(dv_start), .sz(2'd3), .sgn(1'b0), .hi(dv_hi), .lo(dv_lo), .d(b_m), .busy(dv_busy), .done(dv_done), .q(dv_q), .r(dv_r), .err(dv_err));
-    // ---------------- raiz
+    // ---------------- square root
     reg [129:0] sq_rad; reg [66:0] sq_rem; reg [64:0] sq_q; reg [6:0] sq_cnt;
     wire [66:0] sq_rn = {sq_rem[64:0], sq_rad[129:128]};
     wire [66:0] sq_tr = {sq_q, 2'b01};
     wire [67:0] sq_df = {1'b0, sq_rn} - {1'b0, sq_tr};
     wire        sq_ge = !sq_df[67];
     // ---------------- integer/float conversion, to integer
-    reg cv_s; reg [63:0] cv_mag; reg signed [17:0] cv_bias; reg [6:0] cv_lz; reg cv_rnd; // cv_rnd: veio de RNDINT
+    reg cv_s; reg [63:0] cv_mag; reg signed [17:0] cv_bias; reg [6:0] cv_lz; reg cv_rnd; // cv_rnd: came from RNDINT
     reg [63:0] ti_I; reg ti_rb, ti_st; reg [64:0] ti_k; reg ti_inex, ti_inc, ti_ovfI;
     // ---------------- comparison and specials
     reg spr; reg [79:0] sp_resr; reg [5:0] sp_flr; reg [2:0] sp_ccr;
@@ -192,8 +192,8 @@ module fpu_alu(
               sh_in <= {2'b00, m, g, stk}; end
     endtask
     wire [6:0] pbits = (pc_r == 2'd0) ? 7'd24 : (pc_r == 2'd2) ? 7'd53 : 7'd64;
-    // R1: desnormalizacao
-    // R2: arredondamento
+    // R1: denormalization
+    // R2: rounding
     reg [65:0] r2_lsbm; reg [64:0] r2_incv;
     always @* case (r_p) 7'd24: begin r2_lsbm = 66'd1 << 42; r2_incv = 65'd1 << 40; end 7'd53: begin r2_lsbm = 66'd1 << 13; r2_incv = 65'd1 << 11; end default: begin r2_lsbm = 66'd1 << 2; r2_incv = 65'd1; end endcase
     wire [65:0] r2_rbm  = r2_lsbm >> 1;
@@ -202,7 +202,7 @@ module fpu_alu(
     wire r2_incw = (r_rc == 2'd0) ? (r2_rb && (r2_stk || r2_lsb)) : (r_rc == 2'd1) ? ((r2_rb || r2_stk) && r_s) : (r_rc == 2'd2) ? ((r2_rb || r2_stk) && !r_s) : 1'b0;
     wire [65:0] r2_keep = r1_F & ~(r2_lsbm - 66'd1);
     wire [64:0] r2_sum = {1'b0, r2_keep[65:2]} + (r2_incw ? r2_incv : 65'd0);
-    // R3: empacotamento
+    // R3: packing
     wire r3_ovf = (r2_E > r_emax) && (r2_m != 0);
     wire r3_inf = (r_rc == 2'd0) || (r_rc == 2'd2 && !r_s) || (r_rc == 2'd1 && r_s);
     wire [63:0] r3_maxm = (r_p == 7'd24) ? 64'hFFFFFF0000000000 : (r_p == 7'd53) ? 64'hFFFFFFFFFFFFF800 : 64'hFFFFFFFFFFFFFFFF;
@@ -440,7 +440,7 @@ module fpu_alu(
             else load_round(a_s, a_E, a_m, 1'b0, 1'b0, 7'd53, -18'sd1022, 18'sd1023, 2'd2);
             st <= S_R1;
         end
-        // ---- arredondamento e empacotamento
+        // ---- rounding and packing
         S_R1: begin
             sh_amt <= ((r_emin - r_E) <= 0) ? 7'd0 : ((r_emin - r_E) > 66) ? 7'd66 : (r_emin - r_E); r_tiny0 <= ((r_emin - r_E) > 0); st <= S_R1V;
         end

@@ -19,13 +19,13 @@ module tb_soc_boot;
     sdram_model mdl(.clk(clk), .cke(s_cke), .cs_n(s_cs_n), .ras_n(s_ras_n), .cas_n(s_cas_n), .we_n(s_we_n), .dqm(s_dqm), .ba(s_ba), .a(s_a), .dq_i(s_dq_o), .dq_oe(s_dq_oe), .dq_o(mdq));
     integer nwi = 0, nwd = 0; always @(posedge clk) begin if (dut.u_mem.iw_accept) nwi <= nwi + 1; if (dut.u_mem.dw_accept) nwd <= nwd + 1; end
     integer errs = 0, k; reg [31:0] w;
-    integer tb0 = 0; always @(posedge clk) if (!dut.boot_busy && tb0 == 0) begin tb0 <= 1; $display("boot terminou em %0t (init_done=%b)", $time, init_done); end
+    integer tb0 = 0; always @(posedge clk) if (!dut.boot_busy && tb0 == 0) begin tb0 <= 1; $display("boot finished at %0t (init_done=%b)", $time, init_done); end
     initial begin
         repeat (4) @(posedge clk); rst = 0;
         wait (init_done);
         repeat (20000) @(posedge clk);
         $display("mem0=%h mem1=%h mem2=%h xb0=%h", mdl.mem[0], mdl.mem[1], mdl.mem[2], {dut.u_xbuf.lane[7].mem[0],dut.u_xbuf.lane[6].mem[0],dut.u_xbuf.lane[5].mem[0],dut.u_xbuf.lane[4].mem[0],dut.u_xbuf.lane[3].mem[0],dut.u_xbuf.lane[2].mem[0],dut.u_xbuf.lane[1].mem[0],dut.u_xbuf.lane[0].mem[0]});
-        if (mdl.mem[0][7:0] !== 8'h31) begin errs = errs + 1; $display("ERROR imagem[0] = %h", mdl.mem[0]); end
+        if (mdl.mem[0][7:0] !== 8'h31) begin errs = errs + 1; $display("ERROR image[0] = %h", mdl.mem[0]); end
         if ({mdl.mem[2*16'h7FF+1], mdl.mem[2*16'h7FF]} !== 64'h214B_5241_4D44_4E45) begin errs = errs + 1; $display("ERROR end = %h %h", mdl.mem[2*16'h7FF+1], mdl.mem[2*16'h7FF]); end
         if (dut.u_sys.u_cpu.u_core.u_rf1.mem_a[0][7:0] !== 8'h5A) begin errs = errs + 1; $display("ERROR A=%h", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[0]); end
         if (dut.u_sys.u_cpu.u_core.u_rf1.mem_a[1][15:8] !== 8'h5B) begin errs = errs + 1; $display("ERROR B=%h", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[1]); end

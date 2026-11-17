@@ -58,7 +58,7 @@ for _ in range(N):
     fp = newfp(); push(fp, yv); push(fp, pv); M.run(fp, M.ENTRY['FYL2P'])
     if p > -1 and p != 0: rec('FYL2P', ulps(fp['st'][fp['top']], val(yv) * (tln(1 + val(pv)) / LN2)))
 for k, v in sorted(worst.items()): print('%-10s max error %.2f ulp' % (k, v))
-# FREM exato
+# exact FREM
 bad = 0
 for _ in range(400):
     a = rx(-40, 40) if rnd.random() < .7 else rx(-3, 3); b = rx(-20, 20) if rnd.random() < .7 else rx(-3, 3)

@@ -2,7 +2,7 @@
 // (bit by bit, fpref.py vectors). Datapath: working register X (68 bits) that only receives 8 things (MA, MB, the sum, X shifted by 4 or 1 to
 // each side, the quotient/root), ONE adder (X or MA) +/- (X, MA or the root trial), and two 66-bit registers (MA, MB). Multiplication, division and
 // square root are bit by bit in this adder (2 to 3 clocks per bit).
-// Operacoes (op): 0 ADD, 1 SUB, 2 MUL, 3 DIV, 4 SQRT, 5 CMP, 6 FILD(int64), 7 FIST(int64), 8 RNDINT, 9 LD32, 10 LD64, 11 ST32, 12 ST64.
+// Operations (op): 0 ADD, 1 SUB, 2 MUL, 3 DIV, 4 SQRT, 5 CMP, 6 FILD(int64), 7 FIST(int64), 8 RNDINT, 9 LD32, 10 LD64, 11 ST32, 12 ST64.
 // a = ST0 (or memory data), b = second operand; a, b, op, rc and pc must stay STABLE from 'start' until the next 'start'.
 // rc: 0 nearest/even, 1 -inf, 2 +inf, 3 zero. pc: 0 = 24, 2 = 53, others = 64 bits (ADD/SUB/MUL/DIV/SQRT only).
 // Outputs (valid from 'done' until the next 'start'): res, flags {PE,UE,OE,ZE,DE,IE}, up (rounded up = C1), cc {c3,c2,c0} (CMP only).
@@ -133,7 +133,7 @@ module fpu_seq(
                         else if (ia) begin X <= XINF; emode <= 2'd1; st <= S_FIN; end
                     end
                     OP_CMP: begin
-                        st <= S_FIN; sr <= 1'b0;                                       // res = 0 (so cc interessa)
+                        st <= S_FIN; sr <= 1'b0;                                       // res = 0 (only cc matters)
                         if (ua || ub || na || nbn) begin cc <= 3'd7; flags <= {4'd0, fde, 1'b1}; end
                         else cc <= ((za && zb) || (sa == sb && mag_eq)) ? 3'd4 : (sa != sb) ? {2'b00, sa} : {2'b00, mag_gt ? sa : !sa};
                     end
@@ -164,7 +164,7 @@ module fpu_seq(
                     default: begin sr <= 1'b1; X <= XIND; emode <= 2'd1; flags <= 6'd1; st <= S_FIN; end
                 endcase
             end
-            // ---- desempacota (normalizando os denormais) ----
+            // ---- unpack (normalizing the denormals) ----
             S_UA: begin
                 EA <= da ? -18'sd16382 : EA - 18'sd16383; X <= xma; nb <= 1'b0; ret <= S_UA2;
                 st <= da ? S_NRM : (two && !zb) ? S_UB : S_OP;
@@ -228,7 +228,7 @@ module fpu_seq(
                 X <= shr1; MB <= {1'b0, MB[65:1]}; cn <= cn - 7'd1;
                 if (cn == 7'd1) begin ret <= S_RP1; st <= S_NRM; end else st <= S_ML1;
             end
-            // ---- divisao: X = resto, MA = divisor, MB = quociente (66 bits); 2 clocks por bit ----
+            // ---- division: X = remainder, MA = divisor, MB = quotient (66 bits); 2 clocks per bit ----
             S_DV0: begin MA <= MB; MB <= 66'd0; cn <= 7'd66; st <= S_DV1; end
             S_DV1: begin if (ge) X <= sumk; MB <= {MB[64:0], ge}; st <= S_DV2; end
             S_DV2: begin
@@ -258,7 +258,7 @@ module fpu_seq(
                 end else if (X[66:3] != 64'd0) begin EA <= 18'sd63; ret <= S_FIN; st <= S_NRM; end
             end
             S_NEG: begin X <= sumk; st <= (op == OP_FILD) ? S_NRM : S_FIN; end                                 // X := -X (64 bits); used by FIST and FILD
-            // ---- arredonda e empacota ----
+            // ---- round and pack ----
             S_RP0: begin if (X[67]) begin X <= shr1; EA <= EA + 18'sd1; end st <= S_RP1; end
             S_RP1: begin
                 if (EA < emin) begin tiny <= 1'b1; cn <= (dmin > 18'sd68) ? 7'd68 : dmin[6:0]; EA <= emin; ret <= S_RP2; st <= S_SHR; end

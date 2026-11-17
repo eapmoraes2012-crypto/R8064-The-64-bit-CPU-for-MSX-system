@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Checks the ROMs (.mem) against expected_id.mem and the control words against expected_*.mem.
-Uso: python3 ref/verify_roms.py   (a partir da pasta R8064_rtl_pack)"""
+Usage: python3 ref/verify_roms.py   (from the R8064_rtl_pack folder)"""
 import sys
 rd=lambda p:[int(x,16) for x in open(p).read().split()]
 A=rd('rom/rom_ed_a.mem'); AM=rd('rom/amb_idx.mem'); B=rd('rom/rom_ed_b.mem'); C=rd('rom/ctrl.mem')

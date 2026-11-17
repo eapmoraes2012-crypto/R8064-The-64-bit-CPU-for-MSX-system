@@ -17,7 +17,7 @@ module r8064_fifo_if #(parameter BASE = 8'hE8, parameter AW = 11)(
     input  wire       clk, rst,
     // R8064 side (system I/O bus)
     input  wire       r_we, r_re, input wire [7:0] r_a, r_wd, output reg [7:0] r_rd, output wire r_hit,
-    // lado MSX (slot, ja sincronizado ao clk)
+    // MSX side (slot, already synchronized to clk)
     input  wire       m_we, m_re, input wire [1:0] m_a, input wire [7:0] m_wd, output reg [7:0] m_rd,
     output wire       m_irq,        // slot INT line (open collector outside)
     output reg        r8064_rst,    // R8064 restart pulse (CMD.b3)
@@ -64,7 +64,7 @@ module r8064_fifo_if #(parameter BASE = 8'hE8, parameter AW = 11)(
             full_b <= fl_b_n; nz_b <= !emp_b_n; nz_b_d <= nz_b;
         end
     end
-    // ---- registradores compartilhados ----
+    // ---- shared registers ----
     reg [7:0] len_l, len_h; reg start_p, busy, done, irq_en, wnd, err;
     wire irq_pend = done && irq_en;
     always @(posedge clk) begin

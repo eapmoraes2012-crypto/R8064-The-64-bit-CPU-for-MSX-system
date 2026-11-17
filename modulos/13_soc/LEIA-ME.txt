@@ -17,5 +17,5 @@ Synthesis (Yosys + nextpnr, Tang Nano 20K): pnr/ys_mem_top.ys and pnr_mem_top.v 
 Resultados: ver 13_soc/resultado_soc.txt
 CR NUMBERING: "CR n" (n = operand of MFCR/MTCR) is at bank index 32+n. The RTL, tb_soc_exc and resultado_soc.txt use the bank INDEX:
   CR41 = CR9 (vector), CR42 = CR10 (ie), CR43 = CR11 (cause), CR44 = CR12 (address), CR45 = CR13 (EPC), CR46..CR49 = CR14..CR17 (MMU, root, TLB-VA, control).
-rodar_exc.bat roda tb_soc_exc (cenarios 1-8), tb_soc (bypass e +mmu) e tb_clkgen (-DSIM).
+rodar_exc.bat runs tb_soc_exc (scenarios 1-8), tb_soc (bypass and +mmu) and tb_clkgen (-DSIM).
 What the SoC does NOT instantiate: mul/div (03), msx_if (04; the MSX bridge used is r8064_fifo_if of module 10), FPU (08/11) and the classic Z80 (12).

@@ -3,7 +3,7 @@
 //   SRC=0  clk_in = board crystal, 27 MHz        -> rPLL 27 x 17 / 8       = 57.375 MHz   (error +0.18 %; exact ratio 70/33 infeasible: PFD < 3 MHz)
 //   SRC=1  clk_in = 3.579545 MHz (external crystal/oscillator or MSX slot CLOCK) -> rPLL x 16 = 57.2727 MHz (exact, synchronous with the MSX)
 //   SRC=2  clk_in = 57.2727 MHz active oscillator directly (no PLL; locked = 1; clk_sdram = clk)
-//   SRC=3  clk_in = 14,31818 MHz (4 x 3,579545; ex.: pino clk14m da placa de cartucho) -> rPLL x4 = 57,2727 MHz (exato)
+//   SRC=3  clk_in = 14.31818 MHz (4 x 3.579545; e.g.: clk14m pin of the cartridge board) -> rPLL x4 = 57.2727 MHz (exact)
 // A "bare" 3.579545 MHz crystal needs an external oscillator (e.g. Pierce with 74HC04, or an oscillator module); the FPGA receives the already-square wave on clk_in.
 // VCO (SRC=0): 27/8*17*16 = 918 MHz ; (SRC=1): 3.579545*16*16 = 916.4 MHz - both within the GW2A's 500-1250 MHz.
 // rst: active high; stays at 1 until the PLL locks + 16 cycles of the generated clock (synchronous release).
@@ -37,7 +37,7 @@ module r8064_clkgen #(parameter SRC = 1, parameter [3:0] SDR_PSDA = 4'd4)(   // 
         always begin #(half) if (n == 20) ck = ~ck; end
         assign pll_clk = ck; assign pll_lock = lk;
         reg ckp = 1'b0;
-        always @(ck) ckp <= #(half * SDR_PSDA / 8.0) ck;   // defasagem = SDR_PSDA/16 do periodo
+        always @(ck) ckp <= #(half * SDR_PSDA / 8.0) ck;   // phase shift = SDR_PSDA/16 of the period
         assign pll_clkp = ckp;
 `else
         // IDIV_SEL = IDIV-1 ; FBDIV_SEL = FBDIV-1 ; fout = fin*FBDIV/IDIV ; VCO = fout*ODIV

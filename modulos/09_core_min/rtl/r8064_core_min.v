@@ -42,7 +42,7 @@ module r8064_core_min #(
     output wire        gov_boundary,
     output wire        io_we, io_re, output wire [7:0] io_a, io_wd, input wire [7:0] io_rdata,   // 8-bit I/O (IN/OUT)
     output wire [15:0] gov_pc,          // address of the candidate instruction
-    output wire [3:0]  gov_len,         // comprimento (bytes) da candidata
+    output wire [3:0]  gov_len,         // length (bytes) of the candidate
     output wire        gov_dev,         // data access completed
     output wire [15:0] gov_daddr,
     output wire [1:0]  gov_dsize,
@@ -58,7 +58,7 @@ module r8064_core_min #(
     localparam AW = 64;
 `endif
     localparam [63:0] AMASK = (AW >= 64) ? 64'hFFFF_FFFF_FFFF_FFFF : ((64'd1 << AW) - 64'd1);
-    // ============ controle global ============
+    // ============ global control ============
     wire hold;                    // M waiting for the data bus
     wire flush_br;                // taken branch (X2)
     wire irq_take;                // interrupt accepted
@@ -157,7 +157,7 @@ module r8064_core_min #(
     reg [31:0] mainc_q; reg [106:0] uop_q;
     // micro-operation sequencer: u[49]=more uops, u[62:52]=address of the next one. Space: main 0-255, ED 256+id, CB 768-1023, DDCB/FDCB 1792-2047, chains 1024-1791
     reg seq; reg [10:0] nxt_r; reg [2:0] seqc;
-    wire [10:0] base_a = irq_ent ? (im == 2'd2 ? 11'd601 : 11'd600) : is_ed ? (11'd256 + {1'b0, ed_id}) : is_cb ? (xy_on ? {3'b111, b3} : {3'b011, b2}) : {3'b000, b1};   // DD CB d op: regiao 1792 + op
+    wire [10:0] base_a = irq_ent ? (im == 2'd2 ? 11'd601 : 11'd600) : is_ed ? (11'd256 + {1'b0, ed_id}) : is_cb ? (xy_on ? {3'b111, b3} : {3'b011, b2}) : {3'b000, b1};   // DD CB d op: region 1792 + op
     wire [10:0] uaddr = seq ? nxt_r : base_a;
     always @(posedge clk) begin mainc_q <= mainc[b1]; uop_q <= uopm[uaddr]; end
     // registered length: the raw value (control ROM -> ED/main mux -> +prefix) is stable since ds=2 and is only consumed at ds_last (>=4);
@@ -188,7 +188,7 @@ module r8064_core_min #(
             if (!wq_v) begin
                 if (qcnt >= 6'd13 && !hold) begin win_q <= win; wq_v <= 1; end
             end else begin
-                dwin <= pfx_w ? {8'h00, win_q[103:16], 8'hED} : pfx_xy ? {8'h00, win_q[103:8]} : win_q;   // remove o prefixo de banco (ED <pfx> op ... -> ED op ...) ou o DD/FD
+                dwin <= pfx_w ? {8'h00, win_q[103:16], 8'hED} : pfx_xy ? {8'h00, win_q[103:8]} : win_q;   // removes the bank prefix (ED <pfx> op ... -> ED op ...) or the DD/FD
                 xy <= !pfx_xy ? 2'd0 : (win_q[7:0] == 8'hDD) ? 2'd1 : 2'd2;
                 bank <= pfx_w ? ((win_q[15:8] == 8'h0B) ? 2'd1 : (win_q[15:8] == 8'h0E) ? 2'd2 : 2'd3) : 2'd0;
                 is_ed <= (win_q[7:0] == 8'hED);
@@ -205,7 +205,7 @@ module r8064_core_min #(
         else if (consume) dpc_q <= (dpc + {60'd0, clen}) & AMASK;
     end
 
-    // ============ emissao: campos, registradores, imediato ============
+    // ============ issue: fields, registers, immediate ============
     reg sw_main, sw_af;
     wire [106:0] u = uop_q;
     wire f_pos = u[20];
@@ -229,7 +229,7 @@ module r8064_core_min #(
 `endif
     wire en_ill = is_ed && (ed_ill || bank_ill || md64_ill);   // illegal (exception: in this skeleton it becomes a NOP without write)
     wire [5:0] crn = u[101] ? {1'b1, b3[7:3]} : {1'b1, b3[4:0]};   // u[101]: LDCR/STCR (CR in b3[7:3], register in b3[2:0])
-    //         // MTCR/MFCR: CR n = indice 32+n do banco (ED 0A n = MFCR, ED 0C n = MTCR)
+    //         // MTCR/MFCR: CR n = register-file index 32+n (ED 0A n = MFCR, ED 0C n = MTCR)
     // EXPLICIT uop indices (0 AX, 1 BC, 2 DE, 3 HL) also obey EXX / EX AF,AF' (before only the rr fields obeyed: LDIR after EXX used the wrong group)
     function [5:0] xsw(input [5:0] i, input sm, input sa, input [1:0] ix);   // sm/sa/ix as arguments: the function is re-evaluated when the swap changes
         xsw = (i == 6'd3 && ix != 2'd0) ? (ix == 2'd1 ? 6'd9 : 6'd10) :
@@ -241,7 +241,7 @@ module r8064_core_min #(
     wire       r8h = u[95] && (rrD != 3'd7) && !rrD[0];
     wire [5:0] iD = u[77] ? crn : u[95] ? xsw(r8i, sw_main, sw_af, 2'd0) : u[17] ? mD : xsw(u[26:21], sw_main, sw_af, xy_db);
     wire [5:0] jui = (b2[1:0] == 2'd3) ? 6'd0 : {4'd0, b2[1:0]} + 6'd1;      // u[105]: JP USER,(uu): ED B4 BC, B5 DE, B6 HL, B7 AX
-    wire [5:0] iA = u[47] ? iD : u[78] ? crn : u[105] ? xsw(jui, sw_main, sw_af, 2'd0) : (u[18] ? mA : xsw(u[32:27], sw_main, sw_af, xy_a));   // u[47]: fonte A = destino (2 operandos)
+    wire [5:0] iA = u[47] ? iD : u[78] ? crn : u[105] ? xsw(jui, sw_main, sw_af, 2'd0) : (u[18] ? mA : xsw(u[32:27], sw_main, sw_af, xy_a));   // u[47]: source A = destination (2 operands)
     // u[99]: source B is an 8-bit register with the Z80 r code (MLTxB, DIVxB)
     wire [5:0] r8bi = (rrB == 3'd7) ? 6'd0 : {4'd0, rrB[2:1]} + 6'd1;
     wire       r8bh = u[99] && (rrB != 3'd7) && !rrB[0];
@@ -366,7 +366,7 @@ module r8064_core_min #(
     // flag fusion of block instructions: u[69:68] = 0 normal ALU | 1 only PV := (res != 0) | 2 S,Z,H,N from the ALU (keeps PV and C) | 3 PV := (res != 0), H = N = 0
     wire [63:0] szm = (u_x3[6:5] == 2'd0) ? 64'hFF : (u_x3[6:5] == 2'd1) ? 64'hFFFF : (u_x3[6:5] == 2'd2) ? 64'hFFFF_FFFF : 64'hFFFF_FFFF_FFFF_FFFF;
     wire nzres = |(x3_res & szm);
-    reg [7:0] f_new0; wire [7:0] f_leg = {f_new0[7:3], (u_x3[76:74] == 3'd7) ? iff2 : f_new0[2], f_new0[1], u_x3[73] ? fl[0] : f_new0[0]};   // u[73]: mantem C (IN r,(C))
+    reg [7:0] f_new0; wire [7:0] f_leg = {f_new0[7:3], (u_x3[76:74] == 3'd7) ? iff2 : f_new0[2], f_new0[1], u_x3[73] ? fl[0] : f_new0[0]};   // u[73]: keeps C (IN r,(C))
     // u[85:82] = fop: Z80 flag rules that do not come directly from the ALU (0 = previous behavior)
     reg [7:0] f_new;
     always @* case (u_x3[84:82])
@@ -414,7 +414,7 @@ module r8064_core_min #(
     end
     // irq_arm_q: slow part of the condition (pending INT, IE, EI delay) registered; the 1-clock delay is covered by flush_q / dv (INT and exception entry) and by the pipeline being empty
     reg irq_arm_q; always @(posedge clk) irq_arm_q <= rst ? 1'b0 : (irq_pend && ie && !ei_cnt);
-    assign irq_take = irq_arm_q && !flush_q && pipe_empty_q && !issue_q && !dv && !seq && !c_user;   // hold implica v_m (pipe_empty_q = 0)
+    assign irq_take = irq_arm_q && !flush_q && pipe_empty_q && !issue_q && !dv && !seq && !c_user;   // hold implies v_m (pipe_empty_q = 0)
     assign flush_tgt_raw = (flush_br && !ex_take) ? tgt_x2 : vec;
     // PC of the next instruction (architectural) and PC saved on interrupt. In a repeated block (LDIR...) the branch to its own PC
     // leaves npc = PC of the instruction, so the interrupt between iterations resumes exactly the repeat (BC/HL/DE already updated).
@@ -498,7 +498,7 @@ module r8064_core_min #(
     assign d_be    = beat ? bme[15:8] : bme[7:0];
     assign d_wdata = strot;
     wire [63:0] ldrot  = rotl8(d_rdata, 3'd0 - addr_m[2:0]);   // byte j = word[(j + shift) mod 8]
-    wire [63:0] lomask = 64'hFFFF_FFFF_FFFF_FFFF >> {addr_m[2:0], 3'b000};                                    // bytes j < 8 - desloc vem do beat 0
+    wire [63:0] lomask = 64'hFFFF_FFFF_FFFF_FFFF >> {addr_m[2:0], 3'b000};                                    // bytes j < 8 - offset come from beat 0
     wire [63:0] ldsh   = xing ? ((ldrot & ~lomask) | (rd0 & lomask)) : ldrot;
     always @(posedge clk) begin
         if (rst) beat <= 1'b0;
@@ -560,7 +560,7 @@ module r8064_core_min #(
                 mdu_r0 <= !mdu_isdiv ? mul_p[63:0] : div_err ? 64'hFFFF_FFFF_FFFF_FFFF : div_q;
                 mdu_r1 <= !mdu_isdiv ? mul_p[127:64] : div_err ? mdu_a : div_r;
             end
-            if (md_q && mdu_done) mdu_done <= 1'b0;      // a uop que disparou sai de M neste clock
+            if (md_q && mdu_done) mdu_done <= 1'b0;      // the uop that started it leaves M on this clock
         end
     end
     // MLT/DIV flags (written if the triggering uop has fwe): Z = zero product/quotient; C = MLT: the high half is significant (unsigned: != 0, as on the R800;
@@ -609,7 +609,7 @@ module r8064_core_min #(
         end
     end
 
-    // ============ excecoes de traducao ============
+    // ============ translation exceptions ============
     // D: the access in M finished with d_flt (ack with data 0, write discarded by the memory): kills M/W/X3, flushes the front-end, jumps to 'vec'. EPC = PC of the instruction
     //    (pc_last); the restart executes the whole instruction again. RESTARTABLE (rev22): the uop that accesses memory is the FIRST with a visible effect: PUSH/CALL/INT entry write to [SP-2]
     //    (constant immediate immc) and only then update SP; POP/RET/LDIR/CPIR/OUTI (and IM2) read before altering registers (TMP is not visible). NOT restartable: INI/INIR/IND/INDR (the port read already happened).
@@ -663,7 +663,7 @@ module r8064_core_min #(
     wire [5:0] dma_dm = d_w - 6'd51;
     assign dma_cr_we = cw && d_w >= 6'd51 && d_w <= 6'd62; assign dma_cr_idx = dma_dm[3:0]; assign dma_cr_wd = res_w;
 
-    // ============ timer 64 bits + interrupcao ============
+    // ============ 64-bit timer + interrupt ============
     always @(posedge clk) begin
         if (rst) begin tmr <= 0; tcmp <= 64'hFFFF_FFFF_FFFF_FFFF; vec <= 64'h0000_0000_0000_0040; ie <= 0; iff2 <= 0; im <= 2'd3; ireg <= 8'd0; irq_pend <= 0; end
         else begin

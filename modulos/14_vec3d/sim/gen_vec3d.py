@@ -7,7 +7,7 @@ def lanes(v): return [s16(v >> (16*i)) for i in range(4)]
 def pack(l): return sum((x & 0xffff) << (16*i) for i, x in enumerate(l))
 def shr(x, s):
     r = (1 << (s-1)) if s else 0
-    return (x + r) >> s                     # >> em Python = deslocamento aritmetico (piso)
+    return (x + r) >> s                     # >> in Python = arithmetic shift (floor)
 def model(op, a, b, sh, imm):
     A, B = lanes(a), lanes(b)
     if op == 0: return pack([sat(shr(A[i]*B[i], sh)) for i in range(4)])

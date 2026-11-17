@@ -1,5 +1,5 @@
 # generates uop.mem (2048 x 107 bits), mainctrl.mem (256 x 32) and prog*.mem for the R8064 core (needs gen_z80_rom.py in the same folder)
-# formato da uop, bits 0-79: [4:0] alu [6:5] sz(0..3 = 8/16/32/64) [7] use_imm [8] rd [9] wr [10] wren [11] br [14:12] cond [15] rel [16] fwe
+# uop format, bits 0-79: [4:0] alu [6:5] sz(0..3 = 8/16/32/64) [7] use_imm [8] rd [9] wr [10] wren [11] br [14:12] cond [15] rel [16] fwe
 #   [17] dF [18] aF [19] bF [20] fpos [26:21] dI [32:27] aI [38:33] bI [41:39] ioff [43:42] isz [44] sext [45] exx [46] exaf [47] aD
 #   [48] hb (writes high byte) [49] more [50] io_rd [51] io_wr [62:52] nxt [63] immz [64] bsrc [65] bpcn [66] tabs [67] zx [69:68] fmode (block flags)
 #   [70] tself (target = PC of the instruction itself) [71] cmix (cond = PV and not-Z) [72] ashr8 (operand A = A>>8, for B) [73] keepc [76:74] misc [77] crd [78] cra
@@ -14,7 +14,7 @@ def uop(**k):
     for n,x in d.items(): v|=x<<POS[n]
     return v
 ALU=dict(ADD=0,SUB=2,INC=8,DEC=9)
-SP=11; TMP=13   # indices do banco: 11 = QSP, 12 = QPC (reservado), 13 = temporario
+SP=11; TMP=13   # register-file indices: 11 = QSP, 12 = QPC (reserved), 13 = temporary
 uops=[0]*2048; lens=[1]*256; chain_next=[1024]
 def put(addr,u): uops[addr]=u
 def chain(base,ulist):
@@ -47,7 +47,7 @@ def blk(eid,kind,dirn,rep):
 ids=[(275,'ld','i',0),(276,'cp','i',0),(277,'in','i',0),(278,'out','i',0),(279,'ld','d',0),(280,'cp','d',0),(281,'in','d',0),(282,'out','d',0),
      (283,'ld','i',1),(284,'cp','i',1),(285,'in','i',1),(286,'out','i',1),(287,'ld','d',1),(288,'cp','d',1),(289,'in','d',1),(290,'out','d',1)]
 for e,k,d,r in ids: blk(e,k,d,r)
-# ED (indice 256+id): toy de LDW rr,nn e LDQ rr,imm64 (prefixos de banco)
+# ED (index 256+id): toy of LDW rr,nn and LDQ rr,imm64 (bank prefixes)
 uops[256+76]=uop(use_imm=1,wren=1,dF=1,aI=63,sz=1,ioff=3,isz=1,fpos=1)
 uops[256+100]=uop(use_imm=1,wren=1,dF=1,aI=63,sz=3,ioff=3,isz=3,fpos=1)
 
@@ -66,9 +66,9 @@ for eid in (216,224,232,240,248,256,264,272):
     chain(256+eid,[dict(rd=1,wren=1,dI=TMP,aI=SP,immz=1,sz=1,zx=1),dict(alu=ALU['INC'],wren=1,dI=SP,aI=SP,aD=1,sz=3),dict(alu=ALU['INC'],wren=1,dI=SP,aI=SP,aD=1,sz=3),
                    dict(br=1,cond=0,aI=TMP,immz=1,misc=3)])
 put(256+218,uop(alu=ALU['ADD'],use_imm=1,immz=1,wren=1,dI=14,aI=0,sz=0,zx=1))     # LD I,A
-chain(256+234,[dict(alu=ALU['ADD'],use_imm=1,immz=1,wren=1,dI=0,aI=14,sz=0),dict(alu=5,use_imm=1,immz=1,aI=14,sz=0,fwe=1,keepc=1,misc=7)])   # LD A,I: dado + flags (S,Z de I; H=N=0; PV=IFF2; C mantido)
+chain(256+234,[dict(alu=ALU['ADD'],use_imm=1,immz=1,wren=1,dI=0,aI=14,sz=0),dict(alu=5,use_imm=1,immz=1,aI=14,sz=0,fwe=1,keepc=1,misc=7)])   # LD A,I: data + flags (S,Z from I; H=N=0; PV=IFF2; C kept)
 
-# ---- EXINI (ED 09, id 291: desfaz EXX e EX AF,AF'); EXX (D9) e EX AF,AF' (08) estao em gen_z80_rom.py ----
+# ---- EXINI (ED 09, id 291: undoes EXX and EX AF,AF'); EXX (D9) and EX AF,AF' (08) are in gen_z80_rom.py ----
 put(256+291,uop(exx=1,exaf=1))     # EXINI: sw_main <= 0 (main group active, as after reset)
 # ---- MFCR (ED 0A n: AX <- CR[n]) and MTCR (ED 0C n: CR[n] <- AX); CR n = bank index 32+n: 8 tcmp, 9 vec, 10 ie, 11 cause, 12 address, 13 EPC, 14 MMU, 15 root, 16 TLB-VA, 17 control ----
 put(256+292,uop(alu=ALU['ADD'],use_imm=1,immz=1,wren=1,dI=0,cra=1,sz=3))
@@ -77,7 +77,7 @@ IRQ_PUSH=[dict(wr=1,aI=SP,immc=1,isz=1,bpcn=1,sz=1),SPDEC()]      # pushes the P
 chain(600,IRQ_PUSH+[dict(br=1,cond=0,aI=63,tabs=1,ioff=1,isz=1)])                                   # IM 0/1: PC pushed, jumps to 0038h
 chain(601,[dict(rd=1,wren=1,dI=TMP,aI=63,ioff=1,isz=1,sz=1,zx=1)]+IRQ_PUSH+[dict(br=1,cond=0,aI=TMP,immz=1)])   # IM 2: reads the vector [I:FF] into TMP BEFORE pushing (a fault on it does not change state); the 16-bit read crosses the word (2 transactions)
 
-# ---- familia ED 26 (3rd byte: size[7:6] 00=B 01=W 10=L 11=Q): CPL x = size,001,x ; NEG x = size,x,001. B/W/L/Q = ids CPL 294/169/170/171, NEG 295/172/173/174 ----
+# ---- ED 26 family (3rd byte: size[7:6] 00=B 01=W 10=L 11=Q): CPL x = size,001,x ; NEG x = size,x,001. B/W/L/Q = ids CPL 294/169/170/171, NEG 295/172/173/174 ----
 # CPLB/NEGB do not accept register A (AX): the Z80 already has CPL and NEG for A. NEGB s: A <- 0 - s (fixed destination AX, source s)
 for szc,(ci,ni) in enumerate(((294,295),(169,172),(170,173),(171,174))):
     uops[256+ci]=uop(alu=11,dF=1,aD=1,wren=1,fwe=1,sz=szc,fpos=0)                          # s <- NOT s (rr em b3[2:0])
@@ -123,7 +123,7 @@ words(P2,'prog_bank.mem')
 # EXINI: EXX swaps the group; EXINI returns to the main one (see tb_exini.v)
 P7=[]
 def ldw7(rr,val): P7.extend([0xED,0x3B,0x40|(rr<<3)|1,val&255,val>>8])
-ldw7(0,0x1111); P7.append(0xD9); ldw7(0,0x2222); P7.extend([0xED,0x09]); ldw7(0,0x3333)      # BC: 1111 | EXX | 2222 (sombra) | EXINI | 3333 (principal)
+ldw7(0,0x1111); P7.append(0xD9); ldw7(0,0x2222); P7.extend([0xED,0x09]); ldw7(0,0x3333)      # BC: 1111 | EXX | 2222 (shadow) | EXINI | 3333 (main)
 P7.extend([0xED,0x09]); ldw7(2,0x4444)                                                          # EXINI with the group already main: no effect
 P7.append(0xD9); P7.append(0xD9); P7.append(0x08); P7.extend([0xED,0x09]); ldw7(7,0x5555)        # EX AF,AF' active; EXINI returns AF/AF' to AF
 P7.extend([0xD9,0x18,0xFE])
@@ -191,7 +191,7 @@ def mk_irq(name,im2):
 PC_IM1=mk_irq('prog_irq1.mem',0); PC_IM2=mk_irq('prog_irq2.mem',1)
 open('prog_irq_pcs.vh','w').write("localparam PC_IM1 = 16'h%04x;\nlocalparam PC_IM2 = 16'h%04x;\n"%(PC_IM1,PC_IM2))
 
-# tb_irq3: atraso do EI e flags de LD A,I
+# tb_irq3: EI delay and LD A,I flags
 def wmem(name,P,handler=None):
     m=P+[0]*(4096-len(P))
     if handler: m[0x38:0x38+len(handler)]=handler

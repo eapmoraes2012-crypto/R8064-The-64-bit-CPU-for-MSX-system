@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Generates program traces (b2,b3 per executed instruction) and the total expected by the spreadsheet model.
 import csv, random, sys, json
-P = sys.argv[1]            # pasta do pacote R8064_rtl_pack
+P = sys.argv[1]            # folder of the R8064_rtl_pack package
 OUT = sys.argv[2]
 ids = [int(l.strip(), 16) for l in open(P + '/ref/expected_id.mem') if l.strip()]
 enc = {}

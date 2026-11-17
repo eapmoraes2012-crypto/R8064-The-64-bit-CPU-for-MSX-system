@@ -21,8 +21,8 @@ module cache_dm #(parameter WR = 1, parameter WBD = 4, parameter IDX = 8, parame
     input  wire [63:0] m_rdata,
     output reg  [31:0] st_rd_hit, st_rd_miss, st_wr, st_wr_hit
 );
-    // ---------------- arranjos
-    localparam TB = 18 - IDX;   // bits de etiqueta
+    // ---------------- arrays
+    localparam TB = 18 - IDX;   // tag bits
     reg [63:0] d0 [0:(1<<(IDX+2))-1];
     // tags with valid bit (bit 10), in 2 copies (A: read with the new address, B: read with that of stage 1) so there is no mux dependent on 'accept'
     reg [TB:0] tA0 [0:(1<<IDX)-1]; reg [TB:0] tB0 [0:(1<<IDX)-1];

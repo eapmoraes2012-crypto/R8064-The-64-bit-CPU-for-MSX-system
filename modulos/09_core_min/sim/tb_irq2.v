@@ -39,10 +39,10 @@ module tb_irq2;
         if (!(bc_take > 0 && bc_take < 5)) begin errs = errs + 1; $display("ERROR: was not in the middle of the repeat (BC=%0d)", bc_take); end
         chk("handler executed 1 OUT", n_ow, 1); chk("OUT data", ow_d[0], 8'h41); chk("OUT port", ow_a[0], 8'h77);
         chk("pushed return address (lo)", mem[16'hEFE], im2 ? PC_IM2[7:0] : PC_IM1[7:0]); chk("return address (hi)", mem[16'hEFF], 8'h00);
-        chk("SP restaurado", dut.u_rf1.mem_a[11], 64'h0F00);
-        chk("IFF1 restaurado (RETI)", dut.ie, 1); chk("IM", dut.im, im2 ? 2 : 1);
+        chk("SP restored", dut.u_rf1.mem_a[11], 64'h0F00);
+        chk("IFF1 restored (RETI)", dut.ie, 1); chk("IM", dut.im, im2 ? 2 : 1);
         chk("BC final 0", dut.u_rf1.mem_a[1], 0); chk("HL final", dut.u_rf1.mem_a[3], 64'h105); chk("DE final", dut.u_rf1.mem_a[2], 64'h205);
-        chk("[200]", mem[16'h200], 8'h41); chk("[202]", mem[16'h202], 8'h43); chk("[204]", mem[16'h204], 8'h45); chk("[205] intacto", mem[16'h205], 0);
+        chk("[200]", mem[16'h200], 8'h41); chk("[202]", mem[16'h202], 8'h43); chk("[204]", mem[16'h204], 8'h45); chk("[205] intact", mem[16'h205], 0);
         $display("im2=%0d take=%0d BC_at_int=%0d pc=%h errors=%0d", im2, n_take, bc_take, dbg_pc, errs);
         if (errs == 0) $display("RESULT: INTERRUPT %s OK", im2 ? "IM2" : "IM1"); else $display("RESULT: %0d ERRORS", errs);
         $finish;

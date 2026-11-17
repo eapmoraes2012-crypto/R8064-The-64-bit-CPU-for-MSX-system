@@ -26,25 +26,25 @@ UPDATE 04/11/2026 (measured by the user with rodar_tudo.bat): 2-stage ALU (alu_c
   stage X3, forwarding including loads (load-use in stage M), snapshot of the fetch window (win_q), REGISTERED flush (taken branch +1 clock).
   Tests: alu_core_s 148,128 vectors 0 errors; module 01 PASS; core test program OK (pc=13, errors=0).
   Synthesis: LUT1 149 + LUT2 163 + LUT3 1,465 + LUT4 2,190 = 3,967; ALU 408 (4,375 LUT4 eq.); FF 2,770; BSRAM 15 (6 SDPX9B + 9 SPX9).
-  Timing: Fmax 102,86 MHz PASS a 100 MHz (nextpnr-himbaechel, GW2AR-LV18QN88C8/I7). Historico: 78,8 -> 80,8 -> 81,5 -> 75,1 -> 89,0 -> 79,6 -> 102,9 MHz.
+  Timing: Fmax 102.86 MHz PASS at 100 MHz (nextpnr-himbaechel, GW2AR-LV18QN88C8/I7). History: 78.8 -> 80.8 -> 81.5 -> 75.1 -> 89.0 -> 79.6 -> 102.9 MHz.
   LIMITS: no ALU->ALU / flags->branch interlock (the skeleton issues 1 instruction every 5 clocks); no test of two consecutive branches; router noise of +-5 MHz between runs.
 
 == Block instructions (LDI/LDD/LDIR/LDDR, CPI/CPD/CPIR/CPDR, INI/IND/INIR/INDR, OUTI/OUTD/OTIR/OTDR) ==
 80-bit uop; repeat by branching to its own PC; tb_blk.v: BLOCKS OK.
 Fixes: st_x1/old_x1 (write data accompanies the instruction), order DEC B / HL adjust / OUT in the OUTx.
-Regressao: tb_core, tb_bank, tb_seq, tb_sys, tb_sys_seq, tb_gov, tb_mem, tb_mode, tb_cpu_gov OK.
+Regression: tb_core, tb_bank, tb_seq, tb_sys, tb_sys_seq, tb_gov, tb_mem, tb_mode, tb_cpu_gov OK.
 Pending: governor timing for LDIR in the system; synthesis/Fmax of the 80-bit core; IRQ during repeat.
 
 IN r,(C) / OUT (C),r (r = B,C,D,E,H,L,A): data OK in tb_io. Pending: flags of IN r,(C) (S,Z,PV parity,H=N=0, C kept), IN F,(C), OUT (C),0.
 
 == Flags of IN r,(C), IN F,(C), OUT (C),0 and interrupt in a repeated instruction ==
-IN r,(C): S,Z,PV(paridade),H=N=0, C mantido (bit 73 'keepc' no uop; uop extra OR r,r). tb_io: IO(C) OK.
+IN r,(C): S,Z,PV(parity),H=N=0, C kept (bit 73 'keepc' in the uop; extra uop OR r,r). tb_io: IO(C) OK.
 IRQ: only accepted between uops (!seq); npc/epc hold the PC (in an LDIR it is the PC itself); IE disables on entry. tb_irq: IRQ IN LDIR OK
 (interrupt with BC=3 in the middle of the repeat, handler returns by JR, final result equal to the one without interrupt).
 Note: interrupt entry does not yet push the PC (epc is an internal register); Z80 IM0/1/2 semantics and RETI remain pending.
 
 == Real interrupt entry ==
-EI/DI (FB/F3), IM 0/1/2, RETI/RETN (restauram IFF1 := IFF2), LD I,A, LD A,I (so dado), INT por nivel, IFF1/IFF2 limpos ao aceitar.
+EI/DI (FB/F3), IM 0/1/2, RETI/RETN (restore IFF1 := IFF2), LD I,A, LD A,I (data only), level-triggered INT, IFF1/IFF2 cleared on acceptance.
 IM0 and IM1: pseudo-instruction (opcode FF for the governor) pushes the PC and jumps to 0038h. IM2: vector read from [I:FF] (two 8-bit reads, so as not to cross a word).
 Legacy IM (reset, im=3): jumps to CR41 without pushing (old behavior; tb_irq).
 tb_irq2 (+im2): interrupt in the middle of LDIR (BC=3), handler LD A/OUT/EI/RETI, return to LDIR, correct final result: IM1 OK and IM2 OK.
@@ -52,10 +52,10 @@ Findings: (1) a 16-bit read at offset 7 of the 8-byte word crosses a word (known
 (2) a partial write hb right after a write to the same register without slack overwrites the value (no WAW interlock) -> empty micro-operations in the IM2 chain.
 Pending: flags of LD A,I (PV=IFF2); 1-instruction delay after EI; timing (governor uses that of RST: 11 T) vs real 13 T.
 
-== Pendencias da interrupcao resolvidas ==
-- uop: campo misc [76:74] (1 EI, 2 DI, 3 RETN/RETI, 4/5/6 IM 0/1/2, 7 flags de LD A,I) substitui ife/ifv/ifr/imw/imv.
+== Interrupt open items resolved ==
+- uop: misc field [76:74] (1 EI, 2 DI, 3 RETN/RETI, 4/5/6 IM 0/1/2, 7 LD A,I flags) replaces ife/ifv/ifr/imw/imv.
 - EI delay: the interrupt is only accepted after the instruction following EI (ei_cnt). tb_irq3: EI DELAY OK.
-- LD A,I: dado + flags (S,Z de I; H=N=0; PV=IFF2; C mantido). tb_ldai: LD A,I OK.
+- LD A,I: data + flags (S,Z from I; H=N=0; PV=IFF2; C kept). tb_ldai: LD A,I OK.
 - Timing: the governor gained page 7 (interrupt acceptance): Z80 13 T (+1 M1_WAIT = 14 T = 448 clocks in mode A), R800 6 cycles (= RST; to be confirmed). tb_sys_irq: IRQ TIMING OK (448 / 96 clocks).
   gov_rom.mem went to 2048 entries (gov_irq_page.py adds the page; timing_gov.v: rom[0:2047]).
 Final Fmax: seed 1 = 91.7, seed 3 = 94.1 MHz; LUT4 ~6014 (29%).
@@ -72,7 +72,7 @@ New port d_be[7:0] (core, cpu_gov, msx_sys): d_addr aligned to 8, d_wdata alread
 An access that crosses the word (offset + size > 8) becomes two transactions (beat 0 in word A, beat 1 at A+8); the read reassembles the two beats (rotation + mask).
 The testbenches stopped peeking at dut.addr_m (they use d_be). msx_sys: byte lane (mem_wdata/mem_addr) deduced from d_be.
 IM2 went back to reading the vector with ONE 16-bit read at [I:FF]. tb_xing: PUSH/POP/CALL/RET with odd SP, transactions and byte-enables checked: WORD CROSSING OK.
-Bugs achados e corrigidos no caminho:
+Bugs found and fixed along the way:
  (1) a HOLD (slow access in M) froze the XR stage, but the synchronous output of the register file started following the next candidate -> wrong operand (CALL target = SP).
      Fix: under hold the register file read address is that of XR itself (a_xr/b_xr/d_xr).
  (2) seqc and ds counted clocks during the hold, shortening the producer-consumer distance (double INC SP lost an increment) -> now they only count without hold.
@@ -85,7 +85,7 @@ Fmax: seed 1 = 93.6 MHz, seed 3 = 89.4 MHz; LUT4 ~7017 (33%). Full regression OK
 so the extra beat is an internal artifact of the 8-byte interface and must NOT add time; in native mode (no governor) the beat costs real cycles.
 
 
-== Unidade 3D (10/11/2026) ==
+== 3D unit (10/11/2026) ==
 uop[80]=vec (81-bit uop); vec3d_unit instantiated in X1 (a=opa_x1, b=opb_x1, op/sh from imm8), result expected in M by hold (latency 4), ldval += vo. ED F8/FA/FB (ids 294-296).
 Tests: sim/tb_vec.v + gen_prog_vec.py (random program, Python model) OK; regression of modules 09/10/13 identical. Area/ISA: ../14_vec3d/resultados_modulo14.txt, ISA_3D.txt.
 Note: the .mem files in sim/ must be generated with 'python gen_roms.py' (without 'rand') to simulate; synthesis uses 'gen_roms.py rand'. 10_mode_gov/sim/prog_blk_pcs.vh became part of the package.

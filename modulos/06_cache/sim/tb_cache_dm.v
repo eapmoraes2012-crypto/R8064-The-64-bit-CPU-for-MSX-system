@@ -80,7 +80,7 @@ module tb_cache_dm;
     task check_mem(input [255:0] nome); integer bad; begin
         bad = 0;
         for (a = 0; a < 524288; a = a + 1)
-            if ({mdl.mem[{a[18:0], 1'b1}], mdl.mem[{a[18:0], 1'b0}]} !== shadow[a]) begin bad = bad + 1; if (bad < 5) $display("  MEM diferente em %h: sdram=%h sombra=%h", a, {mdl.mem[{a[18:0], 1'b1}], mdl.mem[{a[18:0], 1'b0}]}, shadow[a]); end
+            if ({mdl.mem[{a[18:0], 1'b1}], mdl.mem[{a[18:0], 1'b0}]} !== shadow[a]) begin bad = bad + 1; if (bad < 5) $display("  MEM differs at %h: sdram=%h shadow=%h", a, {mdl.mem[{a[18:0], 1'b1}], mdl.mem[{a[18:0], 1'b0}]}, shadow[a]); end
         if (bad) begin errs = errs + 1; $display("FAIL %0s: %0d different words", nome, bad); end else $display("ok   %0s: SDRAM memory == shadow", nome);
     end endtask
     task rep(input [255:0] nome); begin
@@ -91,7 +91,7 @@ module tb_cache_dm;
         for (a = 0; a < 524288; a = a + 1) begin hv = {a[18:0], 13'h1ace, a[18:0], 13'h0bad} ^ (a * 64'h9E3779B97F4A7C15); shadow[a] = hv; mdl.mem[{a[18:0], 1'b0}] = hv[31:0]; mdl.mem[{a[18:0], 1'b1}] = hv[63:32]; end
         repeat (4) @(posedge clk); rst = 0;
         wait (init_done); repeat (3) @(posedge clk);
-        // T1: latencia de falha e de acerto (D)
+        // T1: miss and hit latency (D)
         dd.push(0, 19'h00100, 0, 0); waitq; $display("T1 read miss latency (accept->rvalid) D: %0d clocks", dd.rv_cyc - dd.acc_cyc);
         dd.push(0, 19'h00101, 0, 0); waitq; $display("T1 hit latency (same line) D: %0d clock(s)", dd.rv_cyc - dd.acc_cyc);
         di.push(0, 19'h40100, 0, 0); waitq; $display("T1 read miss latency I: %0d clocks", di.rv_cyc - di.acc_cyc);
@@ -120,24 +120,24 @@ module tb_cache_dm;
         n = dc.st_rd_miss; dd.push(0, 19'h01690, 0, 0); waitq;
         if (dc.st_rd_miss - n != 0) begin errs = errs + 1; $display("FAIL T4b DM: B should remain in the cache"); end else $display("ok   T4b DM: B preserved (other line)");
         n = dc.st_rd_miss; dd.push(0, 19'h01890, 0, 0); waitq;
-        if (dc.st_rd_miss - n != 1) begin errs = errs + 1; $display("FALHA T4b DM: C deveria ter sido expulsa por A"); end else $display("ok   T4b DM: C expulsa por A");
-        // T5: coerencia - alteracao externa + inv
+        if (dc.st_rd_miss - n != 1) begin errs = errs + 1; $display("FAIL T4b DM: C should have been evicted by A"); end else $display("ok   T4b DM: C evicted by A");
+        // T5: coherence - external change + inv
         dd.push(0, 19'h00300, 0, 0); waitq; bk_write(19'h00300, 64'h5555AAAA5555AAAA); dd.push(0, 19'h00300, 0, 0); waitq;
         $display("T5 without inv: read returned the old cache value (expected: deliberate coherence error: %0d)", dd.errs);
         dd.errs = 0; dd.eh = dd.et; // discards
         @(posedge clk); inv_d <= 1; @(posedge clk); inv_d <= 0; repeat (200) @(posedge clk);
         dd.push(0, 19'h00300, 0, 0); waitq; if (dd.errs) begin errs = errs + 1; $display("FAIL T5: after inv still the old value"); end else $display("ok   T5 inv returns the new value");
-        // T6: I-cache e D-cache simultaneos, aleatorio, muitos conflitos
+        // T6: simultaneous I-cache and D-cache, random, many conflicts
         dd.set_base = 0; dd.g_sets = 4; dd.g_tags = 5; dd.p_wr = 35; dd.p_idle = 20; di.g_sets = 4; di.g_tags = 4; di.p_idle = 10;
-        dd.rand_en = 1; di.rand_en = 1; repeat (60000) @(posedge clk); dd.rand_en = 0; di.rand_en = 0; waitq; rep("T6 aleatorio conflitante"); drain; check_mem("T6");
+        dd.rand_en = 1; di.rand_en = 1; repeat (60000) @(posedge clk); dd.rand_en = 0; di.rand_en = 0; waitq; rep("T6 random conflicting"); drain; check_mem("T6");
         // T7: random with more sets, heavy writes, no idle
         dd.g_sets = 64; dd.g_tags = 3; dd.p_wr = 50; dd.p_idle = 0; di.g_sets = 128; di.g_tags = 2; di.p_idle = 0;
         dd.rand_en = 1; di.rand_en = 1; repeat (80000) @(posedge clk); dd.rand_en = 0; di.rand_en = 0; waitq; rep("T7 random heavy write"); drain; check_mem("T7");
-        // T8: conjunto de trabalho que cabe (acerto alto)
+        // T8: working set that fits (high hit rate)
         dd.g_sets = 32; dd.g_tags = 2; dd.p_wr = 20; dd.p_idle = 0; di.g_sets = 100; di.g_tags = 1; di.p_idle = 0;
-        dd.rand_en = 1; di.rand_en = 1; repeat (40000) @(posedge clk); dd.rand_en = 0; di.rand_en = 0; waitq; rep("T8 conjunto cabe"); drain; check_mem("T8");
-        $display("Estatisticas D: leit acerto=%0d falha=%0d | esc=%0d acerto=%0d", dc.st_rd_hit, dc.st_rd_miss, dc.st_wr, dc.st_wr_hit);
-        $display("Estatisticas I: leit acerto=%0d falha=%0d", ic.st_rd_hit, ic.st_rd_miss);
+        dd.rand_en = 1; di.rand_en = 1; repeat (40000) @(posedge clk); dd.rand_en = 0; di.rand_en = 0; waitq; rep("T8 working set fits"); drain; check_mem("T8");
+        $display("Statistics D: rd hit=%0d miss=%0d | wr=%0d hit=%0d", dc.st_rd_hit, dc.st_rd_miss, dc.st_wr, dc.st_wr_hit);
+        $display("Statistics I: rd hit=%0d miss=%0d", ic.st_rd_hit, ic.st_rd_miss);
         $display("SDRAM: model timing violations = %0d", mdl.viol);
         if (mdl.viol) errs = errs + 1;
         if (errs == 0) $display("RESULT: ALL TESTS PASSED"); else $display("RESULT: %0d FAILURES", errs);

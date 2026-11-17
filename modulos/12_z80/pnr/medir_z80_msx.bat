@@ -15,5 +15,5 @@ for %%F in (100 57.28 40) do (
   type fmax_msx_%%F.txt >> resumo_z80_msx.txt
 )
 type resumo_z80_msx.txt
-echo Terminou.
+echo Finished.
 pause

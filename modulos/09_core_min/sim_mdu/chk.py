@@ -29,9 +29,9 @@ def rnd(W):
     return random.getrandbits(W)
 for _ in range(N):
     o=random.randint(0,3); w=random.randint(0,3); W=8<<w
-    if o&2:   # divisao: dividendo de 2W bits
+    if o&2:   # division: dividend of 2W bits
         a=random.getrandbits(64); h=random.getrandbits(64)
-        if random.random()<.6:   # evita overflow na maioria
+        if random.random()<.6:   # avoids overflow in most cases
             b=rnd(W) or 1
             Dw=random.getrandbits(2*W-1) if random.random()<.3 else random.getrandbits(W+random.randint(0,W-1))
             D=Dw

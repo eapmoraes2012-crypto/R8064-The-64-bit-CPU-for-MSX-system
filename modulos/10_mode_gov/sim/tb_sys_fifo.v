@@ -25,7 +25,7 @@ module tb_sys_fifo;
         chk("slot IRQ", fifo_irq, 1); @(posedge clk); #1 fm_a = 0; fm_re = 1; #1 chk("MSX reads result", fm_rd, 8'h99); @(posedge clk); #1 fm_re = 0;
         chk("nothing leaked to io_x at E8-EC", leak, 0);
         ir(8'hF3, v); chk("F3h goes outside (MSX2+)", v, 8'h5A); iw(8'hF4, 8'h01); ir(8'hE4, v);
-        chk("F3/F4 chegaram a io_x", ext >= 2, 1);
+        chk("F3/F4 reached io_x", ext >= 2, 1);
         $display("errors=%0d", errs); if (errs == 0) $display("RESULT: SYSTEM+FIFO OK"); else $display("RESULT: %0d ERRORS", errs); $finish;
     end
 endmodule

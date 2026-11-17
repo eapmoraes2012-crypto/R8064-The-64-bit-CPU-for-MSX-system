@@ -19,11 +19,11 @@ module tb_exini;
     endtask
     initial begin
         repeat (4) @(posedge clk); rst = 0; repeat (1500) @(posedge clk);
-        chk("BC principal = 3333 (EXINI voltou ao principal)", dut.u_rf1.mem_a[1], 64'h3333);
+        chk("main BC = 3333 (EXINI returned to the main set)", dut.u_rf1.mem_a[1], 64'h3333);
         chk("shadow BC   = 2222 (written after EXX)",           dut.u_rf1.mem_a[6], 64'h2222);
         chk("DE main = 4444 (EXINI has no effect)",          dut.u_rf1.mem_a[2], 64'h4444);
         for (k = 0; k < 24; k = k + 1) if (dut.u_rf1.mem_a[k] == 64'h5555) $display("AX written (after EX AF,AF' + EXINI) at physical index %0d", k);
-        chk("AX principal = 5555 (EXINI voltou AF'->AF)",     dut.u_rf1.mem_a[0], 64'h5555);
+        chk("main AX = 5555 (EXINI returned AF'->AF)",     dut.u_rf1.mem_a[0], 64'h5555);
         $display("pc=%h errors=%0d", dbg_pc, errs);
         if (errs == 0) $display("RESULT: EXINI OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;

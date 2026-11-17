@@ -15,7 +15,7 @@ module tb_alu_regfile;
     reg [63:0] mo [0:4999]; reg [63:0] mn [0:4999]; reg [3:0] mcw [0:4999]; reg [63:0] me [0:4999];
     reg [63:0] old_v, new_v; reg [2:0] wsz; wire [63:0] mout;
     regmerge mg(.old(old_v), .newv(new_v), .wsz(wsz), .out(mout));
-    // ---- banco de registradores
+    // ---- register file
     reg we; reg [5:0] wa, ra, rb; reg [63:0] wd; wire [63:0] qa, qb;
     regfile64 rf(.clk(clk), .we(we), .waddr(wa), .wdata(wd), .raddr_a(ra), .raddr_b(rb), .rdata_a(qa), .rdata_b(qb));
     reg [63:0] model [0:63]; reg [63:0] exp_a, exp_b; reg [63:0] lf;

@@ -34,7 +34,7 @@ module tb_z80core;
     reg [15:0] e_pc, e_af, e_bc, e_de, e_hl, e_ix, e_iy, e_sp, e_af2, e_bc2, e_de2, e_hl2, pc0;
     wire [15:0] g_af = {rA[7:0], dut.fl}, g_af2 = {rA2[7:0], dut.fl2};
     initial begin
-        if (!$value$plusargs("hex=%s", fhex) || !$value$plusargs("trace=%s", ftrace)) begin $display("faltam +hex= e +trace="); $finish; end
+        if (!$value$plusargs("hex=%s", fhex) || !$value$plusargs("trace=%s", ftrace)) begin $display("missing +hex= and +trace="); $finish; end
         if (!$value$plusargs("fmask=%h", fmask)) fmask = 8'hFF; verb = $test$plusargs("v");
         $readmemh(fhex, mem); fd = $fopen(ftrace, "r");
         repeat (4) @(posedge clk); rst = 0;

@@ -1,6 +1,6 @@
 // r8064_soc.v - integration: MSX system (core+mode+governor+msx_mem+FIFOs) + MMU (I and D TLB) + 4 KB I cache + 8 KB D cache + arbiters + SDRAM controller.
 // Instruction path : core i_req/i_paddr -> MMU-I (v_req) -> I cache -> I arbiter (I cache > I walker) -+
-//                                                                                                          +-> arbitro topo (D > I) -> sdram_ctrl -> pinos
+//                                                                                                          +-> top arbiter (D > I) -> sdram_ctrl -> pins
 // Data path        : core d_req/d_paddr -> MMU-D (v_req) -> D cache -> D arbiter (D cache > D walker) -+
 // Each side has an FSM that adapts the core's ack protocol to the cache's req/ready/rvalid protocol (see comments). Translation faults are signaled on
 // i_fault/d_fault (+cause); the core receives them as an exception (CR43 cause, CR44 address, CR45 EPC; jumps to CR41); MMU control in the core's CR46-49. With mmu_en=0 the address passes straight through (low 32 bits).

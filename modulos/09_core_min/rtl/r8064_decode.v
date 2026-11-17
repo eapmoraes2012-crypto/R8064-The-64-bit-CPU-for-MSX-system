@@ -21,10 +21,10 @@ module r8064_decode #(
     output wire [3:0] len,       // instruction bytes
     output wire [4:0] nr,        // data reads (64-bit accesses)
     output wire [4:0] nw,        // data writes
-    output wire [1:0] nio,       // acessos de E/S
+    output wire [1:0] nio,       // I/O accesses
     output wire [7:0] ex,        // occupancy of the X stage (clocks)
     output wire [1:0] pen_code,  // 0 none, 1 BR_D, 2 BR_X, 3 BR_M
-    output wire       has_cond,  // existe variante "condicao falsa"
+    output wire       has_cond,  // a "false condition" variant exists
     output wire       is_z80,    // Z80 ED instruction (Z80 mode)
     output wire       bankable   // accepts bank prefix (ED 0B/0E/0D)
 );

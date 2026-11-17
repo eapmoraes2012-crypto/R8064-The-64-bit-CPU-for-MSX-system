@@ -11,7 +11,7 @@ module tb_dma_win;
         .m_req(m_req), .m_we(m_we), .m_addr(m_addr), .m_wd(m_wd), .m_be(m_be), .m_acc(m_acc), .m_done(m_done), .m_rd(m_rd),
         .a_avail(a_avail), .a_q(a_q), .b_space(b_space), .d_pop(d_pop), .d_push(d_push), .d_wd(d_wd),
         .b_ok(!win), .b_re(xb_re), .b_we(xb_we), .b_a(xb_a), .b_wd(xb_wd), .b_q(xb_q), .irq(irq), .inv(inv));
-    // lado MSX: slot_dec -> fifo_if
+    // MSX side: slot_dec -> fifo_if
     reg sp_we = 0, sp_re = 0; reg [7:0] sp_a = 0, sp_wd = 0; wire [7:0] sp_rd; wire sp_hit;
     wire fm_we, fm_re; wire [1:0] fm_a; wire [7:0] fm_wd, fm_rd; wire fm_irq, fm_rst, r_hit; wire [7:0] r_rd;
     reg r_we = 0, r_re = 0; reg [7:0] r_a = 0, r_wd = 0;
@@ -32,7 +32,7 @@ module tb_dma_win;
     sdram_ctrl #(.INIT_CYC(2000)) sd(.clk(clk), .rst(rst), .req(c_req), .we(c_we), .addr(c_addr), .wdata(c_wd), .be(c_be), .ready(c_ready), .rvalid(c_rvalid), .rdata(c_rd), .wdone(c_wdone),
         .init_done(init_done), .s_cke(s_cke), .s_cs_n(s_cs_n), .s_ras_n(s_ras_n), .s_cas_n(s_cas_n), .s_we_n(s_we_n), .s_dqm(s_dqm), .s_ba(s_ba), .s_a(s_a), .s_dq_o(s_dq_o), .s_dq_oe(s_dq_oe), .s_dq_i(mdq));
     sdram_model mdl(.clk(clk), .cke(s_cke), .cs_n(s_cs_n), .ras_n(s_ras_n), .cas_n(s_cas_n), .we_n(s_we_n), .dqm(s_dqm), .ba(s_ba), .a(s_a), .dq_i(s_dq_o), .dq_oe(s_dq_oe), .dq_o(mdq));
-    // utilitarios
+    // utilities
     integer errs = 0, i;
     task crw(input [3:0] idx, input [63:0] v); begin @(posedge clk); #1 cr_idx = idx; cr_wd = v; cr_we = 1; @(posedge clk); #1 cr_we = 0; end endtask
     task iow(input [7:0] a, input [7:0] d); begin @(posedge clk); #1 io_a = a; io_wd = d; io_we = 1; @(posedge clk); #1 io_we = 0; end endtask
@@ -60,9 +60,9 @@ module tb_dma_win;
         wait (init_done); repeat (10) @(posedge clk);
         // ---- 1) state after reset: WINDOW = 1, SPACE = 1 ----
         spr(P_ST, st); chk("STATUS after reset (WINDOW|SPACE)", st, 8'h22);
-        // ---- 2) assinatura no buffer ----
+        // ---- 2) signature in the buffer ----
         sbr(14'd0, d8); chk("sig R", d8, "R"); sbr(14'd1, d8); chk("sig 8", d8, "8"); sbr(14'd2, d8); chk("sig 0", d8, "0");
-        sbr(14'd3, d8); chk("sig 6", d8, "6"); sbr(14'd4, d8); chk("sig 4", d8, "4"); sbr(14'd5, d8); chk("versao", d8, 1);
+        sbr(14'd3, d8); chk("sig 6", d8, "6"); sbr(14'd4, d8); chk("sig 4", d8, "4"); sbr(14'd5, d8); chk("version", d8, 1);
         sbr(14'd6, d8); chk("zero 6", d8, 0); sbr(14'd7, d8); chk("zero 7", d8, 0);
         // ---- 3) MSX writes the 16 KB; reads it back ----
         for (i = 0; i < 16384; i = i + 1) sbw(i, bpat(i, 1));
@@ -73,14 +73,14 @@ module tb_dma_win;
         sbr(14'd5, d8); chk("read without window = FF", d8, 8'hFF); sbw(14'd5, 8'h77);
         // ---- 5) DMA buffer -> SDRAM: 2048 words to 0x40000 (word 0x8000) ----
         crw(0, 64'h80_0000); crw(1, 64'h4_0000); crw(2, 64'h8000_0000 | 2048); wait_dma(400000); ior(8'hEE, st); chk("DMA ch0 done without error", st & 8'h07, 8'h02); iow(8'hEE, 8'h01);
-        for (i = 0; i < 2048; i = i + 13) chk("SDRAM recebeu o buffer", mw(32'h8000 + i), wpat(i, 1));
+        for (i = 0; i < 2048; i = i + 13) chk("SDRAM received the buffer", mw(32'h8000 + i), wpat(i, 1));
         // (byte 5 was written with 77h without a window: it must have been ignored; i == 0 above compares word 0 with the pattern)
-        chk("byte 5 ignorado", mw(32'h8000) >> 40 & 64'hFF, bpat(5, 1));
+        chk("byte 5 ignored", mw(32'h8000) >> 40 & 64'hFF, bpat(5, 1));
         // ---- 6) the R8064 sets DONE: the window returns to the MSX ----
         rw(8'hEC, 8'h04); spr(P_ST, st); chk("STATUS after DONE (WINDOW|DONE|SPACE)", st & 8'h2E, 8'h2A);
         sbr(14'd0, d8); chk("MSX reads the buffer again", d8, bpat(0, 1)); spw(P_ST, 8'h80);
-        spr(P_ST, st); chk("DONE limpo", st & 8'h08, 0);
-        // ---- 7) SDRAM -> buffer (WIN_GET): o MSX da START, o DMA preenche, o R8064 da DONE ----
+        spr(P_ST, st); chk("DONE cleared", st & 8'h08, 0);
+        // ---- 7) SDRAM -> buffer (WIN_GET): the MSX gives START, the DMA fills, the R8064 gives DONE ----
         for (i = 0; i < 2048; i = i + 1) begin mdl.mem[2*(32'h9000+i)] = wpat(i, 5); mdl.mem[2*(32'h9000+i)+1] = wpat(i, 5) >> 32; end
         spw(P_ST, 8'h01);
         crw(0, 64'h4_8000); crw(1, 64'h80_0000); crw(2, 64'h8000_0000 | 2048); wait_dma(400000); iow(8'hEE, 8'h01);
@@ -112,7 +112,7 @@ module tb_dma_win;
         // ---- 12) ERROR: read with an empty FIFO; cleared by COMMAND ----
         spr(P_ST, st); chk("no ERROR", st & 8'h40, 0);
         spr(P_DT, d8); spr(P_ST, st); chk("ERROR after underflow", st & 8'h40, 8'h40);
-        spw(P_ST, 8'h02); spr(P_ST, st); chk("ERROR limpo", st & 8'h40, 0);
+        spw(P_ST, 8'h02); spr(P_ST, st); chk("ERROR cleared", st & 8'h40, 0);
         // ---- 13) data FIFO through the ports: MSX -> R8064 ----
         for (i = 0; i < 5; i = i + 1) spw(P_DT, 8'h20 + i);
         spr(P_ST, st); chk("R8064 DATA has no data yet", st & 8'h01, 0);

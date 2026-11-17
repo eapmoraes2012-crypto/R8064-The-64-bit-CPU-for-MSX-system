@@ -45,7 +45,7 @@ module tb_r8064_decode;
                 errs_id = errs_id + 1;
                 if (errs_id <= 10) $display("ERROR id: b2=%02h b3=%02h got=%0d expected=%0d", b2, b3, id_seen, exp_id[i]);
             end
-            @(posedge clk); #1;                  // campos de controle validos (+2 clocks)
+            @(posedge clk); #1;                  // control fields valid (+2 clocks)
             // checks the cycles of every (b2,b3) combination that decodes a valid instruction
             if (exp_id[i] != 0) begin
                 nf     = (len + 7) / 8;           // 64-bit fetch accesses

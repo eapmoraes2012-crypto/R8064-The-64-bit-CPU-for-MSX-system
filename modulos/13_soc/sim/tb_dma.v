@@ -24,7 +24,7 @@ module tb_dma;
     sdram_ctrl #(.INIT_CYC(2000)) sd(.clk(clk), .rst(rst), .req(c_req), .we(c_we), .addr(c_addr), .wdata(c_wd), .be(c_be), .ready(c_ready), .rvalid(c_rvalid), .rdata(c_rd), .wdone(c_wdone),
         .init_done(init_done), .s_cke(s_cke), .s_cs_n(s_cs_n), .s_ras_n(s_ras_n), .s_cas_n(s_cas_n), .s_we_n(s_we_n), .s_dqm(s_dqm), .s_ba(s_ba), .s_a(s_a), .s_dq_o(s_dq_o), .s_dq_oe(s_dq_oe), .s_dq_i(mdq));
     sdram_model mdl(.clk(clk), .cke(s_cke), .cs_n(s_cs_n), .ras_n(s_ras_n), .cas_n(s_cas_n), .we_n(s_we_n), .dqm(s_dqm), .ba(s_ba), .a(s_a), .dq_i(s_dq_o), .dq_oe(s_dq_oe), .dq_o(mdq));
-    // ---- utilitarios ----
+    // ---- utilities ----
     integer errs = 0, i, ninv = 0, t0;
     always @(posedge clk) if (inv) begin ninv <= ninv + 1; if ($test$plusargs("v")) $display("inv em %0t", $time); end
     task crw(input [3:0] idx, input [63:0] v); begin @(posedge clk); #1 cr_idx = idx; cr_wd = v; cr_we = 1; @(posedge clk); #1 cr_we = 0; end endtask
@@ -60,10 +60,10 @@ module tb_dma;
         ninv = 0;
         crw(0, 64'h0000); crw(1, 64'h0800); crw(2, 64'h8000_0020);      // ch0: words 0..31 -> 256..287 (0x800/8=256)
         crw(3, 64'h1000); crw(4, 64'h2000); crw(5, 64'h8000_0020);      // ch1: words 512..543 -> 1024..
-        ior(8'hEE, st); chk("ambos ativos", st & 8'h11, 8'h11);
+        ior(8'hEE, st); chk("both active", st & 8'h11, 8'h11);
         wait_done(0, 8000); wait_done(1, 8000);
         for (i = 0; i < 32; i = i + 1) begin chk("ch0 copy", mw(256 + i), pat(i)); chk("ch1 copy", mw(1024 + i), pat(512 + i)); end
-        repeat (4) @(posedge clk); chk("2 pulsos inv", ninv, 2);
+        repeat (4) @(posedge clk); chk("2 inv pulses", ninv, 2);
         iow(8'hEE, 8'h11);
         // ---- 3) memory -> FIFO (mode 1): 4 words from 0x0 ----
         crw(0, 64'h0); crw(2, 64'h8008_0004);
@@ -91,7 +91,7 @@ module tb_dma;
         crw(2, 64'h8018_0004); ior(8'hEE, st); chk("mode 3: done+error", st & 8'h07, 8'h06); iow(8'hEE, 8'h01);
         crw(1, 64'h100_0000); crw(2, 64'h8000_0004); ior(8'hEE, st); chk("destination >= 16 MB: error", st & 8'h07, 8'h06); iow(8'hEE, 8'h01);
         crw(1, 64'h400); crw(2, 64'h8000_0000); ior(8'hEE, st); chk("count 0: done without error", st & 8'h07, 8'h02); iow(8'hEE, 8'h01);
-        // ---- 6) aborto ----
+        // ---- 6) abort ----
         ninv = 0; crw(0, 64'h0); crw(1, 64'h8000); crw(2, 64'h8000_0100); repeat (200) @(posedge clk);
         ior(8'hEE, st); chk("long one active", st[0], 1); iow(8'hEE, 8'h02); repeat (60) @(posedge clk);
         ior(8'hEE, st); chk("aborted: stopped with done+error", st & 8'h07, 8'h06); chk("inv on abort", ninv, 1);
@@ -106,14 +106,14 @@ module tb_dma;
         // ---- 9) four simultaneous channels (mem->mem, 24 words each), individual IRQs ----
         repeat (8) @(posedge clk); ninv = 0; iow(8'hEF, 8'h0F);
         for (i = 0; i < 4; i = i + 1) begin crw(3*i + 0, 64'h4000 + i * 64'h200); crw(3*i + 1, 64'h10000 + i * 64'h1000); crw(3*i + 2, 64'h8000_0018); end
-        ior(8'hEE, st); chk("ch0 e ch1 ativos", st & 8'h11, 8'h11); ior(8'hED, st); chk("ch2 e ch3 ativos", st & 8'h11, 8'h11);
+        ior(8'hEE, st); chk("ch0 and ch1 active", st & 8'h11, 8'h11); ior(8'hED, st); chk("ch2 and ch3 active", st & 8'h11, 8'h11);
         begin : w4 integer c; reg [7:0] s0, s1; c = 0; s0 = 0; s1 = 0;
             while (!(s0[1] && s0[5] && s1[1] && s1[5]) && c < 4000) begin ior(8'hEE, s0); ior(8'hED, s1); c = c + 1; end
             if (c >= 4000) begin errs = errs + 1; $display("ERROR: timeout 4 channels"); end repeat (4) @(posedge clk); end
         for (i = 0; i < 24; i = i + 1) begin chk("c0", mw(8192 + i), pat(2048 + i)); chk("c1", mw(8192 + 512 + i), pat(2112 + i)); chk("c2", mw(8192 + 1024 + i), pat(2176 + i)); chk("c3", mw(8192 + 1536 + i), pat(2240 + i)); end
-        repeat (4) @(posedge clk); chk("4 pulsos inv", ninv, 4); chk("irq with 4 completed", irq, 1);
+        repeat (4) @(posedge clk); chk("4 inv pulses", ninv, 4); chk("irq with 4 completed", irq, 1);
         iow(8'hEE, 8'h11); chk("irq still from ch2/3", irq, 1); iow(8'hED, 8'h11); chk("irq cleared", irq, 0); iow(8'hEF, 8'h00);
-        ior(8'hED, st); chk("status2 limpo", st, 8'h00);
+        ior(8'hED, st); chk("status2 cleared", st, 8'h00);
         // aborts channel 3 (mode 1 with a full FIFO is not necessary: long mem->mem)
         crw(9, 64'h0); crw(10, 64'h10000); crw(11, 64'h8000_0100); repeat (30) @(posedge clk); iow(8'hED, 8'h20); ior(8'hED, st); chk("ch3 aborted: active=0 done+error", st & 8'h70, 8'h60);
         // ---- 10) DMA reaches the 8 MB: copies 16 words from 0 to 0x700000 (word 0xE0000) and from 0x7FFF80 to 0x1000 ----
