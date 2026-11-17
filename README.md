@@ -5,6 +5,8 @@ Clock target: 57.28 MHz (3.58 MHz x 16).
 
 **Version 0.0 Alpha** (REV47, 17/11/2026). Nothing has been verified on hardware yet.
 
+**Datasheet:** [docs/R8064_Datasheet.md](docs/R8064_Datasheet.md) (Appendix B, instruction set tables: [docs/R8064_Datasheet_Appendix_B.md](docs/R8064_Datasheet_Appendix_B.md)).
+
 ## Current status (read before using)
 - The SoC core (`09_core_min`) runs the **complete Z80**: main page, CB, DD/FD (IX/IY, IXH/IXL), DDCB/FDCB and the Z80 ED page.
   Checked instruction by instruction against the model `12_z80/ref/z80ref.c` (`09_core_min/sim_z80`: over 1.1 million instructions, X/Y flags included,
