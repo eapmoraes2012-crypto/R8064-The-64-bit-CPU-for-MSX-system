@@ -1,5 +1,7 @@
 # MSX side: R8064.COM and the r8064io driver
 
+Full user guide: [docs/R8064_MSX_Software.md](../../../docs/R8064_MSX_Software.md).
+
 Z80 software that runs **on the MSX** to send and read data and programs to/from the R8064 cartridge,
 using the REV46 message protocol (chapter 8 of the datasheet). It uses only layer 1 (the message FIFOs on
 I/O ports 0Bh–0Dh), so it works on the V9968_Cartridge board, which has only A0–A7, D0–D7, /IORQ, /RD and /WR
