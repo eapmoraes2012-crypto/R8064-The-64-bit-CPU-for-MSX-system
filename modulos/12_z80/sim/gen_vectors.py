@@ -1,4 +1,4 @@
-# gen_vectors.py : gera vetores (memoria + regs + traco do modelo C) em vec/
+# gen_vectors.py : generates vectors (memory + regs + C model trace) in vec/
 import random, subprocess, os, sys
 REF = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'z80ref'))
 os.makedirs('vec', exist_ok=True)

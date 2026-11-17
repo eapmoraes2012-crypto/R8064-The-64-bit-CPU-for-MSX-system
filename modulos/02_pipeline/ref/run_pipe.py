@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# Roda o pipeline RTL (Icarus) para cada programa e configuracao e compara com o modelo da planilha.
+# Runs the RTL pipeline (Icarus) for each program and configuration and compares with the spreadsheet model.
 import json, subprocess, sys, os, re
-W = sys.argv[1]   # pasta de trabalho com .mem e traços
+W = sys.argv[1]   # working folder with .mem and traces
 meta = json.load(open(W + '/programs.json')); tab = json.load(open(W + '/idtab.json'))
 def sheet(ids, wrd, wwr, wio, with_pen=True):
     t = 0
@@ -11,10 +11,10 @@ def sheet(ids, wrd, wwr, wio, with_pen=True):
         t += clk + (r['b'] + r['nr']) * wrd + r['nw'] * wwr + r['nio'] * wio + (r['pen'] if with_pen else 0)
     return t + 6
 cfgs = [
- ('A: sem wait, D=1 (ideal)',             dict(WRD=0, WWR=0, WIO=0, DEC_D=1, LEN_LAT=0, SERIAL=0)),
- ('B: wait da planilha, D=1',             dict(WRD=4, WWR=2, WIO=1, DEC_D=1, LEN_LAT=0, SERIAL=0)),
- ('C: wait, D=2 (decodificador real)',    dict(WRD=4, WWR=2, WIO=1, DEC_D=2, LEN_LAT=0, SERIAL=0)),
- ('D: wait, D=2, busca serial (len em 2)', dict(WRD=4, WWR=2, WIO=1, DEC_D=2, LEN_LAT=2, SERIAL=1)),
+ ('A: no wait, D=1 (ideal)',             dict(WRD=0, WWR=0, WIO=0, DEC_D=1, LEN_LAT=0, SERIAL=0)),
+ ('B: spreadsheet wait, D=1',             dict(WRD=4, WWR=2, WIO=1, DEC_D=1, LEN_LAT=0, SERIAL=0)),
+ ('C: wait, D=2 (real decoder)',    dict(WRD=4, WWR=2, WIO=1, DEC_D=2, LEN_LAT=0, SERIAL=0)),
+ ('D: wait, D=2, serial fetch (len at 2)', dict(WRD=4, WWR=2, WIO=1, DEC_D=2, LEN_LAT=2, SERIAL=1)),
 ]
 res = {}
 for cn, p in cfgs:
@@ -31,8 +31,8 @@ for cn, p in cfgs:
         res[(cn, pn)] = (d, exp)
 with open(W + '/resultado_pipeline.txt', 'w') as f:
     for cn, p in cfgs:
-        f.write(f'\n== Configuracao {cn} {p}\n')
-        f.write(f'{"programa":24s} {"instr":>5s} {"pipeline":>9s} {"planilha":>9s} {"dif":>7s} {"dif%":>7s} {"CPI pipe":>8s} {"CPI plan":>8s} {"chk_err":>7s} {"wp_fetch":>8s}\n')
+        f.write(f'\n== Configuration {cn} {p}\n')
+        f.write(f'{"program":24s} {"instr":>5s} {"pipeline":>9s} {"sheet":>9s} {"diff":>7s} {"diff%":>7s} {"CPI pipe":>8s} {"CPI sheet":>8s} {"chk_err":>7s} {"wp_fetch":>8s}\n')
         for pn, m in meta.items():
             d, exp = res[(cn, pn)]
             c = d['cycles']

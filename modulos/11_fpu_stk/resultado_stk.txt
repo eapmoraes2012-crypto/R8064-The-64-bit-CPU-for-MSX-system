@@ -1,4 +1,4 @@
-PASS: fpu_stk 20000 vetores, 0 erros
+PASS: fpu_stk 20000 vectors, 0 errors
 tb_fpu_stk.v:30: $finish called at 416921000 (1ps)
 Info: Max frequency for clock 'u.clk': 112.45 MHz (PASS at 100.00 MHz)
 ERROR: Max frequency for clock 'u.clk': 98.10 MHz (FAIL at 100.00 MHz)

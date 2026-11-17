@@ -1,8 +1,8 @@
-// vec3d_unit.v - unidade de manipulacao 3D do R8064 (prototipo de medicao). Vetores = 4 lanes int16 (x,y,z,w) em um registrador de 64 bits,
-// ponto fixo com deslocamento de saida "sh" (Qn): produto = (a*b + arredondamento) >>> sh. 6 multiplicadores 16x16 (DSP 18x18), 1 operacao por clock, latencia 4.
+// vec3d_unit.v - R8064 3D manipulation unit (measurement prototype). Vectors = 4 int16 lanes (x,y,z,w) in a 64-bit register,
+// fixed point with output shift "sh" (Qn): product = (a*b + rounding) >>> sh. 6 16x16 multipliers (DSP 18x18), 1 operation per clock, latency 4.
 //  op 0 VMUL   : lane_i = sat16((a_i*b_i) >>> sh)
 //  op 1 VDOT4  : escalar 64 b = (a0*b0+a1*b1+a2*b2+a3*b3) >>> sh
-//  op 2 VDOT3  : idem sem a lane 3 (w)
+//  op 2 VDOT3  : same without lane 3 (w)
 //  op 3 VCROSS3: (a1*b2-a2*b1, a2*b0-a0*b2, a0*b1-a1*b0, 0) >>> sh, saturado
 //  op 4 VADD   : lane_i = sat16(a_i + b_i)     op 5 VSUB: sat16(a_i - b_i)
 //  op 6 VMIN   : lane_i = min(a_i,b_i)         op 7 VMAX: max
@@ -42,7 +42,7 @@ module vec3d_unit(
         p0 <= xa0 * xb0; p1 <= xa1 * xb1; p2 <= xa2 * xb2; p3 <= xa3 * xb3; p4 <= xa4 * xb4; p5 <= xa5 * xb5;
         o2 <= o1; s2 <= s1; i2 <= i1; v2 <= v1; a2r <= a1r; b2r <= b1r;
     end
-    // ---- S3: somas / diferencas ----
+    // ---- S3: sums / differences ----
     reg signed [35:0] r0, r1, r2, r3; reg [3:0] o3; reg [4:0] s3; reg [7:0] i3; reg v3;
     wire signed [15:0] ya0 = a2r[15:0], ya1 = a2r[31:16], ya2 = a2r[47:32], ya3 = a2r[63:48];
     wire signed [15:0] yb0 = b2r[15:0], yb1 = b2r[31:16], yb2 = b2r[47:32], yb3 = b2r[63:48];
@@ -66,7 +66,7 @@ module vec3d_unit(
     // ---- S4: arredondamento, deslocamento, saturacao, empacotamento ----
     wire do_shift = (o3 <= 4'd3);
     wire [4:0] ss = do_shift ? s3 : 5'd0;
-    // arredondamento = bit (ss-1) apos o deslocamento: (r + 2^(ss-1)) >>> ss == (r >>> ss) + r[ss-1]
+    // rounding = bit (ss-1) after the shift: (r + 2^(ss-1)) >>> ss == (r >>> ss) + r[ss-1]
     wire signed [35:0] t0 = r0 >>> ss, t1 = r1 >>> ss, t2 = r2 >>> ss, t3 = r3 >>> ss;
     wire rb0 = (ss != 0) && r0[ss-1], rb1 = (ss != 0) && r1[ss-1], rb2 = (ss != 0) && r2[ss-1], rb3 = (ss != 0) && r3[ss-1];
     wire signed [35:0] q0 = t0 + rb0, q1 = t1 + rb1, q2 = t2 + rb2, q3 = t3 + rb3;

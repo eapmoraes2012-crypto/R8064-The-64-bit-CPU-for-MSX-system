@@ -1,8 +1,8 @@
-// sdram_ctrl.v - controlador da SDRAM SDR embutida da Tang Nano 20K (64 Mbit, 4 bancos x 2048 linhas x 256 colunas x 32 bits) para acessos de 64 bits do R8064.
-// PREMISSAS (nao confirmadas no chip real): geometria acima; CL=2; BL=2 (um acesso de 64 bits = 2 palavras de 32 bits); tempos genericos de SDR a 100 MHz
-//   (tRCD=2, tRP=2, tRAS=5, tRC=7, tRFC=7, tWR=2, tMRD=2 clocks) e refresh a cada 7,8 us (cobre 8192 linhas em 64 ms). Todos parametrizados.
-// Politica de pagina aberta, um pedido por vez; escrita postada (wdone quando o comando WRITE e emitido); be[7:0] vira DQM por byte.
-// Interface: req/ready (aceita quando ready=1 e req=1 no mesmo clock), we, addr (indice de palavra de 64 bits, 19 bits = 4 MB), wdata, be; leitura: rvalid+rdata; escrita: wdone.
+// sdram_ctrl.v - controller for the embedded SDR SDRAM of the Tang Nano 20K (64 Mbit, 4 banks x 2048 rows x 256 columns x 32 bits) for 64-bit R8064 accesses.
+// ASSUMPTIONS (not confirmed on the real chip): geometry above; CL=2; BL=2 (one 64-bit access = 2 32-bit words); generic SDR timings at 100 MHz
+//   (tRCD=2, tRP=2, tRAS=5, tRC=7, tRFC=7, tWR=2, tMRD=2 clocks) and refresh every 7.8 us (covers 8192 rows in 64 ms). All parameterized.
+// Open-page policy, one request at a time; posted write (wdone when the WRITE command is issued); be[7:0] becomes per-byte DQM.
+// Interface: req/ready (accepts when ready=1 and req=1 on the same clock), we, addr (64-bit word index, 20 bits = 8 MB), wdata, be; read: rvalid+rdata; write: wdone.
 module sdram_ctrl #(
     parameter INIT_CYC = 20000,            // 200 us a 100 MHz
     parameter tRCD = 2, tRP = 2, tRAS = 5, tRC = 7, tRFC = 7, tWR = 2, tMRD = 2, CL = 2,
@@ -10,7 +10,7 @@ module sdram_ctrl #(
 )(
     input  wire        clk, rst,
     input  wire        req, we,
-    input  wire [18:0] addr,
+    input  wire [19:0] addr,
     input  wire [63:0] wdata,
     input  wire [7:0]  be,
     output wire        ready,
@@ -34,19 +34,19 @@ module sdram_ctrl #(
     // comandos {cs_n,ras_n,cas_n,we_n}
     localparam [3:0] C_NOP = 4'b0111, C_ACT = 4'b0011, C_RD = 4'b0101, C_WR = 4'b0100, C_PRE = 4'b0010, C_REF = 4'b0001, C_MRS = 4'b0000;
     task cmd(input [3:0] c); begin {s_cs_n, s_ras_n, s_cas_n, s_we_n} <= c; end endtask
-    // linha/banco/coluna: palavra de 32 bits w = {addr, 0}: col = w[7:0], banco = w[9:8], linha = w[20:10]
+    // row/bank/column: 32-bit word w = {addr, 0}: col = w[7:0], bank = w[9:8], row = w[20:10]
     reg lreq_we; reg [1:0] lb; reg [10:0] lrow; reg [7:0] lcol; reg [63:0] lwd; reg [7:0] lbe;
     wire [20:0] w_in = {addr, 1'b0};
     wire [1:0]  b_in = w_in[9:8]; wire [10:0] row_in = w_in[20:10];
     reg [3:0] open_r; reg [43:0] orow_v;
-    // temporizadores (carregados com N na emissao; comando dependente pode ser emitido quando <= 1)
+    // timers (loaded with N on issue; the dependent command can be issued when <= 1)
     reg [15:0] c_rcd_v, c_ras_v, c_rc_v, c_rp_v, c_wr_v; reg [3:0] c_rfc, c_mrd;
     integer i;
     reg [15:0] refc; reg [3:0] pend;
     reg [7:0] rpipe; reg rd_b0_done;
     reg [31:0] rd_lo;
     wire        in_idle = (st == ST_IDLE);
-    wire        take    = in_idle && req && (pend == 0);                    // pedido aceito neste clock
+    wire        take    = in_idle && req && (pend == 0);                    // request accepted on this clock
     wire        cur_we  = in_idle ? we : lreq_we;
     wire [1:0]  cur_b   = in_idle ? b_in : lb;
     wire [10:0] cur_row = in_idle ? row_in : lrow;
@@ -57,7 +57,7 @@ module sdram_ctrl #(
     wire [3:0] hitv  = {open_r[3] && orow_v[43:33] == row_in, open_r[2] && orow_v[32:22] == row_in, open_r[1] && orow_v[21:11] == row_in, open_r[0] && orow_v[10:0] == row_in};
     wire hit_in  = |(bs_in & hitv);
     wire miss_in = |(bs_in & open_r) && !hit_in;
-    // prontidao por banco (comando dependente pode sair quando o contador <= 1), selecionada por one-hot
+    // readiness per bank (the dependent command can go out when the counter <= 1), selected by one-hot
     wire [3:0] rcd_ok, ras_ok, rc_ok, rp_ok, wr_ok;
     genvar gk;
     generate for (gk = 0; gk < 4; gk = gk + 1) begin : G
@@ -71,7 +71,7 @@ module sdram_ctrl #(
     assign ready = (st == ST_IDLE) && (pend == 0);
     assign init_done = (st >= ST_IDLE);
     wire all_ok_pre = (&ras_ok) && (&wr_ok);
-    wire [3:0] est = take ? (hit_in ? ST_RW : miss_in ? ST_PRE : ST_ACT) : st;   // estado efetivo: o primeiro passo ja ocorre no clock de aceitacao
+    wire [3:0] est = take ? (hit_in ? ST_RW : miss_in ? ST_PRE : ST_ACT) : st;   // effective state: the first step already occurs in the acceptance clock
     always @(posedge clk) begin
         // contadores
         for (i = 0; i < 4; i = i + 1) begin
@@ -87,7 +87,7 @@ module sdram_ctrl #(
         if (st >= ST_IDLE) begin
             if (refc == REF_INT - 1) begin refc <= 0; if (pend != 15) pend <= pend + 1; end else refc <= refc + 1;
         end
-        // captura da leitura (BL=2): beat0 em rpipe[CL], beat1 em rpipe[CL+1]
+        // read capture (BL=2): beat0 in rpipe[CL], beat1 in rpipe[CL+1]
         if (rpipe[CL])     rd_lo <= s_dq_i;
         if (rpipe[CL + 1]) begin rdata <= {s_dq_i, rd_lo}; rvalid <= 1; end
         if (rst) begin
@@ -108,7 +108,7 @@ module sdram_ctrl #(
                 cmd(C_REF); c_rfc <= tRFC; iref <= iref + 1; if (iref == 1) st <= ST_IMRS;
             end
             ST_IMRS: if (c_rfc <= 1) begin
-                cmd(C_MRS); s_ba <= 0; s_a <= {4'b0000, CLV, 1'b0, 3'b001};  // BL=2, sequencial, CL, escrita em rajada
+                cmd(C_MRS); s_ba <= 0; s_a <= {4'b0000, CLV, 1'b0, 3'b001};  // BL=2, sequential, CL, burst write
                 c_mrd <= tMRD; st <= ST_WAIT;
             end
             ST_WAIT: if (c_mrd <= 1) begin st <= ST_IDLE; s_dqm <= 4'h0; end
@@ -144,7 +144,7 @@ module sdram_ctrl #(
             ST_REF: if (c_rfc <= 1) begin
                 cmd(C_REF); c_rfc <= tRFC; pend <= pend - 1; st <= ST_IDLE;
             end
-            ST_WEND: begin s_dq_oe <= 0; s_dqm <= 4'h0; st <= ST_IDLE; end    // fim do segundo beat de escrita
+            ST_WEND: begin s_dq_oe <= 0; s_dqm <= 4'h0; st <= ST_IDLE; end    // end of the second write beat
             default: st <= ST_IDLE;
           endcase
         end

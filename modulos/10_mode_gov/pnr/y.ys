@@ -1,3 +1,3 @@
-read_verilog -sv pnr_gov_top.v ../rtl/r8064_cpu_gov.v ../rtl/mem_class.v ../rtl/r8064_mode.v ../rtl/timing_gov.v ../rtl/r8064_core_min.v ../rtl/r8064_decode.v ../rtl/r8064_decode_rom.v ../../09_core_min/rtl/regfile64.v ../../09_core_min/rtl/regmap_b.v ../../09_core_min/rtl/regmerge.v ../../09_core_min/rtl/alu_prep.v ../rtl/alu_core_s.v ../../09_core_min/rtl/alu_core.v ../../09_core_min/rtl/alu64.v 
+read_verilog -sv pnr_gov_top.v ../rtl/r8064_cpu_gov.v ../rtl/mem_class.v ../rtl/r8064_mode.v ../rtl/timing_gov.v ../rtl/r8064_core_min.v ../rtl/r8064_decode.v ../rtl/r8064_decode_rom.v ../../09_core_min/rtl/regfile64.v ../../09_core_min/rtl/regmap_b.v ../../09_core_min/rtl/regmerge.v ../../09_core_min/rtl/alu_prep.v ../rtl/alu_core_s.v ../../03_muldiv/rtl/mul_unit.v ../../03_muldiv/rtl/div_unit.v ../../08_fpu/rtl/fpu_unit.v ../../08_fpu/rtl/fpu_seq.v 
 synth_gowin -top pnr_gov_top -json g.json
 stat

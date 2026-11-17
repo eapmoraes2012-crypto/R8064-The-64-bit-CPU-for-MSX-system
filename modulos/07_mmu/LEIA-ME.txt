@@ -1,3 +1,3 @@
-07_mmu: rtl/mmu.v (final, 2 estagios), rtl/mmu_v1_1estagio.v (versao anterior, 67 MHz). sim/tb_mmu.v, sim/gen_mutantes.py (gera 20 mutantes: python3 gen_mutantes.py <dir>).
-  iverilog -g2012 -o m7.vvp tb_mmu.v mmu.v ; vvp m7.vvp   (+quick para versao reduzida)   saida em sim/saida_sim.txt
+07_mmu: rtl/mmu.v (final, 2 stages), rtl/mmu_v1_1estagio.v (previous version, 67 MHz). sim/tb_mmu.v, sim/gen_mutantes.py (generates 20 mutants: python3 gen_mutantes.py <dir>).
+  iverilog -g2012 -o m7.vvp tb_mmu.v mmu.v ; vvp m7.vvp   (+quick for a reduced version)   output in sim/saida_sim.txt
 pnr/: pnr_mmu_top.v (wrapper), stat.txt, pnr1.log, pnr2.log. Ver resultados_modulo07.txt.

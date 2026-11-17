@@ -1,4 +1,4 @@
-// ATENCAO: pino 87 e so um exemplo - troque pelo pino fisico onde voce ligar o oscilador/CLOCK do slot MSX.
+// WARNING: pin 87 is only an example - change it to the physical pin where you connect the oscillator/MSX slot CLOCK.
 IO_LOC "clk_in" 87;
 IO_PORT "clk_in" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
 IO_LOC "din" 88;

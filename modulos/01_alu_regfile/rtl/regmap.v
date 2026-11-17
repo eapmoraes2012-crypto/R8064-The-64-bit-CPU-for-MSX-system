@@ -1,5 +1,5 @@
-// regmap.v - campo rr (3 bits) -> indice fisico, com troca de banco (EXX / EX AF,AF').
-// rr: 000 BC, 010 DE, 011 IY, 100 HL, 101 IX, 111 AX; 001 e 110 NAO sao registradores (valid=0).
+// regmap.v - rr field (3 bits) -> physical index, with bank swap (EXX / EX AF,AF').
+// rr: 000 BC, 010 DE, 011 IY, 100 HL, 101 IX, 111 AX; 001 and 110 are NOT registers (valid=0).
 module regmap(
     input  wire [2:0] rr,
     input  wire       swap_main,   // EXX: BC/DE/HL <-> BC'/DE'/HL'

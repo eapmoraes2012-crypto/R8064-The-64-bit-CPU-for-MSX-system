@@ -1,6 +1,6 @@
-// z80_core.v - Z80 classico completo (documentado + nao documentado), ciclo-exato por M-ciclo/T-state.
-// Todo T-state = um pulso de "ce". Barramento Z80 (sinais ativos em 1, o top inverte).
-// Estrutura: motor de ciclos de barramento (M1/MR/MW/IOR/IOW/INT) + logica combinacional "proximo ciclo" executada no fim de cada ciclo.
+// z80_core.v - complete classic Z80 (documented + undocumented), cycle-exact per M-cycle/T-state.
+// Every T-state = one "ce" pulse. Z80 bus (signals active at 1, the top inverts).
+// Structure: bus cycle engine (M1/MR/MW/IOR/IOW/INT) + combinational "next cycle" logic executed at the end of each cycle.
 `timescale 1ns/1ps
 module z80_core(
   input  wire        clk,
@@ -23,7 +23,7 @@ module z80_core(
              S_BIOW=6'd36, S_RETCC=6'd37, S_IV0=6'd38, S_IV1=6'd39,
              S_ADD=6'd40, S_BLD1=6'd41, S_C1=6'd42, S_C2=6'd43, S_PCM2=6'd44, S_PCM2B=6'd45;
 
-  // ---------------- estado arquitetural ----------------
+  // ---------------- architectural state ----------------
   reg [7:0]  a, f, a2, f2, ri, rr;
   reg [15:0] bc, de, hl, bc2, de2, hl2, ix, iy, sp, pc, wz;
   reg        iff1, iff2, halted, ei_dly, nmi_pend, nmi_prev, iack, pj0, pj1;
@@ -32,7 +32,7 @@ module z80_core(
   reg [7:0]  opr, dbi, lo8, tmp8;
   reg [5:0]  st;
   reg [15:0] ea, tmp16, tgt;
-  // ---------------- motor de ciclos ----------------
+  // ---------------- cycle engine ----------------
   reg [2:0]  ctyp;
   reg [4:0]  t, ilen;
   reg [1:0]  cext;
@@ -52,7 +52,7 @@ module z80_core(
   wire       sample  = run && (wp_e != 5'd0) && (t == wp_e) && wait_n && (ctyp==CT_M1 || ctyp==CT_MR || ctyp==CT_IOR);
   wire       cyc_end = run && (t == clen_e) && !waiting;
 
-  // sinais de barramento
+  // bus signals
   wire m1c   = (ctyp==CT_M1);
   wire is_rd = (ctyp==CT_MR) || (ctyp==CT_IOR);
   assign addr  = (m1c && !cack && (t > wp_e)) ? {ri, rr} : caddr;
@@ -180,7 +180,7 @@ module z80_core(
     end
   endfunction
 
-  // ---------------- decodificacao ----------------
+  // ---------------- decoding ----------------
   wire [1:0] x = opr[7:6];
   wire [2:0] y = opr[5:3];
   wire [2:0] z = opr[2:0];
@@ -202,9 +202,9 @@ module z80_core(
           (x==2'd0 && y==3'd6 && (z==3'd4 || z==3'd5)) );
   wire is_pfxbyte = !pf_ed && !pf_cb && (opr==8'hDD || opr==8'hFD || opr==8'hED || opr==8'hCB);
   wire dsp = (st==S_DISP) && !(halted && !iack) && !(iack && im==2'd2) && !is_pfxbyte;
-  wire [15:0] dirv = y[0] ? 16'hFFFF : 16'h0001;     // +1 / -1 segundo o bit "dec" do opcode de bloco
+  wire [15:0] dirv = y[0] ? 16'hFFFF : 16'h0001;     // +1 / -1 according to the "dec" bit of the block opcode
 
-  // ---------------- requisicao ao somador de 16 bits (compartilhado) ----------------
+  // ---------------- request to the 16-bit adder (shared) ----------------
   reg [15:0] a16_x, a16_y; reg [1:0] a16_k;
   always @* begin
     a16_x = pc; a16_y = 16'd0; a16_k = 2'd0;
@@ -307,7 +307,7 @@ module z80_core(
   wire [7:0]  u_res = u_o[15:8];
   wire [7:0]  u_f   = u_o[7:0];
 
-  // ---------------- logica "proximo ciclo" (combinacional) ----------------
+  // ---------------- "next cycle" logic (combinational) ----------------
   reg [7:0]  n_a, n_f, n_ri, n_rr;
   reg [15:0] n_bc, n_de, n_hl, n_sp, n_ix, n_iy, n_pc, n_wz, n_ea, n_tmp16, n_tgt;
   reg        n_iff1, n_iff2, n_halted, n_ei_dly, n_iack, n_pj0, n_pj1, n_nmi_clr, n_pf_ed, n_pf_cb;
@@ -348,7 +348,7 @@ module z80_core(
       end
     end else begin
     case (st)
-    // ------------------------------------------------------------------ despacho apos M1
+    // ------------------------------------------------------------------ dispatch after M1
     S_DISP: begin
       n_pc = pcm;
       if (halted && !iack) begin n_pc = pc; do_fin=1'b1; end
@@ -547,7 +547,7 @@ module z80_core(
       w16_en=1'b1; w16_sel=2'd2; w16_val=a16_res; n_f=a16_f;
       n_ctyp=CT_INT; n_ilen=5'd3; n_st=S_FINI;
     end
-    // ------------------------------------------------------------------ leitura de operando
+    // ------------------------------------------------------------------ operand read
     S_RD1: begin
       if (pf_ed) begin
         if (x==2'd1) begin   // RRD / RLD
@@ -594,7 +594,7 @@ module z80_core(
     end
     S_DC2: begin n_pc=pc1; n_opr=dbi; n_ctyp=CT_MR; n_caddr=ea; n_st=S_DC3; end
     S_DC3: begin n_ctyp=CT_INT; n_ilen=5'd1; n_st=S_INC1; end                     // U faz o calculo
-    // ------------------------------------------------------------------ pilha / saltos
+    // ------------------------------------------------------------------ stack / jumps
     S_PL: begin n_lo8=dbi; n_ctyp=CT_MR; n_caddr=a16_res; n_st=S_PH; n_sp=a16_res; end
     S_PH: begin
       n_sp=a16_res; nn={dbi, lo8};
@@ -678,7 +678,7 @@ module z80_core(
     endcase
     end
 
-    // ----- unidade U: escritas
+    // ----- unit U: writes
     if (u_to_a)   n_a = u_res;
     if (u_to_tmp) n_tmp8 = u_res;
     if (u_fen)    n_f = u_f;
@@ -740,14 +740,14 @@ module z80_core(
       if (run) begin
         if (waiting) begin end
         else if (t == clen_e) begin
-          // fim de ciclo: commit
+          // end of cycle: commit
           t <= 5'd1;
           a<=n_a; f<=n_f; ri<=n_ri; rr<=n_rr; sp<=n_sp; pc<=n_pc; wz<=n_wz; ea<=n_ea; tmp16<=n_tmp16; tgt<=n_tgt;
           iff1<=n_iff1; iff2<=n_iff2; halted<=n_halted; ei_dly<=n_ei_dly; iack<=n_iack; pj0<=n_pj0; pj1<=n_pj1;
           pf_ed<=n_pf_ed; pf_cb<=n_pf_cb; im<=n_im; pfx<=n_pfx; lo8<=n_lo8; tmp8<=n_tmp8; st<=n_st;
-          // opr: so muda por n_opr (S_DC2); opr de M1 ja foi amostrado
+          // opr: only changes by n_opr (S_DC2); the M1 opr has already been sampled
           if (n_opr != opr) opr <= n_opr;
-          // pares (com troca de bancos)
+          // pairs (with bank switching)
           if (do_exaf) begin a<=a2; f<=f2; a2<=n_a; f2<=n_f; end
           if (do_exx) begin bc<=bc2; de<=de2; hl<=hl2; bc2<=n_bc; de2<=n_de; hl2<=n_hl; ix<=n_ix; iy<=n_iy; end
           else if (do_exdh) begin de<=n_hl; hl<=n_de; ix<=n_ix; iy<=n_iy; end

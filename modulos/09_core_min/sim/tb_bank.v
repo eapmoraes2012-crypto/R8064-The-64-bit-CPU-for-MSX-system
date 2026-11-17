@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// teste dos prefixos de banco: sombra (ED 0B), N0-N3 (ED 0E), N4-N7 (ED 0D) e ilegais
+// bank prefix test: shadow (ED 0B), N0-N3 (ED 0E), N4-N7 (ED 0D) and illegal ones
 module tb_bank;
     reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -16,7 +16,7 @@ module tb_bank;
         if (d_req && !d_ack) d_ack <= 1;
     end
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     initial begin
         repeat (4) @(posedge clk); rst = 0;
@@ -27,10 +27,10 @@ module tb_bank;
         chk("N6 (ED 0D HL)", dut.u_rf1.mem_a[22], 64'h2211);
         chk("N3 (LDQ AX)",   dut.u_rf1.mem_a[19], 64'h1122334455667788);
         chk("N0 intacto",    dut.u_rf1.mem_a[16], 64'd0);
-        chk("IY ilegal",     dut.u_rf1.mem_a[10], 64'd0);
+        chk("IY illegal",     dut.u_rf1.mem_a[10], 64'd0);
         chk("DE normal",     dut.u_rf1.mem_a[2],  64'd0);
-        $display("pc=%h erros=%0d", dbg_pc, errs);
-        if (errs == 0) $display("RESULTADO: BANCOS OK"); else $display("RESULTADO: %0d ERROS", errs);
+        $display("pc=%h errors=%0d", dbg_pc, errs);
+        if (errs == 0) $display("RESULT: BANKS OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

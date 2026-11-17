@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// instrucoes de bloco do Z80: LDIR, LDDR, CPIR, INIR, OTIR (nucleo isolado; memoria byte-a-byte)
+// Z80 block instructions: LDIR, LDDR, CPIR, INIR, OTIR (isolated core; byte-by-byte memory)
 module tb_blk;
     `include "prog_blk_pcs.vh"
     wire [7:0] d_be; reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
@@ -25,9 +25,9 @@ module tb_blk;
     end
     always @* io_rdata = (io_a == 8'h78) ? 8'h5A : 8'hFF;
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
-    // fotografias dos registradores logo depois de cada bloco
+    // snapshots of the registers right after each block
     reg [63:0] s_hl[1:5], s_de[1:5], s_bc[1:5], s_ax[1:5]; reg [7:0] s_f[1:5]; reg [4:0] got_s = 0; integer nio_at_otir = 0;
     `define SNAP(N, PCX) always @(posedge clk) if (dut.issue && !dut.seq && dut.dpc[15:0] == PCX && !got_s[N-1]) begin got_s[N-1] <= 1; #1; \
         s_hl[N] = dut.u_rf1.mem_a[3]; s_de[N] = dut.u_rf1.mem_a[2]; s_bc[N] = dut.u_rf1.mem_a[1]; s_ax[N] = dut.u_rf1.mem_a[0]; s_f[N] = dut.fl; end
@@ -39,14 +39,14 @@ module tb_blk;
         chk("LDIR: [200]", mem[16'h200], 8'h41); chk("LDIR: [204]", mem[16'h204], 8'h45); chk("LDIR: [205] intacto", mem[16'h205], 8'h00);
         chk("LDDR: HL", s_hl[2], 64'h0121); chk("LDDR: DE", s_de[2], 64'h0221); chk("LDDR: BC", s_bc[2], 64'h0);
         chk("LDDR: [224]", mem[16'h224], 8'h63); chk("LDDR: [222]", mem[16'h222], 8'h61); chk("LDDR: [221] intacto", mem[16'h221], 8'h00);
-        chk("CPIR: HL (apos o achado)", s_hl[3], 64'h0103); chk("CPIR: BC", s_bc[3], 64'h2); chk("CPIR: Z=1", s_f[3][6], 1); chk("CPIR: PV=1 (BC!=0)", s_f[3][2], 1); chk("CPIR: A", s_ax[3], 64'h43);
+        chk("CPIR: HL (after the match)", s_hl[3], 64'h0103); chk("CPIR: BC", s_bc[3], 64'h2); chk("CPIR: Z=1", s_f[3][6], 1); chk("CPIR: PV=1 (BC!=0)", s_f[3][2], 1); chk("CPIR: A", s_ax[3], 64'h43);
         chk("INIR: HL", s_hl[4], 64'h0303); chk("INIR: BC (B=0, C=78)", s_bc[4][15:0], 16'h0078); chk("INIR: Z=1", s_f[4][6], 1);
         chk("INIR: [300]", mem[16'h300], 8'h5A); chk("INIR: [302]", mem[16'h302], 8'h5A); chk("INIR: [303] intacto", mem[16'h303], 8'h00);
-        chk("OTIR: HL", s_hl[5], 64'h0103); chk("OTIR: B=0", s_bc[5][15:8], 8'h00); chk("OTIR: 3 escritas", n_ow, 3);
+        chk("OTIR: HL", s_hl[5], 64'h0103); chk("OTIR: B=0", s_bc[5][15:8], 8'h00); chk("OTIR: 3 writes", n_ow, 3);
         chk("OTIR: porta", ow_a[0], 8'h77); chk("OTIR: dado0", ow_d[0], 8'h41); chk("OTIR: dado1", ow_d[1], 8'h42); chk("OTIR: dado2", ow_d[2], 8'h43);
-        chk("INIR: 3 leituras", n_ir, 3); chk("PC final (laco JR $: fase de amostragem)", (dbg_pc == PC_END || dbg_pc == PC_END + 2) ? PC_END : dbg_pc, PC_END);
-        $display("pc=%h erros=%0d", dbg_pc, errs);
-        if (errs == 0) $display("RESULTADO: BLOCOS OK"); else $display("RESULTADO: %0d ERROS", errs);
+        chk("INIR: 3 reads", n_ir, 3); chk("final PC (JR $ loop: sampling phase)", (dbg_pc == PC_END || dbg_pc == PC_END + 2) ? PC_END : dbg_pc, PC_END);
+        $display("pc=%h errors=%0d", dbg_pc, errs);
+        if (errs == 0) $display("RESULT: BLOCKS OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

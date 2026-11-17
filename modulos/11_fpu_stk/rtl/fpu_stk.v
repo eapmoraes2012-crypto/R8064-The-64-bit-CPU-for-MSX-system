@@ -1,9 +1,9 @@
-// fpu_stk.v - hardware residual da FPU x87 (medida A: aritmetica em firmware): pilha ST0-ST7 (80 bits), tags, palavras de controle (CW) e estado (SW).
-// Comandos (um por ciclo quando 'go'; XCH leva 2 ciclos, 'busy'=1 ate terminar):
-//  0 NOP 1 INIT(FINIT) 2 PUSH(wdata) 3 POP 4 XCH(troca ST(ra_idx) com ST(rb_idx); mantenha ra_idx/rb_idx estaveis) 5 WRST(idx,wdata) 6 INCSTP 7 DECSTP 8 SETCW(wdata) 9 CLREX 10 ORFLG(flags) 11 SETCC(wdata[3:0]=C0..C3)
+// fpu_stk.v - residual hardware of the x87 FPU (measure A: arithmetic in firmware): ST0-ST7 stack (80 bits), tags, control (CW) and status (SW) words.
+// Commands (one per cycle when 'go'; XCH takes 2 cycles, 'busy'=1 until it finishes):
+//  0 NOP 1 INIT(FINIT) 2 PUSH(wdata) 3 POP 4 XCH(swaps ST(ra_idx) with ST(rb_idx); keep ra_idx/rb_idx stable) 5 WRST(idx,wdata) 6 INCSTP 7 DECSTP 8 SETCW(wdata) 9 CLREX 10 ORFLG(flags) 11 SETCC(wdata[3:0]=C0..C3)
 //  12 SETSW(wdata) 13 SETTW(wdata) 14 FREE(idx)
-// Leitura combinacional de ST(ra_idx) e ST(rb_idx), com tags. FXAM classifica ST(ra_idx) (use ra_idx=0 para FXAM de ST0). Excecao de pilha (IE+SF, C1=1 em estouro): IM mascarado -> escreve INDEFINIDO e move TOP; desmascarado -> so sinaliza.
-// Classificacao de tag na escrita: 0 valido, 1 zero, 2 especial (inf/NaN/denormal/nao normalizado), 3 vazio.
+// Combinational read of ST(ra_idx) and ST(rb_idx), with tags. FXAM classifies ST(ra_idx) (use ra_idx=0 for FXAM of ST0). Stack exception (IE+SF, C1=1 on overflow): IM masked -> writes INDEFINITE and moves TOP; unmasked -> only signals.
+// Tag classification on write: 0 valid, 1 zero, 2 special (inf/NaN/denormal/unnormal), 3 empty.
 module fpu_stk(
     input  wire        clk, rst,
     input  wire        go,
@@ -26,7 +26,7 @@ module fpu_stk(
     reg [15:0] cwr;
     reg [6:0]  exc;                    // IE DE ZE OE UE PE SF
     reg        c0, c1, c2, c3;
-    reg [79:0] tmp; reg [1:0] tmp_t; reg [2:0] xi;      // XCH, ciclo 2
+    reg [79:0] tmp; reg [1:0] tmp_t; reg [2:0] xi;      // XCH, cycle 2
     function [1:0] ctag(input [79:0] v);
         begin
             if (v[78:64] == 15'd0 && v[63:0] == 64'd0) ctag = 2'd1;
@@ -42,7 +42,7 @@ module fpu_stk(
     assign es = |(exc[5:0] & ~cwr[5:0]);
     assign sw = {es, c3, top, c2, c1, c0, es, exc};
     assign tw = {tg[7], tg[6], tg[5], tg[4], tg[3], tg[2], tg[1], tg[0]};
-    // FXAM de ST(ra_idx): usa a porta A (evita uma 3a porta de leitura)
+    // FXAM of ST(ra_idx): uses port A (avoids a 3rd read port)
     wire [79:0] s0 = ra; wire s0e = (tag_a == 2'd3);
     wire s0_z = (s0[78:64] == 15'd0) && (s0[63:0] == 64'd0);
     wire s0_i = (s0[78:64] == 15'h7FFF) && s0[63] && (s0[62:0] == 63'd0);
@@ -60,7 +60,7 @@ module fpu_stk(
             top <= 0; cwr <= 16'h037F; exc <= 0; {c3, c2, c1, c0} <= 0; busy <= 0;
             tg[0] <= 3; tg[1] <= 3; tg[2] <= 3; tg[3] <= 3; tg[4] <= 3; tg[5] <= 3; tg[6] <= 3; tg[7] <= 3;
         end else if (busy) begin
-            // XCH, ciclo 2: ST(i) <- antigo ST0
+            // XCH, cycle 2: ST(i) <- old ST0
             st[xi] <= tmp; tg[xi] <= tmp_t; busy <= 0;
         end else if (go) begin
             case (cmd)
@@ -79,7 +79,7 @@ module fpu_stk(
                     end else begin tg[top] <= 2'd3; top <= top + 3'd1; end
                 end
                 4'd4: begin
-                    // ciclo 1: ST(ra) <- ST(rb); guarda ST(ra) antigo
+                    // cycle 1: ST(ra) <- ST(rb); saves the old ST(ra)
                     tmp <= ra; tmp_t <= tg[pa]; xi <= pb;
                     st[pa] <= rb; tg[pa] <= tg[pb];
                     busy <= 1'b1;

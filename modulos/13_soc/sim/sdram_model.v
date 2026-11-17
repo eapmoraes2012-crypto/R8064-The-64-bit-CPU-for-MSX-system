@@ -1,5 +1,5 @@
-// sdram_model.v - modelo comportamental de SDR SDRAM (4 bancos x 2048 x 256 x 32) com VERIFICACAO de protocolo e tempos (independente do controlador).
-// Conta violacoes: comando ilegal para o estado do banco, tRCD, tRP, tRAS, tRC, tRFC, tWR, tMRD, ACT antes do MRS, contencao no DQ, intervalo entre refreshes, leitura de linha nao ativa, etc.
+// sdram_model.v - behavioral model of SDR SDRAM (4 banks x 2048 x 256 x 32) with protocol and timing CHECKING (independent of the controller).
+// Counts violations: command illegal for the bank state, tRCD, tRP, tRAS, tRC, tRFC, tWR, tMRD, ACT before MRS, DQ contention, interval between refreshes, read of a non-active row, etc.
 module sdram_model #(
     parameter tRCD = 2, tRP = 2, tRAS = 5, tRC = 7, tRFC = 7, tWR = 2, tMRD = 2, MAX_REF_GAP = 800, MIN_INIT_REF = 2
 )(
@@ -20,22 +20,22 @@ module sdram_model #(
         for (k = 0; k < 16; k = k + 1) rd_sched[k] = -1;
         dq_o = 32'hzzzzzzzz;
     end
-    task err(input [255:0] msg); begin viol = viol + 1; if (viol <= 8) $display("[SDRAM %0t] VIOLACAO: %0s (ciclo %0d)", $time, msg, cyc); end endtask
+    task err(input [255:0] msg); begin viol = viol + 1; if (viol <= 8) $display("[SDRAM %0t] VIOLATION: %0s (cycle %0d)", $time, msg, cyc); end endtask
     function integer widx(input integer b, input [10:0] r, input integer c); widx = (r << 10) | (b << 8) | c; endfunction
     reg [31:0] dv;
     always @(posedge clk) begin
         cyc = cyc + 1;
         cmd = {cs_n, ras_n, cas_n, we_n};
-        // dados de leitura agendados: coloca no barramento em (instante de captura - 1)
+        // scheduled read data: puts it on the bus at (capture instant - 1)
         dq_o <= 32'hzzzzzzzz;
         for (q = 0; q < 16; q = q + 1) if (rd_sched[q] == cyc + 1) begin
             dv = mem[widx(rb[q], rrow[q], rcol[q])];
             dq_o <= dv; dq_driven_at = cyc + 1; rd_sched[q] = -1;
         end
-        if (dq_oe && dq_driven_at == cyc) err("contencao no DQ: controlador dirigindo durante leitura");
-        // segundo beat de escrita
+        if (dq_oe && dq_driven_at == cyc) err("DQ contention: controller driving during read");
+        // second write beat
         if (wr_act) begin
-            if (!dq_oe) err("escrita: DQ nao dirigido no 2o beat");
+            if (!dq_oe) err("write: DQ not driven on the 2nd beat");
             if (!dqm[0]) mem[widx(wbank, wrow, wcol + 1)][7:0]   = dq_i[7:0];
             if (!dqm[1]) mem[widx(wbank, wrow, wcol + 1)][15:8]  = dq_i[15:8];
             if (!dqm[2]) mem[widx(wbank, wrow, wcol + 1)][23:16] = dq_i[23:16];
@@ -46,15 +46,15 @@ module sdram_model #(
             case (cmd)
                 4'b0011: begin   // ACTIVE
                     nact = nact + 1;
-                    if (!mode_set) err("ACTIVE antes do MRS");
-                    if (active[ba]) err("ACTIVE em banco ja ativo");
+                    if (!mode_set) err("ACTIVE before MRS");
+                    if (active[ba]) err("ACTIVE on an already active bank");
                     if (cyc - t_pre[ba] < tRP) err("tRP (PRECHARGE->ACTIVE)");
                     if (cyc - t_act[ba] < tRC) err("tRC (ACTIVE->ACTIVE)");
                     if (cyc - t_ref < tRFC) err("tRFC (REFRESH->ACTIVE)");
                     active[ba] = 1; arow[ba] = a; t_act[ba] = cyc;
                 end
                 4'b0101, 4'b0100: begin   // READ / WRITE
-                    if (!active[ba]) err("READ/WRITE em banco sem linha ativa");
+                    if (!active[ba]) err("READ/WRITE on a bank without an active row");
                     if (cyc - t_act[ba] < tRCD) err("tRCD (ACTIVE->READ/WRITE)");
                     if (cmd == 4'b0101) begin
                         nrd = nrd + 1;
@@ -67,7 +67,7 @@ module sdram_model #(
                         end
                     end else begin
                         nwr = nwr + 1;
-                        if (!dq_oe) err("WRITE sem DQ dirigido no 1o beat");
+                        if (!dq_oe) err("WRITE without DQ driven on the 1st beat");
                         if (!dqm[0]) mem[widx(ba, arow[ba], a[7:0])][7:0]   = dq_i[7:0];
                         if (!dqm[1]) mem[widx(ba, arow[ba], a[7:0])][15:8]  = dq_i[15:8];
                         if (!dqm[2]) mem[widx(ba, arow[ba], a[7:0])][23:16] = dq_i[23:16];
@@ -80,7 +80,7 @@ module sdram_model #(
                     for (k = 0; k < 4; k = k + 1) if (a[10] || k == ba) begin
                         if (active[k]) begin
                             if (cyc - t_act[k] < tRAS) err("tRAS (ACTIVE->PRECHARGE)");
-                            if (cyc - t_wr_last[k] < tWR) err("tWR (escrita->PRECHARGE)");
+                            if (cyc - t_wr_last[k] < tWR) err("tWR (write->PRECHARGE)");
                         end
                         active[k] = 0; t_pre[k] = cyc;
                     end
@@ -88,7 +88,7 @@ module sdram_model #(
                 4'b0001: begin   // AUTO REFRESH
                     nref = nref + 1;
                     for (k = 0; k < 4; k = k + 1) begin
-                        if (active[k]) err("REFRESH com banco ativo");
+                        if (active[k]) err("REFRESH with an active bank");
                         if (cyc - t_pre[k] < tRP) err("tRP (PRECHARGE->REFRESH)");
                     end
                     if (cyc - t_ref < tRFC) err("tRFC (REFRESH->REFRESH)");
@@ -97,8 +97,8 @@ module sdram_model #(
                     last_ref = cyc; t_ref = cyc; gap_flag = 0;
                 end
                 4'b0000: begin   // LOAD MODE REGISTER
-                    for (k = 0; k < 4; k = k + 1) if (active[k]) err("MRS com banco ativo");
-                    if (refs_init < MIN_INIT_REF) err("MRS antes dos 2 AUTO REFRESH de inicializacao");
+                    for (k = 0; k < 4; k = k + 1) if (active[k]) err("MRS with an active bank");
+                    if (refs_init < MIN_INIT_REF) err("MRS before the 2 initialization AUTO REFRESHes");
                     if (a[2:0] != 3'b001) err("modo: BL diferente de 2");
                     if (a[6:4] != 3'd2) err("modo: CL diferente de 2");
                     mode_set = 1; t_mrs = cyc; last_ref = cyc;

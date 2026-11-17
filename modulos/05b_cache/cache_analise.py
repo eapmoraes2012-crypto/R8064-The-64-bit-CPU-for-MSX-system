@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-# Analise do ganho de um cache de I e D em BSRAM sobre o modelo de ciclos da planilha (HIT_I/HIT_D).
-# Metodo: nucleos de programa sinteticos (enderecos de busca e de dados) -> simulador de cache (LRU, escrita direta, sem alocar na escrita) -> taxas de acerto -> ciclos pelo modelo da planilha.
-# LIMITE: nao ha traco de programa real do R8064; os nucleos sao exemplos tipicos, nao os programas do usuario.
+# Analysis of the gain of an I and D cache in BSRAM over the spreadsheet cycle model (HIT_I/HIT_D).
+# Method: synthetic program kernels (fetch and data addresses) -> cache simulator (LRU, write-through, no write allocate) -> hit rates -> cycles by the spreadsheet model.
+# LIMIT: there is no real R8064 program trace; the kernels are typical examples, not the user's programs.
 import csv, random, sys, json
 P = sys.argv[1]
 rows = {}
-for r in csv.DictReader(open(P + '/ref/expected_cycles.csv', encoding='utf-8-sig'), delimiter=';'): rows[r['mnemonico']] = r
+for r in csv.DictReader(open(P + '/ref/expected_cycles.csv', encoding='utf-8-sig'), delimiter=';'): rows[r['mnemonic']] = r
 def ins(name):
-    r = rows[name]; return dict(n=name, len=int(r['bytes']), busca=int(r['acessos_busca']), nr=int(r['leituras']), nw=int(r['escritas']), ex=int(r['ocupacao_X']), pen=int(r['penalidade_desvio']))
+    r = rows[name]; return dict(n=name, len=int(r['bytes']), busca=int(r['fetch_accesses']), nr=int(r['reads']), nw=int(r['writes']), ex=int(r['x_occupancy']), pen=int(r['branch_penalty']))
 ADD, INC = ins('ADDQ rr, rr’'), ins('INCQ rr'); LDL, LDS = ins('LDQ rr, (rr’)'), ins('LDQ (rr), rr’')
 LDLX, LDSX = ins('LDQ rr, (QIX+dd)'), ins('LDQ (QIX+dd), rr'); DJ, JR, JRC = ins('DJNZW nn'), ins('JRW nn'), ins('JRW cc, nn')
 CALL, RET, MUL = ins('CALLQ nnnnnnnn'), ins('RETQ'), ins('MLTUQ QA, rr'); CP = ins('SUBQ rr, rr’')
-WRD, WRM, WWH, WWM = 4, 8, 2, 6      # Parametros da planilha (leitura acerto/falha de pagina, escrita)
+WRD, WRM, WWH, WWM = 4, 8, 2, 6      # Spreadsheet parameters (read page hit/miss, write)
 rnd = random.Random(8064)
-# ---- geradores: cada instrucao -> (pc, ins, [(tipo,'r'|'w', endereco)])
+# ---- generators: each instruction -> (pc, ins, [(type,'r'|'w', address)])
 def kern_memcpy(n=60000):
     out = []; src = 0x100000; dst = 0x200000; i = 0
     while len(out) < n:
@@ -75,9 +75,9 @@ def kern_app(n=90000, nfun=120):
             out.append((pc, x, [(t, a) for t, a in d])); pc += x['len']
         out.append((pc, RET, [('r', sp)])); sp += 64
     return out
-KERN = {'copia de memoria (streaming)': kern_memcpy(), 'matriz 40x40 (loops aninhados)': kern_matmul(), 'ordenacao (bolha, 400 itens)': kern_sort(),
-        'lista encadeada (256 KB ... 64 KB de nos)': kern_list(), 'aplicacao (120 funcoes, chamadas/retornos)': kern_app()}
-# ---- cache (LRU, escrita direta, sem alocar na escrita; escrita que acerta atualiza a linha)
+KERN = {'memory copy (streaming)': kern_memcpy(), '40x40 matrix (nested loops)': kern_matmul(), 'sorting (bubble, 400 items)': kern_sort(),
+        'linked list (256 KB ... 64 KB of nodes)': kern_list(), 'application (120 functions, calls/returns)': kern_app()}
+# ---- cache (LRU, write-through, no write allocate; a write that hits updates the line)
 class Cache:
     def __init__(s, size, line, ways):
         s.line = line; s.sets = size // (line * ways); s.ways = ways; s.tag = [[] for _ in range(s.sets)]
@@ -101,10 +101,10 @@ def simula(prog, isize, dsize, line, ways):
                 else: dm += 1
             else: dc.access(a, False)
     return ih, im, dh, dm
-POPEN = 0.8     # fracao dos preenchimentos que acham a pagina da SDRAM aberta (premissa)
+POPEN = 0.8     # fraction of fills that find the SDRAM page open (assumption)
 def fill(line, ctrl):
     n = line // 8; first = POPEN * (1 + WRD) + (1 - POPEN) * (1 + WRM)
-    return first + (n - 1) * (5 if ctrl == 'atual' else 2)      # 'atual': 5 clocks por palavra de 64 bits (modulo 05); 'rajada': 2 (ESTIMATIVA, controlador com leituras sobrepostas, nao simulado)
+    return first + (n - 1) * (5 if ctrl == 'atual' else 2)      # 'atual' (current): 5 clocks per 64-bit word (module 05); 'rajada' (burst): 2 (ESTIMATE, controller with overlapped reads, not simulated)
 def ciclos(prog, ih, im, dh, dm, line, ctrl, pf=False):
     clk = w0 = nw = 0.0; nb = 0.0
     for pc, x, ds in prog:
@@ -115,7 +115,7 @@ def ciclos(prog, ih, im, dh, dm, line, ctrl, pf=False):
         nw += x['nw'] * (POPEN * WWH + (1 - POPEN) * WWM)
     f = fill(line, ctrl)
     hi = ih / (ih + im)
-    imiss = nb * (1 - hi)                      # com prefetch: acessos de busca = bytes/8; a taxa de falha vem da simulacao
+    imiss = nb * (1 - hi)                      # with prefetch: fetch accesses = bytes/8; the miss rate comes from the simulation
     wc = (imiss + dm) * (f - 1) + nw
     return clk, w0, wc
 CONF = [(2, 2, 32, 1), (4, 4, 32, 1), (8, 8, 32, 2), (8, 8, 64, 2), (16, 16, 64, 2)]    # (I KB, D KB, linha B, vias)
@@ -133,25 +133,25 @@ for kn, prog in KERN.items():
                 row[('p' if pf else '') + ctrl] = (clk + wc) / N; row[('p' if pf else '') + 'sem'] = (clk + w0) / N
         res[(kn, ik, dk, line, ways)] = row
 lines = []
-lines.append('GANHO DE UM CACHE DE I E D EM BSRAM (nucleos sinteticos; modelo de ciclos da planilha; escrita direta, sem alocar na escrita)')
-lines.append('CPI = clocks por instrucao. sem = sem cache (planilha: HIT_I=HIT_D=0). atual = com o controlador SDRAM do modulo 05 (5 clocks por palavra de 64 bits no preenchimento). rajada = estimativa com leituras sobrepostas (2 clocks por palavra).')
-hdr = f'{"nucleo":44s} {"I/D KB":>7s} {"linha":>5s} {"vias":>4s} {"HIT_I":>6s} {"HIT_D":>6s} {"CPI sem":>8s} {"CPI atual":>9s} {"ganho":>6s} {"CPI rajada":>10s} {"ganho":>6s}'
+lines.append('GAIN OF AN I AND D CACHE IN BSRAM (synthetic kernels; spreadsheet cycle model; write-through, no write allocate)')
+lines.append('CPI = clocks per instruction. none = no cache (spreadsheet: HIT_I=HIT_D=0). current = with the module 05 SDRAM controller (5 clocks per 64-bit word on fill). burst = estimate with overlapped reads (2 clocks per word).')
+hdr = f'{"kernel":44s} {"I/D KB":>7s} {"line":>5s} {"ways":>4s} {"HIT_I":>6s} {"HIT_D":>6s} {"CPI none":>8s} {"CPI current":>9s} {"gain":>6s} {"CPI burst":>10s} {"gain":>6s}'
 for (ik, dk, line, ways) in CONF:
-    lines.append(f'\n== Cache I={ik} KB, D={dk} KB, linha {line} B, {ways} via(s)  (BSRAM de dados: {(ik + dk) // 2} blocos de 18 Kbit; tags em SSRAM/LUT)'); lines.append(hdr)
+    lines.append(f'\n== Cache I={ik} KB, D={dk} KB, line {line} B, {ways} way(s)  (data BSRAM: {(ik + dk) // 2} 18 Kbit blocks; tags in SSRAM/LUT)'); lines.append(hdr)
     for kn in KERN:
         r = res[(kn, ik, dk, line, ways)]
         lines.append(f'{kn:44s} {ik:>3d}/{dk:<3d} {line:>5d} {ways:>4d} {r["hi"]:6.3f} {r["hd"]:6.3f} {r["sem"]:8.2f} {r["atual"]:9.2f} {r["sem"]/r["atual"]:5.2f}x {r["rajada"]:10.2f} {r["sem"]/r["rajada"]:5.2f}x')
-    # media geometrica
+    # geometric mean
     import math
     g = lambda key: math.exp(sum(math.log(res[(kn, ik, dk, line, ways)][key]) for kn in KERN) / len(KERN))
-    lines.append(f'{"MEDIA GEOMETRICA":44s} {"":>7s} {"":>5s} {"":>4s} {"":>6s} {"":>6s} {g("sem"):8.2f} {g("atual"):9.2f} {g("sem")/g("atual"):5.2f}x {g("rajada"):10.2f} {g("sem")/g("rajada"):5.2f}x')
-lines.append('\n\n######## BASE COM FILA DE PREFETCH (modulo 02): busca efetiva = bytes/8 por instrucao (em vez de 1 acesso por instrucao) - ganho do cache SOBRE essa base ########')
+    lines.append(f'{"GEOMETRIC MEAN":44s} {"":>7s} {"":>5s} {"":>4s} {"":>6s} {"":>6s} {g("sem"):8.2f} {g("atual"):9.2f} {g("sem")/g("atual"):5.2f}x {g("rajada"):10.2f} {g("sem")/g("rajada"):5.2f}x')
+lines.append('\n\n######## BASELINE WITH PREFETCH QUEUE (module 02): effective fetch = bytes/8 per instruction (instead of 1 access per instruction) - cache gain OVER this baseline ########')
 for (ik, dk, line, ways) in CONF:
     lines.append(f'\n== Cache I={ik} KB, D={dk} KB, linha {line} B, {ways} via(s)'); lines.append(hdr)
     for kn in KERN:
         r = res[(kn, ik, dk, line, ways)]
         lines.append(f'{kn:44s} {ik:>3d}/{dk:<3d} {line:>5d} {ways:>4d} {r["hi"]:6.3f} {r["hd"]:6.3f} {r["psem"]:8.2f} {r["patual"]:9.2f} {r["psem"]/r["patual"]:5.2f}x {r["prajada"]:10.2f} {r["psem"]/r["prajada"]:5.2f}x')
     g = lambda key: math.exp(sum(math.log(res[(kn, ik, dk, line, ways)][key]) for kn in KERN) / len(KERN))
-    lines.append(f'{"MEDIA GEOMETRICA":44s} {"":>7s} {"":>5s} {"":>4s} {"":>6s} {"":>6s} {g("psem"):8.2f} {g("patual"):9.2f} {g("psem")/g("patual"):5.2f}x {g("prajada"):10.2f} {g("psem")/g("prajada"):5.2f}x')
+    lines.append(f'{"GEOMETRIC MEAN":44s} {"":>7s} {"":>5s} {"":>4s} {"":>6s} {"":>6s} {g("psem"):8.2f} {g("patual"):9.2f} {g("psem")/g("patual"):5.2f}x {g("prajada"):10.2f} {g("psem")/g("prajada"):5.2f}x')
 open(P + '/modulos/05b_cache/resultado_cache.txt', 'w').write('\n'.join(lines) + '\n')
 print('\n'.join(lines))

@@ -1,15 +1,15 @@
-// r8064_pipe.v - pipeline de 7 estagios do R8064 (modelo de TEMPORIZACAO dirigido por traco de execucao).
-// Estagios: 0=F1 (endereco/PC), 1=F2 (barramento: busca), 2=D (decodificacao), 3=R (registradores), 4=X (execucao),
-//           5=M (acesso a dados/E/S), 6=W (escrita). Ordem estrita, sem adiantamento de resultados e SEM hazards de dados
-//           (o traco ja e a trajetoria executada; hazards nao sao modelados - ver README).
-// - Barramento unico: F2 e M disputam; M tem prioridade (acesso em curso nao e interrompido).
-// - Cada acesso ao barramento custa 1 + W clocks (W_RD / W_WR / W_IO conforme a planilha).
-// - Desvio tomado: o buscador continua buscando instrucoes do caminho errado (ocupam o barramento) ate a resolucao no
-//   estagio D (pen=1), X (pen=2) ou M (pen=3); a resolucao esvazia os estagios mais novos.
-// - O decodificador real (r8064_decode) fica no estagio D; sua saida e conferida contra a leitura combinacional das ROMs.
-// Parametros: DEC_D = clocks do estagio D (1 = ideal da planilha; 2 = decodificador real: +1 id, +2 controle).
-//             SERIAL = 1: a busca da proxima instrucao so comeca depois que F2 da anterior terminou + LEN_LAT clocks
-//             (o comprimento vem da decodificacao); 0: busca sequencial antecipada (suposicao da planilha).
+// r8064_pipe.v - 7-stage R8064 pipeline (TIMING model driven by an execution trace).
+// Stages: 0=F1 (address/PC), 1=F2 (bus: fetch), 2=D (decode), 3=R (registers), 4=X (execute),
+//           5=M (data/I-O access), 6=W (write). Strict order, no result forwarding and NO data hazards
+//           (the trace already is the executed path; hazards are not modeled - see README).
+// - Single bus: F2 and M contend; M has priority (an access in progress is not interrupted).
+// - Each bus access costs 1 + W clocks (W_RD / W_WR / W_IO as per the spreadsheet).
+// - Taken branch: the fetcher keeps fetching wrong-path instructions (they occupy the bus) until resolution in
+//   stage D (pen=1), X (pen=2) or M (pen=3); resolution flushes the younger stages.
+// - The real decoder (r8064_decode) sits in stage D; its output is checked against the combinational read of the ROMs.
+// Parameters: DEC_D = clocks of the D stage (1 = spreadsheet ideal; 2 = real decoder: +1 id, +2 control).
+//             SERIAL = 1: fetch of the next instruction only starts after F2 of the previous one has finished + LEN_LAT clocks
+//             (the length comes from decoding); 0: anticipated sequential fetch (spreadsheet assumption).
 module r8064_pipe #(
     parameter NTRACE = 1,
     parameter TRACE_FILE = "trace.mem",
@@ -40,9 +40,9 @@ module r8064_pipe #(
         reg [11:0] a; reg [7:0] am; reg [9:0] id;
         begin a = rom_a[b2]; am = amb[b2]; id = a[10] ? rom_b[{am[5:0], b3}] : a[9:0]; ctrl_of = ctrl[id[8:0]]; end
     endfunction
-    localparam [31:0] C_WP = 32'h0001_0003;      // caminho errado: 3 bytes, 1 busca, EX=1, sem desvio
+    localparam [31:0] C_WP = 32'h0001_0003;      // wrong path: 3 bytes, 1 fetch, EX=1, no branch
 
-    // decodificador real no estagio D
+    // real decoder in the D stage
     reg  v [0:6]; reg wp [0:6]; integer idx [0:6]; integer rem [0:6]; reg [31:0] c [0:6]; reg chk [0:6]; reg fz [0:6];
     wire [7:0] b2d = (v[2] && !wp[2]) ? trace[idx[2]][15:8] : 8'h00;
     wire [7:0] b3d = (v[2] && !wp[2]) ? trace[idx[2]][7:0]  : 8'h00;
@@ -78,21 +78,21 @@ module r8064_pipe #(
         end else if (!done) begin
             ecount = ecount + 1;
             bus_m = v[5] && (rem[5] > 0) && ((c[5][8:4] + c[5][13:9]) != 0);
-            // conferencia do decodificador real: 1o clock em R (saida registrada do estagio D)
+            // check of the real decoder: 1st clock in R (registered output of stage D)
             if (v[3] && chk[3] && !wp[3] && DEC_D >= 2) begin
                 chk_n <= chk_n + 1;
                 if (dword[27:0] !== c[3][27:0]) chk_err <= chk_err + 1;
             end
             chk[3] = 0;
-            // progresso do trabalho de cada estagio
+            // progress of each stage's work
             for (k = 0; k < 7; k = k + 1)
                 if (v[k] && rem[k] > 0) begin
                     if (k == 1 && bus_m) f2_stall <= f2_stall + 1;
                     else rem[k] = rem[k] - 1;
                 end
-            for (k = 0; k < 7; k = k + 1) dn[k] = v[k] && (rem[k] == 0);   // pronto para sair neste clock
+            for (k = 0; k < 7; k = k + 1) dn[k] = v[k] && (rem[k] == 0);   // ready to leave on this clock
             if (lenwait > 0) lenwait = lenwait - 1;
-            // movimentos, do fim para o inicio
+            // moves, from end to start
             for (k = 6; k >= 1; k = k - 1) begin
                 if (k == 6 && dn[6] && v[6]) begin
                     v[6] = 0;
@@ -108,14 +108,14 @@ module r8064_pipe #(
                     chk[k] = (k == 3);
                     v[k-1] = 0;
                     if (k == 2) lenwait = LEN_LAT;
-                    // resolucao do desvio ao deixar o estagio de resolucao (D=2, X=4, M=5)
+                    // branch resolution on leaving the resolution stage (D=2, X=4, M=5)
                     if (!wp[k-1] && ((pc == 2'd1 && k-1 == 2) || (pc == 2'd2 && k-1 == 4) || (pc == 2'd3 && k-1 == 5))) begin
                         for (pen_s = 0; pen_s < k-1; pen_s = pen_s + 1) v[pen_s] = 0;
                         wp_mode = 0;
                     end
                 end
             end
-            // busca
+            // fetch
             if (!v[0] && (!SERIAL || (!v[1] && lenwait == 0))) begin
                 if (wp_mode) begin
                     v[0] = 1; wp[0] = 1; idx[0] = 0; c[0] = C_WP; rem[0] = 1; wp_fetch <= wp_fetch + 1;
@@ -125,7 +125,7 @@ module r8064_pipe #(
                     if (c[0][25:24] != 0) wp_mode = 1;
                 end
             end
-            // no estagio F1->F2 o numero de buscas vem de c[] (leitura antecipada das ROMs)
+            // in stage F1->F2 the number of fetches comes from c[] (early read of the ROMs)
         end
     end
 endmodule

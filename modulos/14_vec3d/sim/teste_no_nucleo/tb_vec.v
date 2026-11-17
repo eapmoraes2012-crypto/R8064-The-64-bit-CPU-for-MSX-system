@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// instrucoes 3D integradas ao nucleo: programa aleatorio (LDQ + VOP/VSHUF/VOP1, com e sem prefixos de banco ED 0E/0D) conferido contra o modelo em Python
+// 3D instructions integrated into the core: random program (LDQ + VOP/VSHUF/VOP1, with and without bank prefixes ED 0E/0D) checked against the Python model
 module tb_vec;
     `include "nvec.vh"
     reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
@@ -17,7 +17,7 @@ module tb_vec;
         if (d_req && !d_ack) d_ack <= 1;
         if (!rst && dut.v_w && dut.u_w[80] && dut.u_w[10]) begin
             if (n < NEXP) begin
-                if (dut.w_data !== exp[n]) begin errs = errs + 1; if (errs < 10) $display("ERRO vec #%0d: obtido %h esperado %h (uop %h)", n, dut.w_data, exp[n], dut.u_w[4:0]); end
+                if (dut.w_data !== exp[n]) begin errs = errs + 1; if (errs < 10) $display("ERROR vec #%0d: got %h expected %h (uop %h)", n, dut.w_data, exp[n], dut.u_w[4:0]); end
             end
             n = n + 1;
         end
@@ -26,8 +26,8 @@ module tb_vec;
         repeat (4) @(posedge clk); rst = 0;
         while (n < NEXP && cyc < 400000) @(posedge clk);
         repeat (50) @(posedge clk);
-        $display("operacoes 3D concluidas: %0d de %0d, %0d ciclos, erros=%0d", n, NEXP, cyc, errs);
-        if (errs == 0 && n == NEXP) $display("RESULTADO: VEC3D NO NUCLEO OK"); else $display("RESULTADO: FALHA");
+        $display("3D operations completed: %0d of %0d, %0d cycles, errors=%0d", n, NEXP, cyc, errs);
+        if (errs == 0 && n == NEXP) $display("RESULT: VEC3D IN THE CORE OK"); else $display("RESULT: FAILURE");
         $finish;
     end
 endmodule

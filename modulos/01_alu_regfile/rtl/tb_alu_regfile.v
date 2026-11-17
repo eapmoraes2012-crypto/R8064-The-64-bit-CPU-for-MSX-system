@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// Testbench: ALU (148k vetores, modelo Python independente), regmap, regmerge e banco de registradores.
+// Testbench: ALU (148k vectors, independent Python model), regmap, regmerge and register file.
 module tb_alu_regfile;
     localparam NV = 148128;
     reg clk = 0; always #5 clk = ~clk;
@@ -28,20 +28,20 @@ module tb_alu_regfile;
             a = va[i]; b = vb[i]; op = vc[i][14:10]; sz = vc[i][9:8]; fin = vc[i][7:0]; #1;
             if (res !== vr[i] || fout !== vf[i]) begin
                 e_alu = e_alu + 1;
-                if (e_alu <= 8) $display("ERRO ALU #%0d op=%0d sz=%0d a=%h b=%h fin=%h: res=%h/%h f=%h/%h", i, op, sz, a, b, fin, res, vr[i], fout, vf[i]);
+                if (e_alu <= 8) $display("ERROR ALU #%0d op=%0d sz=%0d a=%h b=%h fin=%h: res=%h/%h f=%h/%h", i, op, sz, a, b, fin, res, vr[i], fout, vf[i]);
             end
         end
         for (i = 0; i < 32; i = i + 1) begin
             rr = i[2:0]; sm = i[3]; sa = i[4]; #1;
             if ({valid, idx} !== {mexp[i][6], mexp[i][5:0]} || (!valid && 0)) begin
-                if (valid !== mexp[i][6] || (valid && idx !== mexp[i][5:0])) begin e_map = e_map + 1; $display("ERRO regmap i=%0d", i); end
+                if (valid !== mexp[i][6] || (valid && idx !== mexp[i][5:0])) begin e_map = e_map + 1; $display("ERROR regmap i=%0d", i); end
             end
         end
         for (i = 0; i < 5000; i = i + 1) begin
             old_v = mo[i]; new_v = mn[i]; wsz = mcw[i][2:0]; #1;
-            if (mout !== me[i]) begin e_mrg = e_mrg + 1; if (e_mrg <= 5) $display("ERRO merge #%0d wsz=%0d", i, wsz); end
+            if (mout !== me[i]) begin e_mrg = e_mrg + 1; if (e_mrg <= 5) $display("ERROR merge #%0d wsz=%0d", i, wsz); end
         end
-        // banco de registradores: escritas/leituras aleatorias contra modelo (leitura sincrona, read-first)
+        // register file: random writes/reads against the model (synchronous read with write forwarding)
         for (i = 0; i < 64; i = i + 1) model[i] = 64'd0;
         we = 0; wa = 0; ra = 0; rb = 0; wd = 0; lf = 64'h1234_5678_9ABC_DEF1; exp_a = 0; exp_b = 0;
         repeat (3) @(posedge clk);
@@ -49,13 +49,14 @@ module tb_alu_regfile;
             lf = nxt(lf);
             we = lf[0]; wa = lf[6:1]; ra = lf[12:7]; rb = lf[18:13]; wd = nxt(lf);
             @(negedge clk);
-            // valores esperados na borda seguinte: leitura devolve o valor ANTIGO
-            exp_a = model[ra]; exp_b = model[rb];
+            // expected values on the next edge: the memory is read-first, but regfile64 forwards the same-clock write
+            // (registered bypass wq_d/byp_*): reading the address being written returns the NEW value; otherwise, the stored value.
+            exp_a = (we && wa == ra) ? wd : model[ra]; exp_b = (we && wa == rb) ? wd : model[rb];
             @(posedge clk); #1;
             if (we) model[wa] = wd;
-            if (qa !== exp_a || qb !== exp_b) begin e_rf = e_rf + 1; if (e_rf <= 5) $display("ERRO regfile i=%0d ra=%0d: %h/%h rb=%0d: %h/%h", i, ra, qa, exp_a, rb, qb, exp_b); end
+            if (qa !== exp_a || qb !== exp_b) begin e_rf = e_rf + 1; if (e_rf <= 5) $display("ERROR regfile i=%0d ra=%0d: %h/%h rb=%0d: %h/%h", i, ra, qa, exp_a, rb, qb, exp_b); end
         end
-        $display("ALU: %0d vetores, %0d erros | regmap: %0d erros | regmerge: %0d erros | regfile: %0d erros", NV, e_alu, e_map, e_mrg, e_rf);
+        $display("ALU: %0d vectors, %0d errors | regmap: %0d errors | regmerge: %0d errors | regfile: %0d errors", NV, e_alu, e_map, e_mrg, e_rf);
         if (e_alu == 0 && e_map == 0 && e_mrg == 0 && e_rf == 0) $display("PASS"); else $display("FAIL");
         $finish;
     end

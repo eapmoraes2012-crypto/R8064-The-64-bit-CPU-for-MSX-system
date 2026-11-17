@@ -1,4 +1,4 @@
-// Invólucro SÓ para medir area/timing da ALU (entradas por LFSR, saida reduzida a 1 bit). Nao e o projeto final.
+// Wrapper ONLY to measure area/timing of the ALU (LFSR inputs, output reduced to 1 bit). Not the final design.
 module pnr_alu_top(input clk, input din, output dout);
     function [63:0] xs(input [63:0] x); reg [63:0] t; begin t = x ^ (x << 13); t = t ^ (t >> 7); xs = t ^ (t << 17); end endfunction
     reg [63:0] la = 64'h1357_9BDF_0246_8ACE, lb = 64'hFEDC_BA98_7654_3211;

@@ -1,5 +1,5 @@
-# verifica_tempos_z80.py - deriva INDEPENDENTEMENTE os T-states do Z80 real (Zilog Z80 CPU User Manual, UM0080) por regras de decodificacao
-# e compara com a tabela [Z80_*] de R8064_Z80_instrucoes_fpga.txt. Uso: python3 verifica_tempos_z80.py arquivo.txt
+# verifica_tempos_z80.py - INDEPENDENTLY derives the T-states of the real Z80 (Zilog Z80 CPU User Manual, UM0080) by decoding rules
+# and compares with the [Z80_*] table of R8064_Z80_instrucoes_fpga.txt. Usage: python3 verifica_tempos_z80.py file.txt
 import sys, re
 def main_t(op):
     x, y, z = op >> 6, (op >> 3) & 7, op & 7; p, q = y >> 1, y & 1
@@ -67,9 +67,9 @@ bad = 0; n = 0; byp = {}
 for page, op, raw, mn, t, ta in rows:
     exp = {'00': main_t, 'CB': cb_t, 'ED': ed_t, 'DD': idx_t, 'FD': idx_t, 'DDCB': idxcb_t, 'FDCB': idxcb_t}[page](op)
     n += 1; byp[page] = byp.get(page, 0) + 1
-    if exp is None: print('SEM REGRA', page, raw, mn, t, ta); continue
+    if exp is None: print('NO RULE', page, raw, mn, t, ta); continue
     et, ea = exp
     got = (int(t), int(ta) if ta.strip() else None)
     if got != (et, ea):
-        bad += 1; print('DIFERE', page, raw, mn, 'tabela', got, 'regra', (et, ea))
-print('linhas', n, byp, 'diferencas', bad)
+        bad += 1; print('DIFFERS', page, raw, mn, 'table', got, 'rule', (et, ea))
+print('lines', n, byp, 'differences', bad)

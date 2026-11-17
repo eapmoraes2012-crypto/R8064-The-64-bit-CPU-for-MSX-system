@@ -1,0 +1,5 @@
+read_verilog -sv ../rtl/r8064_board_top.v ../rtl/r8064_clkgen.v ../rtl/r8064_soc.v ../rtl/r8064_memsys.v ../rtl/mem_arb5.v ../rtl/r8064_dma.v ../rtl/r8064_xbuf.v ../rtl/cache_dm.v ../rtl/mmu.v ../rtl/sdram_ctrl.v ../../10_mode_gov/rtl/r8064_cpu_gov.v ../../10_mode_gov/rtl/r8064_msx_sys.v ../../10_mode_gov/rtl/r8064_fifo_if.v ../../10_mode_gov/rtl/r8064_mode.v ../../10_mode_gov/rtl/timing_gov.v ../../10_mode_gov/rtl/mem_class.v ../../10_msx_mem/rtl/msx_mem.v ../../10_mode_gov/rtl/r8064_core_min.v ../../10_mode_gov/rtl/r8064_decode.v ../../10_mode_gov/rtl/r8064_decode_rom.v ../../09_core_min/rtl/regfile64.v ../../09_core_min/rtl/regmap_b.v ../../09_core_min/rtl/regmerge.v ../../09_core_min/rtl/alu_prep.v ../../10_mode_gov/rtl/alu_core_s.v ../../01_alu_regfile/rtl/alu_core.v ../../01_alu_regfile/rtl/alu64.v 
+chparam -set SRC 0 r8064_board_top
+synth_gowin -top r8064_board_top -noflatten
+hierarchy -top r8064_board_top
+tee -o stat_modulos.txt stat -top r8064_board_top

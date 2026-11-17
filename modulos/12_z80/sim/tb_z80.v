@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
-// tb_z80.v - compara o RTL com o modelo C (z80ref -d) a cada instrucao: PC, A F BC DE HL IX IY SP WZ, sombra, I R, IFF, IM, T acumulado.
-// plusargs: +mem=mem.hex +regs=regs.txt +trace=trace.txt +n=20000 +wait=0/1 (wait=1: ce lento + WAIT aleatorio, sem comparar T)
+// tb_z80.v - compares the RTL with the C model (z80ref -d) at every instruction: PC, A F BC DE HL IX IY SP WZ, shadow set, I R, IFF, IM, accumulated T.
+// plusargs: +mem=mem.hex +regs=regs.txt +trace=trace.txt +n=20000 +wait=0/1 (wait=1: slow ce + random WAIT, without comparing T)
 module tb_z80;
   reg clk=0, rst_n=0; always #5 clk=~clk;
   reg [7:0] mem [0:65535];
@@ -36,7 +36,7 @@ module tb_z80;
     ninstr=0; errs=0;
     repeat (4) @(posedge clk);
     @(negedge clk); rst_n = 1;
-    repeat (60) @(posedge clk);   // rotina de RESET termina e o 1o ciclo M1 fica aguardando ce
+    repeat (60) @(posedge clk);   // RESET routine ends and the 1st M1 cycle waits for ce
     @(negedge clk);
     wr8(7, v[0][7:0]); dut.f=v[1][7:0];
     wr8(0, v[2][7:0]); wr8(1, v[3][7:0]); wr8(2, v[4][7:0]); wr8(3, v[5][7:0]); wr8(4, v[6][7:0]); wr8(5, v[7][7:0]);
@@ -50,10 +50,10 @@ module tb_z80;
     go = 1;
   end
   task wr8; input integer k; input [7:0] val; begin dut.rfa[k] = val; dut.rfb[k] = val; end endtask
-  // comparacao no negedge (valores estaveis)
+  // comparison on negedge (stable values)
   always @(negedge clk) if (rst_n && instr_done && ninstr < nmax) begin
     rc = $fscanf(fd, "%h %h %h %h %h %h %h %h %h %h %h %h %h %h %h", e_pc, e_af, e_bc, e_de, e_hl, e_ix, e_iy, e_sp, e_wz, e_af2, e_bc2, e_de2, e_hl2, e_ir, e_if);
-    if (rc != 15) begin $display("PASS: %0d instrucoes identicas ao modelo (fim do traco: HALT no modelo)", ninstr); $finish; end
+    if (rc != 15) begin $display("PASS: %0d instructions identical to the model (end of trace: HALT in the model)", ninstr); $finish; end
     rc = $fscanf(fd, "%h", e_t);
     ninstr = ninstr + 1;
     if ({dut.dbg_pc, dut.dbg_a, dut.f, dut.dbg_bc, dut.dbg_de, dut.dbg_hl, dut.dbg_ix, dut.dbg_iy, dut.dbg_sp, dut.dbg_wz} !== {e_pc, e_af, e_bc, e_de, e_hl, e_ix, e_iy, e_sp, e_wz}
@@ -66,10 +66,10 @@ module tb_z80;
         $display("  RTL: pc=%h af=%h%h bc=%h de=%h hl=%h ix=%h iy=%h sp=%h wz=%h af'=%h%h ir=%h%h iff=%b%b im=%0d T=%0d", dut.dbg_pc, dut.dbg_a, dut.f, dut.dbg_bc, dut.dbg_de, dut.dbg_hl, dut.dbg_ix, dut.dbg_iy, dut.dbg_sp, dut.dbg_wz, dut.dbg_a2, dut.f2, dut.ri, dut.rr, dut.iff1, dut.iff2, dut.im, tc);
         $display("  REF: pc=%h af=%h bc=%h de=%h hl=%h ix=%h iy=%h sp=%h wz=%h af'=%h ir=%h iff=%h T=%0d", e_pc, e_af, e_bc, e_de, e_hl, e_ix, e_iy, e_sp, e_wz, e_af2, e_ir, e_if, e_t);
       end
-      if (errs >= 1) begin $display("FAIL: %0d instrucoes comparadas ate a 1a divergencia", ninstr); $finish; end
+      if (errs >= 1) begin $display("FAIL: %0d instructions compared up to the 1st divergence", ninstr); $finish; end
     end
     if (ninstr == nmax) begin
-      $display("PASS: %0d instrucoes identicas ao modelo (T-states %s)", ninstr, waitmode ? "nao comparados" : "comparados");
+      $display("PASS: %0d instructions identical to the model (T-states %s)", ninstr, waitmode ? "not compared" : "compared");
       $finish;
     end
   end

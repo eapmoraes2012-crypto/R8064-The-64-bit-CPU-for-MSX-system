@@ -12,11 +12,11 @@ module tb_vec3d;
         gp <= (gp + 1) % GAP; if (i < N && gp == 0) begin in_valid <= 1; a <= ma[i]; b <= mb[i]; op <= mc[i][3:0]; sh <= mc[i][7:4]; imm <= mc[i][19:12]; i <= i + 1; end
         else in_valid <= 0;
         if (out_valid) begin
-            if (out !== me[k]) begin err = err + 1; if (err < 6) $display("ERRO vetor %0d op=%0d: obtido %h esperado %h", k, mc[k][3:0], out, me[k]); end
+            if (out !== me[k]) begin err = err + 1; if (err < 6) $display("ERROR vector %0d op=%0d: got %h expected %h", k, mc[k][3:0], out, me[k]); end
             k = k + 1;
         end
         if (k == N) begin
-            if (err == 0) $display("RESULTADO: VEC3D OK (%0d vetores, 1 a cada %0d clocks)", N, GAP); else $display("RESULTADO: %0d ERROS", err);
+            if (err == 0) $display("RESULT: VEC3D OK (%0d vectors, 1 every %0d clocks)", N, GAP); else $display("RESULT: %0d ERRORS", err);
             $finish;
         end
     end

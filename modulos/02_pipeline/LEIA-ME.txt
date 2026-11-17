@@ -1,37 +1,37 @@
-MODULO 02 - Pipeline de 7 estagios (modelo de temporizacao dirigido por traco) - 2026-11-02
-Arquivos: rtl/r8064_pipe.v, rtl/tb_pipe.v, ref/gen_trace.py (gera tracos e tabela), ref/run_pipe.py (roda Icarus e compara), resultado_pipeline.txt, sim/*.mem (11 programas).
-Como rodar: copie rom/*.mem e rtl/r8064_decode.v do pacote + rtl/*.v + sim/*.mem para uma pasta; python3 ref/gen_trace.py <pacote> <pasta>; python3 ref/run_pipe.py <pasta>.
+MODULE 02 - 7-stage pipeline (trace-driven timing model) - 2026-11-02
+Files: rtl/r8064_pipe.v, rtl/tb_pipe.v, ref/gen_trace.py (generates traces and table), ref/run_pipe.py (runs Icarus and compares), resultado_pipeline.txt, sim/*.mem (11 programs).
+How to run: copy rom/*.mem and rtl/r8064_decode.v from the package + rtl/*.v + sim/*.mem to a folder; python3 ref/gen_trace.py <package> <folder>; python3 ref/run_pipe.py <folder>.
 
-O QUE E: um pipeline F1,F2,D,R,X,M,W em RTL que executa o TRACO de instrucoes (b2,b3) e conta clocks: barramento unico (busca x dados, dado tem prioridade),
-wait por acesso (1+W), desvio tomado com busca de caminho errado ate resolver em D/X/M (penalidade 2/4/5 sai da propria estrutura), e o decodificador REAL
-r8064_decode no estagio D (conferido contra a leitura combinacional das ROMs: 500/500 conferencias, 0 erros; um mutante da ROM de controle foi detectado).
-O QUE NAO E: nao executa as instrucoes (nao ha dados/registradores/memoria) e nao modela hazards de dados (RAW, load-uso), desvio nao tomado, interrupcoes, FPU/MMU.
-Nao e sintetizavel (usa traco e ROMs de simulacao); portanto nao ha LUT/Fmax para este modulo.
+WHAT IT IS: an F1,F2,D,R,X,M,W pipeline in RTL that executes the instruction TRACE (b2,b3) and counts clocks: single bus (fetch x data, data has priority),
+wait per access (1+W), taken branch with wrong-path fetch until resolved in D/X/M (penalty 2/4/5 comes from the structure itself), and the REAL decoder
+r8064_decode in the D stage (checked against the combinational read of the ROMs: 500/500 checks, 0 errors; a mutant of the control ROM was detected).
+WHAT IT IS NOT: it does not execute the instructions (there is no data/registers/memory) and does not model data hazards (RAW, load-use), not-taken branches, interrupts, FPU/MMU.
+Not synthesizable (uses trace and simulation ROMs); therefore there is no LUT/Fmax for this module.
 
-RESULTADOS (ver resultado_pipeline.txt)
-A/B  D=1, busca sequencial (suposicao da planilha): instrucao isolada, sequencias de ALU e EX longo batem EXATAMENTE com a planilha (+6 de enchimento).
-     Com mistura de memoria e desvios o pipeline e de 0% a 3% mais rapido (A) ou 0,1% a 10% (B), porque a planilha soma penalidade e wait sem sobrepor.
-C    D=2 (decodificador como esta: id +1, controle +2): +1 clock de latencia e BR_D passa de 2 para 3 (JPQ: +5,5%); demais iguais ou ate 16% abaixo da planilha.
-D    busca SERIAL (so busca a proxima instrucao depois de conhecer o comprimento, len em 2 clocks): 5% a 60% PIOR que a planilha.
+RESULTS (ver resultado_pipeline.txt)
+A/B  D=1, sequential fetch (spreadsheet assumption): isolated instruction, ALU sequences and long EX match the spreadsheet EXACTLY (+6 fill).
+     With a mix of memory and branches the pipeline is 0% to 3% faster (A) or 0.1% to 10% (B), because the spreadsheet adds penalty and wait without overlapping.
+C    D=2 (decoder as it is: id +1, control +2): +1 clock of latency and BR_D goes from 2 to 3 (JPQ: +5.5%); the rest equal or up to 16% below the spreadsheet.
+D    SERIAL fetch (only fetches the next instruction after knowing the length, len in 2 clocks): 5% to 60% WORSE than the spreadsheet.
 CONCLUSOES
-1) A planilha so se sustenta se a busca for antecipada (fila de prefetch + decodificador de comprimento fora do caminho critico). O R8064 tem instrucoes de 2 a 13 bytes e
-   o comprimento depende de b2/b3 (ROM). Sem prefetch, CPI sobe de 5,06 para 8,04 em codigo ALU com wait. Falta projetar a fila de prefetch (modulo futuro).
-2) Resposta a "duas leituras em serie no D": funciona se D ocupar 2 clocks (custo: +1 latencia, BR_D=3). Alternativa: ler a ROM de controle no estagio R (D=1) e manter
-   BR_D=2 apenas se a classe de desvio puder ser obtida da ROM_A/B (hoje esta so na ROM de controle). Nao testado.
-3) Penalidades de desvio ficam parcialmente escondidas atras do barramento ocupado; a soma da planilha e conservadora.
-PREMISSAS: W_RD=4,W_WR=2,W_IO=1, HIT=0 (as da planilha); desvios sempre tomados (condicionais "falsas" nao simuladas); 1 acesso de busca de 8 bytes por instrucao (sem reuso).
+1) The spreadsheet only holds if fetch is anticipated (prefetch queue + length decoder off the critical path). The R8064 has instructions of 2 to 13 bytes and
+   the length depends on b2/b3 (ROM). Without prefetch, CPI rises from 5.06 to 8.04 in ALU code with wait. The prefetch queue still has to be designed (future module).
+2) Answer to "two serial reads in D": it works if D takes 2 clocks (cost: +1 latency, BR_D=3). Alternative: read the control ROM in the R stage (D=1) and keep
+   BR_D=2 only if the branch class can be obtained from ROM_A/B (today it is only in the control ROM). Not tested.
+3) Branch penalties are partially hidden behind the busy bus; the spreadsheet sum is conservative.
+ASSUMPTIONS: W_RD=4,W_WR=2,W_IO=1, HIT=0 (those of the spreadsheet); branches always taken ("false" conditionals not simulated); 1 fetch access of 8 bytes per instruction (no reuse).
 
-=== FILA DE PREFETCH (rtl/r8064_pipe2.v, rtl/tb_pipe2.v, ref/run_pipe2.py, resultado_prefetch.txt) ===
-Front-end: busca de palavras de 8 bytes alinhadas (1+WRD clocks, disputa o barramento com M) -> fila de QCAP bytes -> F1 (comprimento, LEN_LAT clocks) -> F2 (extrai LEN bytes) -> D.
-Desvio: a instrucao de desvio trava o front-end ao entrar em F1; a fila segue enchendo com bytes do caminho errado ate a resolucao (D/X/M); depois e esvaziada e a busca recomeca
-no alvo (deslocamento pseudoaleatorio dentro da palavra). Nao modela hazards de dados nem desvio nao tomado. Decodificador real no D conferido: 500/500, 0 erros.
-Como rodar: python3 ref/run_pipe2.py <pasta de trabalho>  (a mesma pasta do modulo 02, com as ROMs; argumentos opcionais = indices das configuracoes).
-RESULTADOS (CPI = clocks por instrucao; planilha = busca de 1 palavra por instrucao, sem reaproveitamento)
-- Com wait da planilha e fila de 32 B: 10% a 61% MENOS clocks que a planilha (ex.: ALU 5,06 -> 2,13 CPI; mistura aleatoria 13,99 -> 10,76). A planilha SUPERESTIMA a busca,
-  porque uma palavra de 8 bytes serve varias instrucoes de 2-5 bytes. Chamadas/retornos (CALL/RET) ficam iguais a planilha (+0,3%): a penalidade de desvio domina.
-- Tamanho da fila: 18 e 19 B travam (deadlock: instrucao de 13 bytes + palavra de 8 nao cabem); minimo funcional = 20 B (13+8-1); 24 B tem o mesmo desempenho de 32 e 64 B
-  (diferenca < 0,1% em 500 instrucoes; 16 B trava em varios programas). Recomendado: 32 B (2 BSRAM nao precisam; cabe em registradores/SSRAM). 
-- Desvios: wait de 4 deixa cerca de 14 palavras buscadas ate resolver; o desvio no D custa 1 clock a mais com D=2 (JPQ BR_D 3).
-- SEM wait (cache/memoria rapida): o decodificador de comprimento com LEN_LAT=2 NAO e pipelinado e limita a 1 instrucao a cada 2 clocks (ALU: CPI 2,08 contra 1,06 da planilha, +96%).
-  Para sustentar 1 instrucao/clock o decodificador de comprimento precisa de 1 clock por instrucao (ou ser pipelinado/duplicado). Com wait de 4 isso nao aparece.
-PREMISSAS A CONFIRMAR: palavra de busca de 8 bytes (barramento de 64 bits), W_RD=4, nenhum acerto de cache, alvo de desvio com deslocamento aleatorio, F1 le o comprimento em LEN_LAT clocks.
+=== PREFETCH QUEUE (rtl/r8064_pipe2.v, rtl/tb_pipe2.v, ref/run_pipe2.py, resultado_prefetch.txt) ===
+Front-end: fetch of aligned 8-byte words (1+WRD clocks, contends for the bus with M) -> queue of QCAP bytes -> F1 (length, LEN_LAT clocks) -> F2 (extracts LEN bytes) -> D.
+Branch: the branch instruction stalls the front-end on entering F1; the queue keeps filling with wrong-path bytes until resolution (D/X/M); then it is flushed and fetch restarts
+at the target (pseudo-random offset within the word). Does not model data hazards or not-taken branches. Real decoder in D checked: 500/500, 0 errors.
+How to run: python3 ref/run_pipe2.py <working folder>  (the same folder as module 02, with the ROMs; optional arguments = configuration indices).
+RESULTS (CPI = clocks per instruction; spreadsheet = fetch of 1 word per instruction, no reuse)
+- With the spreadsheet's wait and a 32 B queue: 10% to 61% FEWER clocks than the spreadsheet (e.g.: ALU 5.06 -> 2.13 CPI; random mix 13.99 -> 10.76). The spreadsheet OVERESTIMATES fetch,
+  because one 8-byte word serves several 2-5 byte instructions. Calls/returns (CALL/RET) stay equal to the spreadsheet (+0.3%): the branch penalty dominates.
+- Queue size: 18 and 19 B deadlock (13-byte instruction + 8-byte word do not fit); functional minimum = 20 B (13+8-1); 24 B has the same performance as 32 and 64 B
+  (difference < 0.1% in 500 instructions; 16 B deadlocks in several programs). Recommended: 32 B (2 BSRAM not needed; fits in registers/SSRAM). 
+- Branches: a wait of 4 leaves about 14 words fetched until resolution; the branch in D costs 1 more clock with D=2 (JPQ BR_D 3).
+- WITHOUT wait (cache/fast memory): the length decoder with LEN_LAT=2 is NOT pipelined and limits to 1 instruction every 2 clocks (ALU: CPI 2.08 against 1.06 of the spreadsheet, +96%).
+  To sustain 1 instruction/clock the length decoder needs 1 clock per instruction (or to be pipelined/duplicated). With a wait of 4 this does not show up.
+ASSUMPTIONS TO CONFIRM: 8-byte fetch word (64-bit bus), W_RD=4, no cache hits, branch target with random offset, F1 reads the length in LEN_LAT clocks.

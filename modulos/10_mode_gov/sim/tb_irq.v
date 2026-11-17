@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// instrucoes de bloco do Z80: LDIR, LDDR, CPIR, INIR, OTIR (nucleo isolado; memoria byte-a-byte)
+// Z80 block instructions: LDIR, LDDR, CPIR, INIR, OTIR (isolated core; byte-by-byte memory)
 module tb_irq;
     wire [7:0] d_be; reg clk = 0, rst = 1, irq = 0; integer n_take = 0; reg [63:0] bc_take = 0, hl_take = 0, epc_take = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -24,7 +24,7 @@ module tb_irq;
     end
     always @* io_rdata = (io_a == 8'h78) ? 8'h5A : 8'hFF;
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     always @(posedge clk) if (dut.irq_take) begin n_take <= n_take + 1; bc_take <= dut.u_rf1.mem_a[1]; hl_take <= dut.u_rf1.mem_a[3]; epc_take <= dut.npc; end
     initial begin
@@ -32,15 +32,15 @@ module tb_irq;
         wait (mem[16'h201] == 8'h42);      // 2 iteracoes ja feitas
         @(posedge clk); irq = 1; @(posedge clk); irq = 0;
         repeat (20000) @(posedge clk);
-        chk("1 interrupcao aceita", n_take, 1);
+        chk("1 interrupt accepted", n_take, 1);
         chk("PC salvo = LDIR (0F)", dut.epc, 64'h0f);
-        if (!(bc_take > 0 && bc_take < 5)) begin errs = errs + 1; $display("ERRO: interrupcao nao foi no meio da repeticao (BC=%0d)", bc_take); end
+        if (!(bc_take > 0 && bc_take < 5)) begin errs = errs + 1; $display("ERROR: interrupt was not in the middle of the repeat (BC=%0d)", bc_take); end
         chk("IE desabilitado", dut.ie, 0);
         chk("BC final 0", dut.u_rf1.mem_a[1], 0); chk("HL final", dut.u_rf1.mem_a[3], 64'h105); chk("DE final", dut.u_rf1.mem_a[2], 64'h205);
         chk("[200]", mem[16'h200], 8'h41); chk("[202]", mem[16'h202], 8'h43); chk("[204]", mem[16'h204], 8'h45); chk("[205] intacto", mem[16'h205], 0);
         chk("PC final (JR)", dbg_pc, 64'h11);
-        $display("take=%0d BC_na_interrupcao=%0d epc=%h pc=%h erros=%0d", n_take, bc_take, dut.epc, dbg_pc, errs);
-        if (errs == 0) $display("RESULTADO: IRQ EM LDIR OK"); else $display("RESULTADO: %0d ERROS", errs);
+        $display("take=%0d BC_at_interrupt=%0d epc=%h pc=%h errors=%0d", n_take, bc_take, dut.epc, dbg_pc, errs);
+        if (errs == 0) $display("RESULT: IRQ IN LDIR OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

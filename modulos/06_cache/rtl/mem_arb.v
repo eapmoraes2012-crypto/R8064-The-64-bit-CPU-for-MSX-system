@@ -1,4 +1,4 @@
-// mem_arb.v - arbitro de 2 mestres (D com prioridade sobre I) para o controlador de SDRAM de 1 pedido por vez.
+// mem_arb.v - 2-master arbiter (D with priority over I) for the 1-request-at-a-time SDRAM controller.
 module mem_arb(
     input  wire clk, rst,
     // mestre D

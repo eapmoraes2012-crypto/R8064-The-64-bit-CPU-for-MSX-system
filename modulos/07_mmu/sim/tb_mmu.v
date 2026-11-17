@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// Testbench da MMU: tabelas de paginas reais em memoria comportamental (latencia aleatoria), modelo de referencia em software (percorre as tabelas), fila de esperados.
+// MMU testbench: real page tables in behavioral memory (random latency), software reference model (walks the tables), queue of expected values.
 module tb_mmu;
     reg clk = 0, rst = 1; always #5 clk = ~clk;
     reg en = 0, user = 0; reg [7:0] asid = 0; reg [19:0] root = 1;
@@ -12,7 +12,7 @@ module tb_mmu;
     mmu #(.NENT(NENT)) dut(.clk(clk), .rst(rst), .en(en), .user(user), .asid(asid), .root_ppn(root), .fl_all(fl_all), .fl_va_en(fl_va_en), .fl_asid_en(fl_asid_en), .fl_va(fl_va), .fl_asid(fl_asid), .fl_busy(fl_busy),
         .v_req(v_req), .v_addr(v_addr), .v_acc(v_acc), .ready(ready), .p_valid(p_valid), .p_addr(p_addr), .p_fault(p_fault), .p_cause(p_cause),
         .m_req(m_req), .m_addr(m_addr), .m_accept(m_accept), .m_done(m_done), .m_rdata(m_rdata), .st_hit(sh), .st_miss(sm), .st_walk(sw), .st_fault(sf));
-    // ---- memoria com latencia aleatoria
+    // ---- memory with random latency
     reg [63:0] pm [0:524287];
     integer lat_min = 4, lat_max = 12, nmemrd = 0;
     reg [63:0] rd_lat; reg mbusy = 0; integer mcnt = 0; reg [18:0] maddr_l;
@@ -46,7 +46,7 @@ module tb_mmu;
             pm[{t_[9:0], idx}] = {34'd0, ppn, 2'b00, flags};
         end
     endtask
-    // ---- modelo de referencia (percorre as tabelas)
+    // ---- reference model (walks the tables)
     function [35:0] refx(input e, input [19:0] rt, input [63:0] va, input [1:0] acc, input usr);
         reg [63:0] pe; reg [19:0] tb; integer l; reg done, flt; reg [2:0] cs; reg [31:0] pa; reg [8:0] ix; reg pf;
         begin
@@ -80,7 +80,7 @@ module tb_mmu;
             end
         end
     endfunction
-    // ---- gerador / verificador
+    // ---- generator / checker
     reg [63:0] qa [0:8191]; reg [1:0] qc [0:8191]; reg qu [0:8191]; reg qs [0:8191]; reg exs [0:8191]; integer qh = 0, qt = 0;
     reg [35:0] ex [0:8191]; integer eh = 0, et = 0; integer errs = 0, nchk = 0, acc_cyc = 0, rv_cyc = 0, cyc = 0;
     task push(input [63:0] a, input [1:0] c, input u); begin qa[qt % 8192] = a; qc[qt % 8192] = c; qu[qt % 8192] = u; qs[qt % 8192] = 0; qt = qt + 1; end endtask
@@ -92,9 +92,9 @@ module tb_mmu;
         cyc = cyc + 1;
         if (!rst) begin
             if (p_valid) begin
-                if (eh == et) begin errs = errs + 1; $display("ERRO: p_valid sem pedido"); end
+                if (eh == et) begin errs = errs + 1; $display("ERROR: p_valid without request"); end
                 else begin
-                    if ({p_fault, p_fault ? p_cause : 3'd0, p_fault ? 32'd0 : p_addr} !== ex[eh % 8192] && !exs[eh % 8192]) begin errs = errs + 1; if (errs < 12) $display("ERRO t=%0t: dut f=%b c=%0d a=%h  esperado f=%b c=%0d a=%h", $time, p_fault, p_cause, p_addr, ex[eh%8192][35], ex[eh%8192][34:32], ex[eh%8192][31:0]); end
+                    if ({p_fault, p_fault ? p_cause : 3'd0, p_fault ? 32'd0 : p_addr} !== ex[eh % 8192] && !exs[eh % 8192]) begin errs = errs + 1; if (errs < 12) $display("ERROR t=%0t: dut f=%b c=%0d a=%h  expected f=%b c=%0d a=%h", $time, p_fault, p_cause, p_addr, ex[eh%8192][35], ex[eh%8192][34:32], ex[eh%8192][31:0]); end
                     if (ex[eh % 8192][35]) nflt = nflt + 1;
                     eh = eh + 1; nchk = nchk + 1; rv_cyc = cyc;
                 end
@@ -107,13 +107,13 @@ module tb_mmu;
         end
     end
     task waitq; begin @(negedge clk); while (!quiet) @(negedge clk); repeat (3) @(negedge clk); while (!quiet) @(negedge clk); end endtask
-    integer eb = 0, tot_f = 0; task rep(input [255:0] nome); begin if (errs != eb) begin $display("FALHA %0s: %0d erros", nome, errs - eb); tot_f = tot_f + 1; end else $display("ok   %0s (%0d traducoes conferidas ate aqui, %0d faltas)", nome, nchk, nflt); eb = errs; end endtask
+    integer eb = 0, tot_f = 0; task rep(input [255:0] nome); begin if (errs != eb) begin $display("FAIL %0s: %0d errors", nome, errs - eb); tot_f = tot_f + 1; end else $display("ok   %0s (%0d translations checked so far, %0d faults)", nome, nchk, nflt); eb = errs; end endtask
     task pulse_asid(input [7:0] a); begin @(negedge clk); while (fl_busy) @(negedge clk); fl_asid_en = 1; fl_asid = a; @(negedge clk); fl_asid_en = 0; end endtask
     integer wk0;
-    task chk_w(input integer esperado, input [255:0] nome); begin if (sw - wk0 != esperado) begin errs = errs + 1; $display("ERRO %0s: %0d caminhadas (esperado %0d)", nome, sw - wk0, esperado); end end endtask
+    task chk_w(input integer esperado, input [255:0] nome); begin if (sw - wk0 != esperado) begin errs = errs + 1; $display("ERROR %0s: %0d walks (expected %0d)", nome, sw - wk0, esperado); end end endtask
     task pulse_all; begin @(negedge clk); fl_all = 1; @(negedge clk); fl_all = 0; end endtask
     task pulse_va(input [63:0] va); begin @(negedge clk); while (fl_busy) @(negedge clk); fl_va_en = 1; fl_va = va; @(negedge clk); fl_va_en = 0; end endtask
-    // ---- testes
+    // ---- tests
     integer n, k2, gerr, a_, seed; reg qk; initial qk = $test$plusargs("quick");
     reg [38:0] va_; reg [19:0] pp_; reg [7:0] fl_; integer lf_, T0, T1;
     reg [19:0] rootA, rootB;
@@ -127,13 +127,13 @@ module tb_mmu;
                 lf_ = ($urandom % 8 == 0) ? 1 : 0;
                 va_ = {r4(0), 9'd0, 9'd0, 12'd0};   // VPN2 em 0..3
                 va_[29:21] = $urandom % 6; va_[20:12] = (lf_ == 1) ? 9'd0 : ($urandom % 24);
-                if ($urandom % 10 == 0) va_[38] = 1;   // endereco 'negativo' (canonico se estendido)
+                if ($urandom % 10 == 0) va_[38] = 1;   // 'negative' address (canonical if sign-extended)
                 pp_ = 20'd256 + ($urandom % 700); if (lf_ == 1) pp_ = {pp_[19:9], 9'd0} & 20'h003FF; if (lf_ == 1 && pp_ == 0) pp_ = 20'h200;
                 fl_ = $urandom; fl_[0] = ($urandom % 12 != 0); fl_[6] = ($urandom % 6 != 0); fl_[7] = ($urandom % 3 != 0);
-                if (fl_[2] && !fl_[1]) fl_[2] = 0;     // W sem R seria invalida (testada separadamente)
+                if (fl_[2] && !fl_[1]) fl_[2] = 0;     // W without R would be invalid (tested separately)
                 if (fl_[3:1] == 0) fl_[1] = 1;
                 if (lf_ == 1 && $urandom % 8 == 0) pp_[8:0] = 1 + ($urandom % 100);
-                if ($urandom % 40 == 0) pp_ = 20'h40000 + ($urandom % 1000);   // fora da memoria
+                if ($urandom % 40 == 0) pp_ = 20'h40000 + ($urandom % 1000);   // outside the memory
                 map(rt, va_, pp_, fl_, lf_); ml[nml % 2048] = {{25{va_[38]}}, va_}; nml = nml + 1;
             end
         end
@@ -145,7 +145,7 @@ module tb_mmu;
                 a = {25'd0, r4(0), 9'd0, 9'd0, 12'd0}; a[29:21] = $urandom % 6; a[20:12] = $urandom % 24; a[11:0] = $urandom; a[2:0] = 0;
                 if ($urandom % 10 == 0) begin a[63:39] = {25{a[38]}}; a[38] = 1; a[63:39] = {25{1'b1}}; end else a[63:39] = 0;
                 if (a[38] && $urandom % 10 != 0) a[63:39] = {25{1'b1}};
-                if ($urandom % 50 == 0) a[50] = ~a[50];     // nao canonico
+                if ($urandom % 50 == 0) a[50] = ~a[50];     // non-canonical
                 if (nml > 0 && $urandom % 10 < 8) begin a = ml[$urandom % ((nml < 2048) ? nml : 2048)]; a[11:3] = $urandom; a[2:0] = 0; if (a[12+:9] == 0 && $urandom % 2) a[20:12] = $urandom; end
                 push(a, $urandom % 3, $urandom % 2);
             end
@@ -158,30 +158,30 @@ module tb_mmu;
         en = 0; push(64'h123456789ABC, 0, 0); push(64'hFFFF_0000_1234, 1, 1); waitq; rep("T1 en=0 identidade");
         // T2: mapeamento simples + latencias
         en = 1; root = 1; newroot(1); map(1, 39'h0000_4000, 20'd300, 8'b1100_1111, 0);   // V R W X, A, D (U=0)
-        push(64'h4008, 0, 0); waitq; $display("T2 latencia de falha de TLB (1 pagina, 3 niveis): %0d clocks", rv_cyc - acc_cyc);
+        push(64'h4008, 0, 0); waitq; $display("T2 TLB miss latency (1 page, 3 levels): %0d clocks", rv_cyc - acc_cyc);
         push(64'h4010, 0, 0); waitq; $display("T2 latencia de acerto: %0d clock(s)", rv_cyc - acc_cyc);
         rep("T2");
         // T2b: vazao de acertos
         T0 = cyc; for (n = 0; n < 200; n = n + 1) push(64'h4000 + 8 * (n % 64), n % 2, 0); waitq; T1 = rv_cyc; $display("T2b 200 acertos seguidos: %0d clocks", T1 - T0 - 1); rep("T2b");
         // T3: permissoes
         pulse_all; newroot(1); nexttbl = 2;
-        map(1, 39'h1000, 20'd301, 8'b0100_0011, 0);   // V R, A       -> so leitura
-        map(1, 39'h2000, 20'd302, 8'b0100_0111, 0);   // V R W A (D=0)-> escrita da causa 3
+        map(1, 39'h1000, 20'd301, 8'b0100_0011, 0);   // V R, A       -> read only
+        map(1, 39'h2000, 20'd302, 8'b0100_0111, 0);   // V R W A (D=0)-> write of cause 3
         map(1, 39'h3000, 20'd303, 8'b1101_0111, 0);   // V R W U A D
         map(1, 39'h4000, 20'd304, 8'b1100_1001, 0);   // V X A D
         map(1, 39'h5000, 20'd305, 8'b1000_0011, 0);   // V R, A=0     -> causa 3
         for (n = 1; n <= 5; n = n + 1) begin for (k2 = 0; k2 < 3; k2 = k2 + 1) begin push(64'h1000 * n + 8, k2, 0); push(64'h1000 * n + 8, k2, 1); end end
         waitq; rep("T3 permissoes (R,W,X x usuario/supervisor)");
-        pulse_all; for (n = 1; n <= 5; n = n + 1) for (k2 = 0; k2 < 3; k2 = k2 + 1) push(64'h1000 * n + 16, k2, k2 % 2); waitq; rep("T3b repete apos descarga");
-        // T4: nao canonico, invalida, folha no nivel 2, megapagina desalinhada, fora da memoria
+        pulse_all; for (n = 1; n <= 5; n = n + 1) for (k2 = 0; k2 < 3; k2 = k2 + 1) push(64'h1000 * n + 16, k2, k2 % 2); waitq; rep("T3b repeats after flush");
+        // T4: non-canonical, invalid, level-2 leaf, misaligned megapage, outside memory
         push(64'h0001_0000_0000_1000, 0, 0); push(64'h7F00_0000_0000_1000, 0, 0); push(64'hFFFF_FFFF_FFFF_F000, 0, 0);
         pm[{10'd1, 9'd5}] = 64'h0000_0000_0000_0FCF;                    // folha no nivel 2 (VPN2=5)
         map(1, 39'h40_0000_0000 >> 0 & 39'h3F_FFFF_FFFF, 20'd400, 8'hCF, 1);   // possivel desalinhada
-        pm[{10'd1, 9'd6}] = {34'd0, 20'd9, 10'd1};                       // nivel2 aponta p/ tabela 9 vazia
-        map(1, 39'h2_0000_0000 + 39'h0020_0000, 20'h40001, 8'hCF, 0);   // PPN fora da memoria (>= 4 MB)
+        pm[{10'd1, 9'd6}] = {34'd0, 20'd9, 10'd1};                       // level 2 points to empty table 9
+        map(1, 39'h2_0000_0000 + 39'h0020_0000, 20'h40001, 8'hCF, 0);   // PPN outside the memory (>= 4 MB)
         push({25'd0, 39'h1_4000_0000}, 0, 0); push({25'd0, 39'h1_8000_0000}, 0, 0); push({25'd0, 39'h2_0020_0000}, 0, 0);
         push(64'h4020_0000, 0, 0); push(64'h6000_1000, 0, 0);
-        waitq; rep("T4 faltas diversas");
+        waitq; rep("T4 miscellaneous faults");
         // T5: megapagina correta
         pulse_all; wk0 = sw; newroot(1); nexttbl = 2; map(1, 39'h0040_0000, 20'd512, 8'hCF, 1); map(1, 39'h0060_0000, 20'd1024 - 20'd512, 8'hCF, 1);
         for (n = 0; n < 40; n = n + 1) push(64'h0040_0000 + n * 64'h2468 , n % 3, 0); for (n = 0; n < 40; n = n + 1) push(64'h0060_0000 + n * 64'h1230, n % 2, 0);
@@ -190,7 +190,7 @@ module tb_mmu;
         newroot(1); nexttbl = 2; map(1, 39'h8000, 20'd310, 8'hCF, 0); push(64'h8000, 0, 0); waitq;
         map(1, 39'h8000, 20'd311, 8'hCF, 0); pulse_va(64'h8123); push(64'h8000, 0, 0); waitq; rep("T6 PGINV");
         map(1, 39'h8000, 20'd312, 8'hCF, 0); pulse_all; push(64'h8000, 0, 0); waitq; rep("T6b fl_all");
-        // T7: dois espacos de enderecos com ASID e pagina global, sem descarga ao trocar
+        // T7: two address spaces with ASID and global page, no flush on switching
         rootA = 20'd1; rootB = 20'd20; nexttbl = 30; newroot(rootA); newroot(rootB);
         for (n = 0; n < 7; n = n + 1) begin map(rootA, 39'h1000 * n + 39'h10_0000, 20'd320 + n, 8'hCF, 0); map(rootB, 39'h1000 * n + 39'h10_0000, 20'd340 + n, 8'hCF, 0); end
         map(rootA, 39'h20_0000_0000 >> 8, 20'd360, 8'hEF, 0); map(rootB, 39'h20_0000_0000 >> 8, 20'd360, 8'hEF, 0);   // global (bit5)
@@ -201,9 +201,9 @@ module tb_mmu;
             push(64'h20_0000_0000 >> 8, 0, 0);
             waitq;
         end
-        if (NENT >= 16) chk_w(15, "T7 7+7+1 caminhadas"); rep("T7 ASID/global sem descarga");
-        $display("   T7 apos a 1a passagem: TLB deve reaproveitar (walks=%0d)", sw);
-        // T8: aleatorio com muita pressao na TLB (mais paginas que entradas), com troca de tabelas+descarga total
+        if (NENT >= 16) chk_w(15, "T7 7+7+1 walks"); rep("T7 ASID/global without flush");
+        $display("   T7 after the 1st pass: TLB must reuse (walks=%0d)", sw);
+        // T8: random with heavy TLB pressure (more pages than entries), with table switching + full flush
         for (seed = 0; seed < (qk ? 3 : 6); seed = seed + 1) begin
             root = 1; asid = 3 + seed; newroot(1); nexttbl = 2; nml = 0; rand_tables(1, 150 + 40 * seed);
             lat_min = (seed % 2) ? 1 : 4; lat_max = (seed % 2) ? 3 : 14;
@@ -221,7 +221,7 @@ module tb_mmu;
             end
             rep("T9 remapeamento + fl_all");
         end
-        // T10: descarga concorrente com o caminhador (restart)
+        // T10: flush concurrent with the walker (restart)
         begin : t10
             integer q;
             for (q = 0; q < (qk ? 45 : 90); q = q + 1) begin
@@ -233,9 +233,9 @@ module tb_mmu;
                 waitq;
                 push(64'h8000 + (q % 5) * 64'h1000, 0, 0); waitq;
             end
-            rep("T10 descarga durante a caminhada");
+            rep("T10 flush during the walk");
         end
-        // T11: descarga em offsets variados em relacao a pedidos consecutivos (corrida estagio1->estagio2)
+        // T11: flush at varied offsets relative to consecutive requests (race stage1->stage2)
         begin : t11
             integer q, o, pg;
             lat_min = 4; lat_max = 6;
@@ -252,16 +252,16 @@ module tb_mmu;
             end
             rep("T11 PGINV em offsets variados");
         end
-        // T12: PGINV numa megapagina com deslocamento de 4 KB diferente do usado no preenchimento
+        // T12: PGINV on a megapage with a 4 KB offset different from the one used in the fill
         asid = 1; root = 1; pulse_all; newroot(1); nexttbl = 2; map(1, 39'h40_0000, 20'd512, 8'hCF, 1); push(64'h40_5000, 0, 0); waitq;
         map(1, 39'h40_0000, 20'd0, 8'hCF, 1); pulse_va(64'h40_9000); push(64'h40_1000, 0, 0); waitq; rep("T12 PGINV em megapagina");
-        // T13: descarga por ASID: so as paginas nao globais do ASID somem
+        // T13: flush by ASID: only the non-global pages of the ASID disappear
         pulse_all; newroot(1); nexttbl = 2; asid = 1; root = 1; map(1, 39'h50_0000, 20'd320, 8'hCF, 0); map(1, 39'h51_0000, 20'd321, 8'hEF, 0);
         push(64'h50_0000, 0, 0); push(64'h51_0000, 0, 0); waitq; wk0 = sw;
-        pulse_asid(8'd1); push(64'h50_0008, 0, 0); push(64'h51_0008, 0, 0); waitq; chk_w(1, "T13 fl_asid preserva global"); rep("T13 descarga por ASID");
-        wk0 = sw; pulse_asid(8'd9); push(64'h50_0010, 0, 0); push(64'h51_0010, 0, 0); waitq; chk_w(0, "T13b fl_asid de outro ASID nao descarrega"); rep("T13b");
-        $display("Estatisticas: acertos=%0d falhas(walks)=%0d faltas=%0d leituras de PTE=%0d", sh, sw, sf, nmemrd);
-        if (errs == 0) $display("RESULTADO: TODOS OS TESTES PASSARAM"); else $display("RESULTADO: %0d ERROS", errs);
+        pulse_asid(8'd1); push(64'h50_0008, 0, 0); push(64'h51_0008, 0, 0); waitq; chk_w(1, "T13 fl_asid preserves global"); rep("T13 flush by ASID");
+        wk0 = sw; pulse_asid(8'd9); push(64'h50_0010, 0, 0); push(64'h51_0010, 0, 0); waitq; chk_w(0, "T13b fl_asid of another ASID does not flush"); rep("T13b");
+        $display("Statistics: hits=%0d misses(walks)=%0d faults=%0d PTE reads=%0d", sh, sw, sf, nmemrd);
+        if (errs == 0) $display("RESULT: ALL TESTS PASSED"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
     initial begin #800000000; $display("TIMEOUT"); $finish; end

@@ -1,5 +1,5 @@
 #!/bin/bash
-# uso: ys_unit.sh arquivo.v -> LUT (1+2+3+4) + ALU = area em LUT4-eq, FF, DSP da unidade isolada (as 'LUT4' do relatorio do nextpnr contam LUT1..LUT4)
+# usage: ys_unit.sh file.v -> LUT (1+2+3+4) + ALU = area in LUT4-eq, FF, DSP of the isolated unit (the 'LUT4' of the nextpnr report count LUT1..LUT4)
 export PATH=$HOME/oss/oss-cad-suite/bin:$PATH
 f=$1; t=${2:-/tmp/yu}
 yosys -q -p "read_verilog -sv $f; synth_gowin -top vec3d_unit -json $t.json; tee -o $t.stat stat" >/dev/null 2>&1

@@ -1,22 +1,22 @@
-MODULO 04 - Interface slot MSX <-> R8064 (opcao A: 4 portas de E/S, 2 FIFOs de 2 KB) - simulacao 2026-11-02
-O QUE FOI SIMULADO (Icarus Verilog 14.0): modelo de Z80 (ciclos de E/S de 4 T-states a 3,579545 MHz; 23 T-states por byte em OTIR/INIR), modelo do "programa" do R8064
-  (polling das portas F1/F4, le LEN e dados, XOR 5Ah, grava resultado e CONCLUIDO), monitores de conflito de barramento e de acionamento indevido do buffer de dados (U3).
-RESULTADOS
-  Ida e volta completa (loopback com transformacao): blocos de 1, 7 (com IRQ), 513 e 2048 bytes (com IRQ, FIFOs cheios): 0 erros de dado, len de retorno correto, INT ativa/desativa como esperado.
-  Vazao medida: MSX->FPGA 155.613 B/s e FPGA->MSX 153.202 B/s (planilha: 155.632 B/s) com 23 T-states por byte.
-  Estouro (2049o byte com FIFO cheio): bit de estouro ligado, FIFO preservado; sub-fluxo (leitura de FIFO vazio): devolve 00h e liga o bit; CMD b1 limpa FIFOs e erros. R8064 reiniciado por CMD b3.
-  Portas fora da faixa (64 enderecos) e ciclo M1+IORQ (reconhecimento de interrupcao): nada escrito nem dirigido. Ruido de 15 ns em WR/RD com endereco valido: ignorado.
-  Atrasos aleatorios entre as linhas do barramento (SKEW 30 e 60 ns): 0 erros, 0 conflitos, 0 acionamentos indevidos.
-  Conflitos de barramento: 0. Acionamentos indevidos de OE/BUSDIR: 0.
-  FIFO 2K isolado contra modelo em software (6 regimes de push/pop aleatorios a cada clock, nivel maximo 2048, ~25.600 operacoes): 0 erros.
-  Mutantes: 5 alteracoes de proposito (sem filtro de M1; filtro de leitura reduzido; filtro de escrita reduzido; FIFO visivel cedo demais; CONCLUIDO sem limpar IRQ) - todas detectadas.
-SINTESE / P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, 100 MHz, com invólucro LFSR): 121,7 MHz PASS. Interface isolada (Yosys): 83 LUT4 + 92 ALU + ~70 MUX2, ~238 FF, 2 BSRAM (um por FIFO).
-  A planilha (aba Ocupação) estimava a interface em bloco proprio: compare os numeros ao atualizar.
-CORRECOES/DESVIOS EM RELACAO A PLANILHA (aba Pinagem MSX)
-  - Escrita: a planilha diz "capturar o dado na borda de subida de WR"; a implementacao confirma o dado quando o ciclo fica estavel por 3 amostras de 100 MHz (antes de WR subir),
-    porque o dado sincronizado so chega depois de 20 ns e o Z80 mantem o dado estavel durante todo o ciclo. Funciona na simulacao; confirmar com osciloscopio/analisador.
-  - Leitura: o buffer U3 e liberado ~20-30 ns depois que RD sobe (atraso dos sincronizadores); o proximo ciclo do Z80 comeca centenas de ns depois, mas confira o tempo de retencao do MSX.
-  - Porta F1 do R8064 (b0 ha dado, b1 ha espaco) foi acrescentada: nao estava na planilha (que listava F0, F2, F3, F4).
-  - Bits extras no STATUS do MSX: b5 estouro, b6 sub-fluxo.
-NAO COBERTO: eletrica (niveis 5 V, coletor aberto, pull-ups, tempos reais do slot), pinos reais do header (coluna Pino FPGA da planilha continua vazia), WAIT (nao usado), opcoes B/C (memoria CS1),
-  faixa de portas BASE (parametro; default 40h so para teste), relogio do R8064 diferente de 100 MHz, interrupcao em IM 2/ROM do MSX.
+MODULE 04 - MSX slot <-> R8064 interface (option A: 4 I/O ports, 2 FIFOs of 2 KB) - simulation 2026-11-02
+WHAT WAS SIMULATED (Icarus Verilog 14.0): Z80 model (I/O cycles of 4 T-states at 3.579545 MHz; 23 T-states per byte in OTIR/INIR), model of the R8064 "program"
+  (polling of ports F1/F4, reads LEN and data, XOR 5Ah, writes the result and DONE), monitors for bus conflicts and for improper data buffer drive (U3).
+RESULTS
+  Complete round trip (loopback with transformation): blocks of 1, 7 (with IRQ), 513 and 2048 bytes (with IRQ, FIFOs full): 0 data errors, correct return len, INT asserts/deasserts as expected.
+  Measured throughput: MSX->FPGA 155,613 B/s and FPGA->MSX 153,202 B/s (spreadsheet: 155,632 B/s) with 23 T-states per byte.
+  Overflow (2049th byte with FIFO full): overflow bit set, FIFO preserved; underflow (read of empty FIFO): returns 00h and sets the bit; CMD b1 clears FIFOs and errors. R8064 restarted by CMD b3.
+  Ports out of range (64 addresses) and M1+IORQ cycle (interrupt acknowledge): nothing written or driven. 15 ns noise on WR/RD with valid address: ignored.
+  Random delays between the bus lines (SKEW 30 and 60 ns): 0 errors, 0 conflicts, 0 improper drives.
+  Bus conflicts: 0. Improper OE/BUSDIR drives: 0.
+  Isolated 2K FIFO against a software model (6 regimes of random push/pop on every clock, maximum level 2048, ~25,600 operations): 0 errors.
+  Mutants: 5 deliberate changes (no M1 filter; reduced read filter; reduced write filter; FIFO visible too early; DONE without clearing IRQ) - all detected.
+SYNTHESIS / P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, 100 MHz, with LFSR wrapper): 121.7 MHz PASS. Isolated interface (Yosys): 83 LUT4 + 92 ALU + ~70 MUX2, ~238 FF, 2 BSRAM (one per FIFO).
+  The spreadsheet (Occupancy tab) estimated the interface as its own block: compare the numbers when updating.
+CORRECTIONS/DEVIATIONS FROM THE SPREADSHEET (MSX Pinout tab)
+  - Write: the spreadsheet says "capture the data on the rising edge of WR"; the implementation confirms the data when the cycle stays stable for 3 samples of 100 MHz (before WR rises),
+    because the synchronized data only arrives after 20 ns and the Z80 keeps the data stable during the whole cycle. Works in simulation; confirm with an oscilloscope/analyzer.
+  - Read: the U3 buffer is released ~20-30 ns after RD rises (synchronizer delay); the next Z80 cycle starts hundreds of ns later, but check the MSX hold time.
+  - R8064 port F1 (b0 has data, b1 has space) was added: it was not in the spreadsheet (which listed F0, F2, F3, F4).
+  - Extra bits in the MSX STATUS: b5 overflow, b6 underflow.
+NOT COVERED: electrical (5 V levels, open collector, pull-ups, real slot timing), real header pins (the FPGA Pin column of the spreadsheet is still empty), WAIT (not used), options B/C (CS1 memory),
+  BASE port range (parameter; default 40h for testing only), R8064 clock other than 100 MHz, interrupt in IM 2/MSX ROM.

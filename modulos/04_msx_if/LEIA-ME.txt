@@ -1,5 +1,5 @@
-Modulo 04 - msx_if.v + fifo2k.v. Copie rtl/*.v para uma pasta e rode (Icarus):
-  iverilog -g2012 -o sim tb_msx_if.v msx_if.v fifo2k.v && vvp sim        (cerca de 20 s; deve imprimir PASS)
-  iverilog -g2012 -o sk -Ptb_msx_if.SKEW=60 tb_msx_if.v msx_if.v fifo2k.v && vvp sk     (atraso aleatorio entre linhas)
+Module 04 - msx_if.v + fifo2k.v. Copy rtl/*.v to a folder and run (Icarus):
+  iverilog -g2012 -o sim tb_msx_if.v msx_if.v fifo2k.v && vvp sim        (about 20 s; must print PASS)
+  iverilog -g2012 -o sk -Ptb_msx_if.SKEW=60 tb_msx_if.v msx_if.v fifo2k.v && vvp sk     (random delay between lines)
   iverilog -g2012 -o tf tb_fifo.v fifo2k.v && vvp tf
-Resultados e desvios em resultados_modulo04.txt; pnr/ tem o invólucro e os logs.
+Results and deviations in resultados_modulo04.txt; pnr/ has the wrapper and the logs.

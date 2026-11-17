@@ -1,6 +1,6 @@
-// z80_core.v - Z80 classico completo (documentado + nao documentado), ciclo-exato por M-ciclo/T-state.
-// Todo T-state = um pulso de "ce". Barramento Z80 (sinais ativos em 1, o top inverte).
-// Estrutura: motor de ciclos de barramento (M1/MR/MW/IOR/IOW/INT) + logica combinacional "proximo ciclo" executada no fim de cada ciclo.
+// z80_core.v - complete classic Z80 (documented + undocumented), cycle-exact per M-cycle/T-state.
+// Every T-state = one "ce" pulse. Z80 bus (signals active at 1, the top inverts).
+// Structure: bus cycle engine (M1/MR/MW/IOR/IOW/INT) + combinational "next cycle" logic executed at the end of each cycle.
 `timescale 1ns/1ps
 module z80_core(
   input  wire        clk,
@@ -22,7 +22,7 @@ module z80_core(
              S_DC1=6'd27, S_DC2=6'd28, S_DC3=6'd29, S_BLD=6'd31, S_BLD2=6'd32, S_BCPI=6'd33, S_B1=6'd34, S_B2=6'd35,
              S_BIOW=6'd36, S_RETCC=6'd37, S_IV0=6'd38, S_IV1=6'd39;
 
-  // ---------------- estado arquitetural ----------------
+  // ---------------- architectural state ----------------
   reg [7:0]  a, f, a2, f2, ri, rr;
   reg [15:0] bc, de, hl, bc2, de2, hl2, ix, iy, sp, pc, wz;
   reg        iff1, iff2, halted, ei_dly, nmi_pend, nmi_prev, iack, pj0, pj1;
@@ -31,7 +31,7 @@ module z80_core(
   reg [7:0]  opr, dbi, lo8, tmp8;
   reg [5:0]  st;
   reg [15:0] ea, tmp16, tgt;
-  // ---------------- motor de ciclos ----------------
+  // ---------------- cycle engine ----------------
   reg [2:0]  ctyp;
   reg [4:0]  t, ilen;
   reg [1:0]  cext;
@@ -51,7 +51,7 @@ module z80_core(
   wire       sample  = run && (wp_e != 5'd0) && (t == wp_e) && wait_n && (ctyp==CT_M1 || ctyp==CT_MR || ctyp==CT_IOR);
   wire       cyc_end = run && (t == clen_e) && !waiting;
 
-  // sinais de barramento
+  // bus signals
   wire m1c   = (ctyp==CT_M1);
   wire is_rd = (ctyp==CT_MR) || (ctyp==CT_IOR);
   assign addr  = (m1c && !cack && (t > wp_e)) ? {ri, rr} : caddr;
@@ -104,7 +104,7 @@ module z80_core(
       if (kind==2'd0) fl = {fo[7], fo[6], r[13], (x[12]^y[12]^r[12]), r[11], fo[2], 1'b0, s[16]};
       else if (kind==2'd1) fl = {r[15], (r==16'd0), r[13], (x[12]^y[12]^r[12]), r[11], (~(x[15]^y[15]) & (x[15]^r[15])), 1'b0, s[16]};
       else fl = {r[15], (r==16'd0), r[13], (x[12]^y[12]^r[12]), r[11], ((x[15]^y[15]) & (x[15]^r[15])), 1'b1, s[16]};
-      // reordenar: fl acima esta na ordem {S,Z,Y,H,X,P,N,C}
+      // reorder: fl above is in the order {S,Z,Y,H,X,P,N,C}
       f_a16 = {r, fl};
     end
   endfunction
@@ -160,7 +160,7 @@ module z80_core(
     end
   endfunction
 
-  // ---------------- logica "proximo ciclo" (combinacional) ----------------
+  // ---------------- "next cycle" logic (combinational) ----------------
   reg [7:0]  n_a, n_f, n_ri, n_rr;
   reg [15:0] n_bc, n_de, n_hl, n_sp, n_ix, n_iy, n_pc, n_wz, n_ea, n_tmp16, n_tgt;
   reg        n_iff1, n_iff2, n_halted, n_ei_dly, n_iack, n_pj0, n_pj1, n_nmi_clr, n_pf_ed, n_pf_cb;
@@ -174,7 +174,7 @@ module z80_core(
   reg [15:0] n_caddr;
   reg [7:0]  n_cdata;
   reg        do_fin, do_m1, do_exaf, do_exx, do_exdh;
-  // porta de escrita 8 bits / 16 bits
+  // 8-bit / 16-bit write port
   reg        w8_en, w8_und; reg [2:0] w8_sel; reg [7:0] w8_val;
   reg        w16_en, w16_af; reg [1:0] w16_sel; reg [15:0] w16_val;
 
@@ -185,7 +185,7 @@ module z80_core(
   wire       q = opr[3];
   wire [15:0] hlx = (pfx==2'd1) ? ix : (pfx==2'd2) ? iy : hl;
   wire [15:0] pc1 = pc + 16'd1;
-  wire [15:0] pcm = iack ? pc : pc1;           // M1 de reconhecimento nao incrementa PC
+  wire [15:0] pcm = iack ? pc : pc1;           // acknowledge M1 does not increment PC
   reg  [15:0] rp16;                              // rp[p] (BC,DE,HLx,SP)
   always @* begin case (p) 2'd0: rp16 = bc; 2'd1: rp16 = de; 2'd2: rp16 = hlx; default: rp16 = sp; endcase end
   reg  [15:0] rp2;                               // BC,DE,HLx,AF
@@ -217,11 +217,11 @@ module z80_core(
     do_fin=1'b0; do_m1=1'b0; do_exaf=1'b0; do_exx=1'b0; do_exdh=1'b0;
     w8_en=1'b0; w8_und=1'b0; w8_sel=3'd0; w8_val=8'd0; w16_en=1'b0; w16_af=1'b0; w16_sel=2'd0; w16_val=16'd0;
     est=st; t16=16'd0; t16b=16'd0; t24=24'd0; t_alu=16'd0; t8=8'd0; t8b=8'd0; t8c=8'd0; tb=1'b0; nn=16'd0; taken=1'b0; isop=1'b0;
-    // R: incrementa a cada M1
+    // R: increments on every M1
     if (ctyp==CT_M1) n_rr = {rr[7], rr[6:0] + 7'd1};
 
     if (ctyp==CT_M1 && st==S_DISP) est = S_DISP;
-    // virtual S_OP: acesso ao operando de memoria
+    // virtual S_OP: access to the memory operand
     if (st==S_EA) isop = 1'b1;
     if (st==S_DISP && ctyp==CT_M1 && is_memop_np && pfx==2'd0 && !halted && !iack) begin isop = 1'b1; n_ea = hl; end
 
@@ -235,12 +235,12 @@ module z80_core(
       end
     end else begin
     case (st)
-    // ------------------------------------------------------------------ despacho apos M1
+    // ------------------------------------------------------------------ dispatch after M1
     S_DISP: begin
       n_pc = pcm;
       if (halted && !iack) begin n_pc = pc; do_fin=1'b1; end
       else if (iack && im==2'd2) begin
-        // IM2: INT1 e empilha PC; vetor = {I, dado}
+        // IM2: INT1 and pushes PC; vector = {I, data}
         n_tmp16=pc; n_pj0=1'b0; n_pj1=1'b1; n_tgt={ri, opr}; n_ctyp=CT_INT; n_ilen=5'd1; n_st=S_PSH0;
       end
       else if (!pf_ed && !pf_cb && (opr==8'hDD || opr==8'hFD)) begin
@@ -253,7 +253,7 @@ module z80_core(
         else do_m1=1'b1;
       end
       else if (pf_cb) begin
-        // CB sem prefixo de indice
+        // CB without index prefix
         if (z==3'd6) begin n_ea=hl; n_ctyp=CT_MR; n_caddr=hl; n_st=S_RD1; end
         else begin
           t8 = r_z_nu;
@@ -303,7 +303,7 @@ module z80_core(
         else do_fin=1'b1;   // NOP*
       end
       else begin
-        // ------------------------------- sem prefixo ED/CB (com possivel DD/FD)
+        // ------------------------------- no ED/CB prefix (with possible DD/FD)
         case (x)
         2'd0: begin
           case (z)
@@ -342,7 +342,7 @@ module z80_core(
                 if (z==3'd4) begin t8b = t8 + 8'd1; n_f = {t8b[7], (t8b==8'd0), t8b[5], (t8[3:0]==4'hF), t8b[3], (t8==8'h7F), 1'b0, f[0]}; end
                 else         begin t8b = t8 - 8'd1; n_f = {t8b[7], (t8b==8'd0), t8b[5], (t8[3:0]==4'h0), t8b[3], (t8==8'h80), 1'b1, f[0]}; end
                 w8_en=1'b1; w8_und=1'b1; w8_sel=y; w8_val=t8b; do_fin=1'b1;
-              end else begin n_ctyp=CT_MR; n_caddr=pcm; n_st=S_D; end   // (IX+d) (pfx != 0 aqui)
+              end else begin n_ctyp=CT_MR; n_caddr=pcm; n_st=S_D; end   // (IX+d) (pfx != 0 here)
             end
             3'd6: begin
               n_ctyp=CT_MR; n_caddr=pcm;
@@ -364,11 +364,11 @@ module z80_core(
         end
         2'd1: begin
           if (opr==8'h76) begin n_halted=1'b1; do_fin=1'b1; end
-          else if (y==3'd6 || z==3'd6) begin n_ctyp=CT_MR; n_caddr=pcm; n_st=S_D; end  // so com pfx
+          else if (y==3'd6 || z==3'd6) begin n_ctyp=CT_MR; n_caddr=pcm; n_st=S_D; end  // only with pfx
           else begin w8_en=1'b1; w8_und=1'b1; w8_sel=y; w8_val=r_z_u; do_fin=1'b1; end
         end
         2'd2: begin
-          if (z==3'd6) begin n_ctyp=CT_MR; n_caddr=pcm; n_st=S_D; end                 // so com pfx
+          if (z==3'd6) begin n_ctyp=CT_MR; n_caddr=pcm; n_st=S_D; end                 // only with pfx
           else begin
             t_alu=f_alu(y, a, r_z_u, f[0]); if (y!=3'd7) n_a=t_alu[15:8]; n_f=t_alu[7:0]; do_fin=1'b1;
           end
@@ -394,7 +394,7 @@ module z80_core(
                 3'd5: begin do_exdh=1'b1; do_fin=1'b1; end
                 3'd6: begin n_iff1=1'b0; n_iff2=1'b0; do_fin=1'b1; end
                 3'd7: begin n_iff1=1'b1; n_iff2=1'b1; n_ei_dly=1'b1; do_fin=1'b1; end
-                default: do_fin=1'b1;   // 3'd1 = CB (tratado acima)
+                default: do_fin=1'b1;   // 3'd1 = CB (handled above)
               endcase
             end
             3'd5: begin
@@ -473,7 +473,7 @@ module z80_core(
       if (x==2'd0 && z==3'd6 && y==3'd6) begin n_ctyp=CT_MR; n_caddr=pc1; n_cext=2'd2; n_st=S_IMM8; end
       else begin n_ctyp=CT_INT; n_ilen=5'd5; n_st=S_EA; end
     end
-    // ------------------------------------------------------------------ leitura de operando
+    // ------------------------------------------------------------------ operand read
     S_RD1: begin
       if (pf_ed) begin
         if (x==2'd1) begin   // RRD / RLD
@@ -546,7 +546,7 @@ module z80_core(
       end
       n_ctyp=CT_INT; n_ilen=5'd1; n_st=S_INC1;
     end
-    // ------------------------------------------------------------------ pilha / saltos
+    // ------------------------------------------------------------------ stack / jumps
     S_PL: begin n_lo8=dbi; n_ctyp=CT_MR; n_caddr=sp+16'd1; n_st=S_PH; n_sp=sp+16'd1; end
     S_PH: begin
       n_sp=sp+16'd1; nn={dbi, lo8};
@@ -586,7 +586,7 @@ module z80_core(
           n_wz=bc+16'd1;
         end else if (z==3'd1) n_wz=bc+16'd1;
         else begin
-          // INI/IND: dado lido -> escreve em (HL)
+          // INI/IND: data read -> writes to (HL)
           n_tmp8=dbi; n_ctyp=CT_MW; n_caddr=hl; n_cdata=dbi; n_st=S_BIOW;
         end
         if (!(x==2'd2)) do_fin=1'b1;
@@ -595,11 +595,11 @@ module z80_core(
         do_fin=1'b1;
       end
     end
-    S_B1: begin n_ctyp=CT_IOR; n_caddr=bc; n_st=S_IO; end              // INI/IND: porta (BC) antes de decrementar B
+    S_B1: begin n_ctyp=CT_IOR; n_caddr=bc; n_st=S_IO; end              // INI/IND: port (BC) before decrementing B
     S_B2: begin n_ctyp=CT_MR; n_caddr=hl; n_st=S_RD1; end
     S_BIOW: begin
-      // fim do INI/IND (apos MW) ou OUTI/OUTD (apos IOW): atualiza HL, B, flags
-      t8 = (z==3'd2) ? bc[15:8] - 8'd1 : bc[15:8];          // B novo (OUTI: ja decrementado em n_bc)
+      // end of INI/IND (after MW) or OUTI/OUTD (after IOW): updates HL, B, flags
+      t8 = (z==3'd2) ? bc[15:8] - 8'd1 : bc[15:8];          // new B (OUTI: already decremented in n_bc)
       t16 = y[0] ? hl - 16'd1 : hl + 16'd1;
       n_hl = t16;
       if (z==3'd2) begin n_bc={t8, bc[7:0]}; t8c = y[0] ? bc[7:0] - 8'd1 : bc[7:0] + 8'd1; n_wz = y[0] ? bc - 16'd1 : bc + 16'd1; end
@@ -617,7 +617,7 @@ module z80_core(
     S_X4: begin w16_en=1'b1; w16_sel=2'd2; w16_val=tmp16; n_wz=tmp16; n_ctyp=CT_INT; n_ilen=5'd2; n_st=S_FINI; end
     // ------------------------------------------------------------------ blocos
     S_BLD: begin
-      // apos MW (DE): atualiza HL/DE/BC, flags
+      // after MW (DE): updates HL/DE/BC, flags
       n_hl = y[0] ? hl - 16'd1 : hl + 16'd1;
       n_de = y[0] ? de - 16'd1 : de + 16'd1;
       n_bc = bc - 16'd1;
@@ -637,7 +637,7 @@ module z80_core(
     endcase
     end
 
-    // ----- DD/FD + CB: ja tratado (DISP). Escritas e trocas
+    // ----- DD/FD + CB: already handled (DISP). Writes and swaps
     if (w8_en) begin
       case (w8_sel)
         3'd0: n_bc[15:8]=w8_val; 3'd1: n_bc[7:0]=w8_val; 3'd2: n_de[15:8]=w8_val; 3'd3: n_de[7:0]=w8_val;
@@ -659,7 +659,7 @@ module z80_core(
     if (do_fin || do_m1) begin
       n_st = S_DISP; n_iack=1'b0; n_pj0=1'b0; n_pj1=1'b0;
       if (do_fin) begin n_pfx=2'd0; n_done=1'b1; n_pf_ed=1'b0; n_pf_cb=1'b0; end
-      // ei_dly: EI define 1; qualquer outra instrucao limpa
+      // ei_dly: EI sets 1; any other instruction clears
       if (do_fin && !(st==S_DISP && !pf_ed && !pf_cb && x==2'd3 && z==3'd3 && y==3'd7)) n_ei_dly=1'b0;
       n_ctyp=CT_M1; n_cack=1'b0; n_caddr=n_pc;
       if (do_fin) begin
@@ -695,14 +695,14 @@ module z80_core(
       if (run) begin
         if (waiting) begin end
         else if (t == clen_e) begin
-          // fim de ciclo: commit
+          // end of cycle: commit
           t <= 5'd1;
           a<=n_a; f<=n_f; ri<=n_ri; rr<=n_rr; sp<=n_sp; pc<=n_pc; wz<=n_wz; ea<=n_ea; tmp16<=n_tmp16; tgt<=n_tgt;
           iff1<=n_iff1; iff2<=n_iff2; halted<=n_halted; ei_dly<=n_ei_dly; iack<=n_iack; pj0<=n_pj0; pj1<=n_pj1;
           pf_ed<=n_pf_ed; pf_cb<=n_pf_cb; im<=n_im; pfx<=n_pfx; lo8<=n_lo8; tmp8<=n_tmp8; st<=n_st;
-          // opr: so muda por n_opr (S_DC2); opr de M1 ja foi amostrado
+          // opr: only changes by n_opr (S_DC2); the M1 opr has already been sampled
           if (n_opr != opr) opr <= n_opr;
-          // pares (com troca de bancos)
+          // pairs (with bank switching)
           if (do_exaf) begin a<=a2; f<=f2; a2<=n_a; f2<=n_f; end
           if (do_exx) begin bc<=bc2; de<=de2; hl<=hl2; bc2<=n_bc; de2<=n_de; hl2<=n_hl; ix<=n_ix; iy<=n_iy; end
           else if (do_exdh) begin de<=n_hl; hl<=n_de; ix<=n_ix; iy<=n_iy; end

@@ -1,8 +1,8 @@
 // mul_unit.v - multiplicador do R8064 (4 multiplicadores 18x18 em paralelo, em DSP).
-//   sz: 0=8, 1=16, 2=32, 3=64 bits; sgn: 1 = com sinal.
-//   sz<=2 : produto 2*sz bits em UMA passada (pipeline, 1 operacao por clock). sz=3: 4 passadas (16x64 por passada), 128 bits.
-//   Estagios: S1 (mux de operandos, x/y 18 bits) -> S2 (4 produtos 36 bits, DSP) -> S3a (somas parciais) -> S3b (soma ponderada 84 bits) -> S3c (acumulador 128 bits) -> prod/out_valid.
-//   Latencia (operacao aceita no ciclo 0 ate out_valid): pequenas 5 clocks, 64 bits 8 clocks. ready cai por 3 clocks apos uma de 64 bits.
+//   sz: 0=8, 1=16, 2=32, 3=64 bits; sgn: 1 = signed.
+//   sz<=2 : 2*sz-bit product in ONE pass (pipeline, 1 operation per clock). sz=3: 4 passes (16x64 per pass), 128 bits.
+//   Stages: S1 (operand mux, 18-bit x/y) -> S2 (4 36-bit products, DSP) -> S3a (partial sums) -> S3b (84-bit weighted sum) -> S3c (128-bit accumulator) -> prod/out_valid.
+//   Latency (operation accepted at cycle 0 until out_valid): small ones 5 clocks, 64 bits 8 clocks. ready drops for 3 clocks after a 64-bit one.
 module mul_unit(
     input  wire         clk, rst,
     input  wire         in_valid,
@@ -23,12 +23,12 @@ module mul_unit(
     wire [1:0]  cj = busy_big ? jc : 2'd0;
     wire        cv = busy_big | issue;
 
-    // extensao a 32 bits para operacoes pequenas
+    // extension to 32 bits for small operations
     wire [31:0] a32 = (sz == 2'd0) ? {{24{cs & ca[7]}},  ca[7:0]}  :
                       (sz == 2'd1) ? {{16{cs & ca[15]}}, ca[15:0]} : ca[31:0];
     wire [31:0] b32 = (sz == 2'd0) ? {{24{cs & cb[7]}},  cb[7:0]}  :
                       (sz == 2'd1) ? {{16{cs & cb[15]}}, cb[15:0]} : cb[31:0];
-    // limbos de 16 bits (18 bits com sinal): topo com sinal se cs
+    // 16-bit limbs (18 bits when signed): signed top if cs
     function [17:0] ext(input [15:0] v, input s); ext = s ? {{2{v[15]}}, v} : {2'b00, v}; endfunction
     reg signed [17:0] xn [0:3]; reg signed [17:0] yn [0:3];
     always @* begin
@@ -50,7 +50,7 @@ module mul_unit(
     reg signed [35:0] p2 [0:3]; reg v2, big2; reg [1:0] j2;
     reg signed [127:0] acc;
     integer k;
-    // S3a: somas parciais; S3b: soma ponderada (84 bits); S3c: deslocamento por passada e acumulador (128 bits)
+    // S3a: partial sums; S3b: weighted sum (84 bits); S3c: per-pass shift and accumulator (128 bits)
     reg signed [51:0] t01, t23; reg v3, big3; reg [1:0] j3;
     reg signed [83:0] sw; reg v4, big4; reg [1:0] j4;
     wire signed [51:0] w01 = $signed(p2[0]) + ($signed(p2[1]) <<< 16);

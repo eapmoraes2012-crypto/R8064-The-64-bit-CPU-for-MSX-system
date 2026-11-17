@@ -1,4 +1,4 @@
-// Tang Nano 20K - topo r8064_board_top. Pinos conferidos no relatorio de pinos do cartucho VDP (GW2AR-LV18QN88C8). SDRAM embutida: sem IO_LOC (nextpnr posiciona).
+// Tang Nano 20K - r8064_board_top top. Pins checked against the pin report of the VDP cartridge (GW2AR-LV18QN88C8). Embedded SDRAM: no IO_LOC (nextpnr places it).
 IO_LOC "clk27" 4;
 IO_PORT "clk27" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
 IO_LOC "clk_ext" 80;

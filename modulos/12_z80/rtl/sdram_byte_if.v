@@ -1,6 +1,6 @@
-// sdram_byte_if.v - adaptador: acesso de 1 byte (endereco fisico de 24 bits) -> sdram_ctrl (palavra de 64 bits + byte-enable).
-// Protocolo do lado do Z80: req fica em 1 ate 'ack' (pulso de 1 clock; rdata valido nesse clock); depois req cai e um novo pedido pode ser feito.
-// Enderecos acima de 4 MB (addr[23:22] != 0) dao alias (sao ignorados).
+// sdram_byte_if.v - adapter: 1-byte access (24-bit physical address) -> sdram_ctrl (64-bit word + byte-enable).
+// Z80-side protocol: req stays at 1 until 'ack' (1-clock pulse; rdata valid in that clock); then req drops and a new request can be made.
+// Addresses above 4 MB (addr[23:22] != 0) alias (are ignored).
 module sdram_byte_if(
     input  wire        clk, rst,
     input  wire        req, we,

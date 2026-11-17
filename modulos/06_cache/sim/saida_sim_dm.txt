@@ -1,0 +1,25 @@
+T1 read miss latency (accept->rvalid) D: 31 clocks
+T1 hit latency (same line) D: 1 clock(s)
+T1 read miss latency I: 33 clocks
+ok   T1 (D: 2 leit 0 esc | I: 1 leit)
+T2 2nd pass of 256 hit reads: 258 clocks (expected ~256)
+ok   T2 (D: 514 leit 0 esc | I: 1 leit)
+ok   T3 (D: 518 leit 4 esc | I: 1 leit)
+ok   T3: SDRAM memory == shadow
+ok   T4 (D: 563 leit 4 esc | I: 1 leit)
+ok   T4b DM: A e C disputam a linha (4 falhas)
+ok   T4b DM: B preserved (other line)
+ok   T4b DM: C expulsa por A
+ERROR(0): data a60d36b3df1434ad expected 5555aaaa5555aaaa t=57005000
+T5 without inv: read returned the old cache value (expected: deliberate coherence error: 1)
+ok   T5 inv returns the new value
+ok   T6 aleatorio conflitante (D: 2751 leit 1231 esc | I: 441 leit)
+ok   T6: SDRAM memory == shadow
+ok   T7 random heavy write (D: 7182 rd 5545 wr | I: 1095 rd)
+ok   T7: SDRAM memory == shadow
+ok   T8 conjunto cabe (D: 32701 leit 11959 esc | I: 32156 leit)
+ok   T8: SDRAM memory == shadow
+Estatisticas D: leit acerto=32701 falha=3006 | esc=11959 acerto=9742
+Estatisticas I: leit acerto=32156 falha=797
+SDRAM: model timing violations = 0
+RESULT: ALL TESTS PASSED

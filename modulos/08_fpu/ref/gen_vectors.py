@@ -1,4 +1,4 @@
-# gen_vectors.py <semente> <n_por_operacao> > vetores.txt   (op rc pc A B -> res flags up cc, tudo em hexa)
+# gen_vectors.py <seed> <n_per_operation> > vetores.txt   (op rc pc A B -> res flags up cc, all in hex)
 import sys, random
 sys.path.insert(0, '.')
 from fpref import *
@@ -30,11 +30,11 @@ def rnd80(kind=None):
     if k == 'snan': return s | (0x7FFF << 64) | (1 << 63) | (R(62) or 1)
     c = random.randint(0, 3)
     if c == 0: return s | (0x7FFF << 64) | R(63)          # pseudo-inf/NaN
-    if c == 1: return s | (random.randint(1, 32766) << 64) | R(63)  # nao normalizado
+    if c == 1: return s | (random.randint(1, 32766) << 64) | R(63)  # not normalized
     if c == 2: return s | (R(1) << 63) | R(63) if False else s | (1 << 63) | R(63)  # pseudo-denormal
     return s | (random.randint(1, 32766) << 64) | (R(63))
 def near(x):
-    """segundo operando perto do primeiro (cancelamento / alinhamento)"""
+    """second operand close to the first (cancellation / alignment)"""
     c = random.random(); s = R(1) << 79
     ex = (x >> 64) & 0x7FFF
     if ex in (0, 0x7FFF) or not (x >> 63) & 1: return rnd80()

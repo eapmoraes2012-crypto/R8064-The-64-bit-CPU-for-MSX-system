@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// EXINI (ED 09): devolve o grupo principal ao estado de reset (EXX desfeito), e tambem AF/AF' (desfaz EX AF,AF')
+// EXINI (ED 09): returns the main group to the reset state (EXX undone), and also AF/AF' (undoes EX AF,AF')
 module tb_exini;
     reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -15,17 +15,17 @@ module tb_exini;
         if (d_req && !d_ack) d_ack <= 1;
     end
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     initial begin
         repeat (4) @(posedge clk); rst = 0; repeat (1500) @(posedge clk);
         chk("BC principal = 3333 (EXINI voltou ao principal)", dut.u_rf1.mem_a[1], 64'h3333);
-        chk("BC sombra   = 2222 (escrito apos EXX)",           dut.u_rf1.mem_a[6], 64'h2222);
-        chk("DE principal = 4444 (EXINI sem efeito)",          dut.u_rf1.mem_a[2], 64'h4444);
-        for (k = 0; k < 24; k = k + 1) if (dut.u_rf1.mem_a[k] == 64'h5555) $display("AX escrito (apos EX AF,AF' + EXINI) no indice fisico %0d", k);
+        chk("shadow BC   = 2222 (written after EXX)",           dut.u_rf1.mem_a[6], 64'h2222);
+        chk("DE main = 4444 (EXINI has no effect)",          dut.u_rf1.mem_a[2], 64'h4444);
+        for (k = 0; k < 24; k = k + 1) if (dut.u_rf1.mem_a[k] == 64'h5555) $display("AX written (after EX AF,AF' + EXINI) at physical index %0d", k);
         chk("AX principal = 5555 (EXINI voltou AF'->AF)",     dut.u_rf1.mem_a[0], 64'h5555);
-        $display("pc=%h erros=%0d", dbg_pc, errs);
-        if (errs == 0) $display("RESULTADO: EXINI OK"); else $display("RESULTADO: %0d ERROS", errs);
+        $display("pc=%h errors=%0d", dbg_pc, errs);
+        if (errs == 0) $display("RESULT: EXINI OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// instrucoes de bloco do Z80: LDIR, LDDR, CPIR, INIR, OTIR (nucleo isolado; memoria byte-a-byte)
+// Z80 block instructions: LDIR, LDDR, CPIR, INIR, OTIR (isolated core; byte-by-byte memory)
 module tb_xing;
     wire [7:0] d_be; reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -25,7 +25,7 @@ module tb_xing;
     end
     always @* io_rdata = (io_a == 8'h78) ? 8'h5A : 8'hFF;
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     reg [7:0] be_log [0:15]; reg [63:0] ad_log [0:15]; reg [63:0] wd_log [0:15]; integer nw = 0;
     always @(posedge clk) if (d_req && d_ack && d_we) begin be_log[nw] <= d_be; ad_log[nw] <= d_addr; wd_log[nw] <= d_wdata; nw <= nw + 1; end
@@ -34,13 +34,13 @@ module tb_xing;
         repeat (6000) @(posedge clk);
         chk("PUSH: byte 7 da 1a transacao = 34", wd_log[0][63:56], 8'h34); chk("PUSH: byte 0 da 2a transacao = 12", wd_log[1][7:0], 8'h12);
         chk("PUSH: bytes vizinhos intactos [EFE]", mem[16'h0EFE], 8'h00); chk("[F01] intacto", mem[16'h0F01], 8'h00);
-        chk("POP DE cruzando a palavra", dut.u_rf1.mem_a[2][15:0], 16'h1234);
-        chk("1a transacao do PUSH: be = 80 (so o byte 7)", be_log[0], 8'h80); chk("1a transacao: endereco EF8", ad_log[0], 64'h0EF8);
-        chk("2a transacao do PUSH: be = 01", be_log[1], 8'h01); chk("2a transacao: endereco F00", ad_log[1], 64'h0F00);
-        chk("CALL: endereco de retorno [EFF]", mem[16'h0EFF], 8'h0D); chk("CALL: [F00]", mem[16'h0F00], 8'h00);
-        chk("RET voltou ao laco (PC)", dbg_pc == 64'h0D || dbg_pc == 64'h0F, 1); chk("SP final", dut.u_rf1.mem_a[11], 64'h0F01);
-        $display("pc=%h erros=%0d", dbg_pc, errs);
-        if (errs == 0) $display("RESULTADO: CRUZAMENTO DE PALAVRA OK"); else $display("RESULTADO: %0d ERROS", errs);
+        chk("POP DE crossing the word", dut.u_rf1.mem_a[2][15:0], 16'h1234);
+        chk("1st PUSH transaction: be = 80 (only byte 7)", be_log[0], 8'h80); chk("1st transaction: address EF8", ad_log[0], 64'h0EF8);
+        chk("2nd PUSH transaction: be = 01", be_log[1], 8'h01); chk("2nd transaction: address F00", ad_log[1], 64'h0F00);
+        chk("CALL: return address [EFF]", mem[16'h0EFF], 8'h0D); chk("CALL: [F00]", mem[16'h0F00], 8'h00);
+        chk("RET returned to the loop (PC)", dbg_pc == 64'h0D || dbg_pc == 64'h0F, 1); chk("final SP", dut.u_rf1.mem_a[11], 64'h0F01);
+        $display("pc=%h errors=%0d", dbg_pc, errs);
+        if (errs == 0) $display("RESULT: WORD CROSSING OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

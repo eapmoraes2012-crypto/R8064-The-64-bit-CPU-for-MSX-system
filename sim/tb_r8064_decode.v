@@ -1,6 +1,6 @@
-// tb_r8064_decode.v - testbench exaustivo do decodificador ED + conferencia de ciclos com a planilha.
-// GERADO a partir da planilha rev. 5. NAO FOI SIMULADO no ambiente de geracao.
-// Execute dentro de rom/ + ref/ (os .mem precisam estar no diretorio de trabalho), por exemplo:
+// tb_r8064_decode.v - exhaustive testbench of the ED decoder + cycle check against the spreadsheet.
+// GENERATED from spreadsheet rev. 5. NOT SIMULATED in the generation environment.
+// Run inside rom/ + ref/ (the .mem files must be in the working directory), for example:
 //   cp ../rom/*.mem ../ref/*.mem . && iverilog -g2012 -o sim tb_r8064_decode.v r8064_decode.v && vvp sim
 `timescale 1ns/1ps
 module tb_r8064_decode;
@@ -39,16 +39,16 @@ module tb_r8064_decode;
         repeat (3) @(posedge clk);
         for (i = 0; i < 65536; i = i + 1) begin
             b2 = i[15:8]; b3 = i[7:0];
-            @(posedge clk); #1;                  // id valido (+1 clock)
+            @(posedge clk); #1;                  // valid id (+1 clock)
             id_seen = id;
             if (id_seen !== exp_id[i]) begin
                 errs_id = errs_id + 1;
-                if (errs_id <= 10) $display("ERRO id: b2=%02h b3=%02h obtido=%0d esperado=%0d", b2, b3, id_seen, exp_id[i]);
+                if (errs_id <= 10) $display("ERROR id: b2=%02h b3=%02h got=%0d expected=%0d", b2, b3, id_seen, exp_id[i]);
             end
             @(posedge clk); #1;                  // campos de controle validos (+2 clocks)
-            // confere os ciclos de toda combinacao (b2,b3) que decodifica uma instrucao valida
+            // checks the cycles of every (b2,b3) combination that decodes a valid instruction
             if (exp_id[i] != 0) begin
-                nf     = (len + 7) / 8;           // acessos de busca de 64 bits
+                nf     = (len + 7) / 8;           // 64-bit fetch accesses
                 tmp    = nf + nr + nw;
                 clk_c  = 1;
                 if (tmp > clk_c)      clk_c = tmp;
@@ -59,12 +59,12 @@ module tb_r8064_decode;
                 checked = checked + 1;
                 if (clk_c !== exp_clk[exp_id[i]] || wait_c !== exp_wait[exp_id[i]] || pen_c !== exp_pen[exp_id[i]]) begin
                     errs_cyc = errs_cyc + 1;
-                    if (errs_cyc <= 10) $display("ERRO ciclos: id=%0d clk %0d/%0d wait %0d/%0d pen %0d/%0d",
+                    if (errs_cyc <= 10) $display("ERROR cycles: id=%0d clk %0d/%0d wait %0d/%0d pen %0d/%0d",
                         exp_id[i], clk_c, exp_clk[exp_id[i]], wait_c, exp_wait[exp_id[i]], pen_c, exp_pen[exp_id[i]]);
                 end
             end
         end
-        $display("Vetores (b2,b3): 65536 | erros de id: %0d | combinacoes com ciclos conferidos: %0d | erros de ciclos: %0d",
+        $display("Vectors (b2,b3): 65536 | id errors: %0d | combinations with cycles checked: %0d | cycle errors: %0d",
                  errs_id, checked, errs_cyc);
         if (errs_id == 0 && errs_cyc == 0) $display("PASS"); else $display("FAIL");
         $finish;

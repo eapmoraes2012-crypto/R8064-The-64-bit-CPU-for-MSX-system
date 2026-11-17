@@ -1,23 +1,23 @@
-// mem_class.v - classificador de memoria do R8064 nos modos R800 (ciclos extras por regiao do mapa MSX).
-// Regioes (por pagina de 16 KB x slot primario, tabela de 16 entradas programavel): 0 RAM interna, 1 ROM, 2 memoria externa.
-//   - Memoria externa: +4 ciclos R800, ou +5 conforme a fase do barramento (phase) - R_WAIT_EXT / premissa da planilha.
-//   - ROM (somente modo ROM): +WAIT_ROM, aplicado no governador para a busca (c_romw) e aqui para leituras de dados.
-//   - Quebra de pagina de 256 B (R800): +1 se a busca da instrucao ou um acesso de dados atravessa a fronteira.
-//   - Modo Z80 e modo nativo: sem extras (o tempo do Z80 e fixo; o nativo nao tem governador).
-// Busca: combinacional sobre (pc, comprimento) do candidato -> c_xcyc / c_romw do governador.
-// Dados: evento por acesso concluido (d_ev) -> add_ev/add_n (tardio) para o governador.
+// mem_class.v - R8064 memory classifier for the R800 modes (extra cycles per MSX map region).
+// Regions (per 16 KB page x primary slot, programmable 16-entry table): 0 internal RAM, 1 ROM, 2 external memory.
+//   - External memory: +4 R800 cycles, or +5 depending on the bus phase (phase) - R_WAIT_EXT / spreadsheet assumption.
+//   - ROM (ROM mode only): +WAIT_ROM, applied in the governor for the fetch (c_romw) and here for data reads.
+//   - 256 B page break (R800): +1 if the instruction fetch or a data access crosses the boundary.
+//   - Z80 mode and native mode: no extras (Z80 timing is fixed; native has no governor).
+// Fetch: combinational over (pc, length) of the candidate -> c_xcyc / c_romw of the governor.
+// Data: event per completed access (d_ev) -> add_ev/add_n (late) for the governor.
 module mem_class #(parameter WAIT_ROM = 3)(
     input  wire        clk, rst,
-    input  wire        active,        // modo R800 (nao Z80, nao nativo)
+    input  wire        active,        // R800 mode (not Z80, not native)
     input  wire        is_rom,        // modo ROM (R800 ROM)
-    input  wire        phase,         // fase do ciclo R800 (governador)
-    input  wire [7:0]  a8,            // registrador de slot primario (porta A8H)
-    input  wire        map_we,        // programacao da tabela
-    input  wire [3:0]  map_idx,       // {pagina[1:0], slot[1:0]}
+    input  wire        phase,         // R800 cycle phase (governor)
+    input  wire [7:0]  a8,            // primary slot register (port A8H)
+    input  wire        map_we,        // table programming
+    input  wire [3:0]  map_idx,       // {page[1:0], slot[1:0]}
     input  wire [1:0]  map_val,       // 0 RAM, 1 ROM, 2 externa
     input  wire [15:0] f_pc,
     input  wire [3:0]  f_len,
-    output reg  [3:0]  f_xcyc,         // registrado: valido 1 clock depois de (f_pc, f_len)
+    output reg  [3:0]  f_xcyc,         // registered: valid 1 clock after (f_pc, f_len)
     output reg         f_romw,
     input  wire        d_ev,
     input  wire [15:0] d_addr,
@@ -34,15 +34,15 @@ module mem_class #(parameter WAIT_ROM = 3)(
         end else if (map_we) map[map_idx] <= map_val;
     end
     function [1:0] slot_of(input [1:0] pg); slot_of = a8 >> {pg, 1'b0}; endfunction
-    // ---- busca ----
+    // ---- fetch ----
     wire [1:0] f_pg = f_pc[15:14];
     wire [1:0] f_at = map[{f_pg, slot_of(f_pg)}];
     wire [8:0] f_sum = {1'b0, f_pc[7:0]} + {5'd0, f_len};
-    wire f_pgb = f_sum > 9'd256;                      // ultimo byte cai na pagina seguinte
+    wire f_pgb = f_sum > 9'd256;                      // last byte falls on the next page
     wire [3:0] f_xcyc_c = active ? ((f_at == 2'd2 ? (4'd4 + {3'd0, phase}) : 4'd0) + {3'd0, f_pgb}) : 4'd0;
     wire f_romw_c = (f_at == 2'd1);
     always @(posedge clk) begin f_xcyc <= f_xcyc_c; f_romw <= f_romw_c; end
-    // ---- dados ----
+    // ---- data ----
     wire [1:0] d_pg = d_addr[15:14];
     wire [1:0] d_at = map[{d_pg, slot_of(d_pg)}];
     wire [3:0] nb = 4'd1 << d_size;

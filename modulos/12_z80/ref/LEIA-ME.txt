@@ -1,11 +1,11 @@
-MODELO DE REFERENCIA Z80 (modulo 12_z80/ref)
+Z80 REFERENCE MODEL (module 12_z80/ref)
 ============================================
-zasm.py     montador minimo (Python) -> zexdoc.com    : python3 zasm.py zexdoc.z80 zexdoc.com
-z80ref.c    modelo de referencia em C (documentado + nao documentado, flags X/Y, MEMPTR, R, T-states por instrucao)
-            gcc -O2 -o z80ref z80ref.c ; ./z80ref zexdoc.com   (shim CP/M: BDOS 2 e 9; jp 0 termina)
-            ./z80ref -t  -> tdump.txt (T maximo/minimo de cada opcode, 7 paginas de prefixo)
-cmpt.py     compara tdump.txt com R8064_Z80_instrucoes_fpga.txt
-RESULTADOS: ZEXDOC 67/67 OK (5,76e9 instrucoes, 46,7e9 T-states = ~3,5 h num Z80 de 4 MHz, 0,7 min em C)
-            T-states: 1269/1269 opcodes batem com a tabela (taken/not-taken, repeticoes).
-LIMITES:   ZEXDOC mascara flags indefinidos (X/Y e outros); IN/OUT e interrupcoes ainda nao modelados (stub).
-           Python puro seria ~100x mais lento; o modelo C e a referencia, o Python fica para o traco de barramento.
+zasm.py     minimal assembler (Python) -> zexdoc.com    : python3 zasm.py zexdoc.z80 zexdoc.com
+z80ref.c    C reference model (documented + undocumented, X/Y flags, MEMPTR, R, T-states per instruction)
+            gcc -O2 -o z80ref z80ref.c ; ./z80ref zexdoc.com   (CP/M shim: BDOS 2 and 9; jp 0 ends)
+            ./z80ref -t  -> tdump.txt (max/min T of each opcode, 7 prefix pages)
+cmpt.py     compares tdump.txt with R8064_Z80_instrucoes_fpga.txt
+RESULTS: ZEXDOC 67/67 OK (5.76e9 instructions, 46.7e9 T-states = ~3.5 h on a 4 MHz Z80, 0.7 min in C)
+            T-states: 1269/1269 opcodes match the table (taken/not-taken, repeats).
+LIMITS:   ZEXDOC masks undefined flags (X/Y and others); IN/OUT and interrupts not yet modeled (stub).
+           Pure Python would be ~100x slower; the C model is the reference, Python is left for the bus trace.

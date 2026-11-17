@@ -1,4 +1,4 @@
-// r8064_cpu_gov.v - invólucro: nucleo + registrador de modo + governador de tempo + classificador de memoria.
+// r8064_cpu_gov.v - wrapper: core + mode register + timing governor + memory classifier.
 module r8064_cpu_gov #(parameter ROM_FILE = "gov_rom.mem")(
     input  wire        clk, rst, irq,
     output wire        i_req, input wire i_ack, output wire [63:0] i_addr, input wire [63:0] i_rdata,
@@ -9,9 +9,10 @@ module r8064_cpu_gov #(parameter ROM_FILE = "gov_rom.mem")(
     input  wire        i_flt, d_flt, input wire [2:0] i_cs, d_cs,
     output wire        cr_mmu_en, cr_mmu_user, output wire [7:0] cr_asid, output wire [19:0] cr_root,
     output wire        cr_fl_all, cr_fl_va_en, cr_fl_asid_en, output wire [63:0] cr_fl_va, output wire [7:0] cr_fl_asid, output wire cr_cinv,
-    output wire        cio_we, cio_re, output wire [7:0] cio_a, cio_wd, input wire [7:0] cio_rd,   // E/S emitida pelo nucleo (IN/OUT)
-    input  wire [7:0]  a8,                       // slot primario (PPI A8H) vindo do sistema de memoria MSX
-    input  wire        map_we, input wire [3:0] map_idx, input wire [1:0] map_val,   // tabela de regioes (0 RAM, 1 ROM, 2 externa)
+    output wire        dma_cr_we, output wire [3:0] dma_cr_idx, output wire [63:0] dma_cr_wd,
+    output wire        cio_we, cio_re, output wire [7:0] cio_a, cio_wd, input wire [7:0] cio_rd,   // I/O issued by the core (IN/OUT)
+    input  wire [7:0]  a8,                       // primary slot (PPI A8H) coming from the MSX memory system
+    input  wire        map_we, input wire [3:0] map_idx, input wire [1:0] map_val,   // region table (0 RAM, 1 ROM, 2 external)
     output wire        native64, clk_sel, is_z80, is_rom, mode_busy,
     output wire [63:0] dbg_pc, output wire [7:0] dbg_f, output wire dbg_sig, output wire gov_cv
 );
@@ -28,6 +29,7 @@ module r8064_cpu_gov #(parameter ROM_FILE = "gov_rom.mem")(
         .d_req(d_req), .d_we(d_we), .d_addr(d_addr), .d_size(d_size), .d_wdata(d_wdata), .d_be(d_be), .d_ack(d_ack), .d_rdata(d_rdata),
         .i_flt(i_flt), .d_flt(d_flt), .i_cs(i_cs), .d_cs(d_cs), .cr_mmu_en(cr_mmu_en), .cr_mmu_user(cr_mmu_user), .cr_asid(cr_asid), .cr_root(cr_root),
         .cr_fl_all(cr_fl_all), .cr_fl_va_en(cr_fl_va_en), .cr_fl_asid_en(cr_fl_asid_en), .cr_fl_va(cr_fl_va), .cr_fl_asid(cr_fl_asid), .cr_cinv(cr_cinv),
+        .dma_cr_we(dma_cr_we), .dma_cr_idx(dma_cr_idx), .dma_cr_wd(dma_cr_wd),
         .dbg_pc(dbg_pc), .dbg_f(dbg_f), .dbg_sig(dbg_sig), .gov_go(go), .gov_wait(!native64), .port_c(port_c), .gov_page(pg), .gov_op(op), .gov_port(prt),
         .gov_cv(gov_cv), .gov_alt_ev(alt_ev), .gov_boundary(bnd), .gov_pc(fpc), .gov_len(flen), .gov_dev(d_ev), .gov_daddr(daddr), .gov_dsize(dsz), .gov_dwe(dwe), .io_we(cio_we), .io_re(cio_re), .io_a(cio_a), .io_wd(cio_wd), .io_rdata(cio_rd));
 endmodule

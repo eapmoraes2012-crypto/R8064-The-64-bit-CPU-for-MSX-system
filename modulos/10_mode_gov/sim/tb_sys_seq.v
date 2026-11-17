@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
-// sistema MSX completo executando o programa de sequencias (LD SP/PUSH/POP/CALL/RET/OUT/IN) em Z80 ROM, R800 DRAM e nativo.
-// programa e pilha ficam no mapper (slot 3, segmento 1 -> fisico 4000h); memoria byte-a-byte so responde a enderecos fisicos.
+// full MSX system executing the sequence program (LD SP/PUSH/POP/CALL/RET/OUT/IN) in Z80 ROM, R800 DRAM and native.
+// program and stack stay in the mapper (slot 3, segment 1 -> physical 4000h); byte-by-byte memory only answers physical addresses.
 module tb_sys_seq;
     wire [7:0] d_be; reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we, i_hit, d_hit, d_wr_ok; wire [63:0] i_paddr, d_paddr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -29,7 +29,7 @@ module tb_sys_seq;
     end
     task wio(input [7:0] ad, input [7:0] d); begin @(posedge clk); #1 io_a = ad; io_wd = d; io_we = 1; @(posedge clk); #1 io_we = 0; end endtask
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     initial begin
         repeat (4) @(posedge clk); rst = 0;
@@ -41,10 +41,10 @@ module tb_sys_seq;
         chk("BC", dut.u_cpu.u_core.u_rf1.mem_a[1], 64'h33); chk("DE", dut.u_cpu.u_core.u_rf1.mem_a[2], 64'h22);
         chk("HL", dut.u_cpu.u_core.u_rf1.mem_a[3], 64'h22); chk("AX", dut.u_cpu.u_core.u_rf1.mem_a[0], 64'h5A);
         chk("SP", dut.u_cpu.u_core.u_rf1.mem_a[11], 64'h0F00);
-        chk("pilha: retorno", {mem[16'h4EFF], mem[16'h4EFE]}, 64'h0008);
-        chk("OUT porta 77h (barramento externo)", lw_a, 64'h77); chk("OUT dado", lw_d, 64'h41); chk("1 OUT externo", n_ow, 1); chk("1 IN externo", n_ir, 1);
-        $display("modo nativo=%0d z80=%0d rom=%0d | laco final em %0d clocks | dbg_pc=%h", nat, z80, rom, tw, dbg_pc);
-        if (errs == 0) $display("RESULTADO: SISTEMA+SEQUENCIAS OK"); else $display("RESULTADO: %0d ERROS", errs);
+        chk("stack: return", {mem[16'h4EFF], mem[16'h4EFE]}, 64'h0008);
+        chk("OUT port 77h (external bus)", lw_a, 64'h77); chk("OUT data", lw_d, 64'h41); chk("1 external OUT", n_ow, 1); chk("1 external IN", n_ir, 1);
+        $display("native mode=%0d z80=%0d rom=%0d | final loop at %0d clocks | dbg_pc=%h", nat, z80, rom, tw, dbg_pc);
+        if (errs == 0) $display("RESULT: SYSTEM+SEQUENCES OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

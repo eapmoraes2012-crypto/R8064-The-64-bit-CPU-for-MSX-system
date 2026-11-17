@@ -1,22 +1,22 @@
-MODULO 05 - Controlador da SDRAM embutida (Tang Nano 20K) para acessos de 64 bits do R8064 - simulacao 2026-11-02
-PREMISSAS (NAO CONFIRMADAS NO CHIP): geometria 4 bancos x 2048 linhas x 256 colunas x 32 bits (64 Mbit; 11 bits de linha, 8 de coluna, A10 = precharge); CL=2; BL=2 (64 bits = 2 palavras);
-  tempos genericos de SDR a 100 MHz: tRCD=2, tRP=2, tRAS=5, tRC=7, tRFC=7, tWR=2, tMRD=2 clocks; refresh a cada 7 us (700 clocks; cobre 8192 linhas em 64 ms); init de 200 us. Tudo e parametro.
-  O modelo de SDRAM do testbench foi escrito por mim a partir dessas premissas (nao e o modelo do fabricante) - ele verifica o protocolo, nao prova compatibilidade com o chip.
-O QUE FOI SIMULADO (Icarus Verilog 14.0): 71.434 acessos (escritas de 64 bits com byte-enable e leituras): sequencial 8192 palavras, byte-enable, conflito de linha no banco 0,
-  4 bancos intercalados, 30.000 acessos aleatorios em 4 MB (70% leitura), 40 us ocioso, 20.000 leituras aleatorias de verificacao. Memoria-sombra: 0 divergencias de dado.
-  Modelo de SDRAM com verificador (tRCD, tRP, tRAS, tRC, tRFC, tWR, tMRD, ACT em banco ativo, READ/WRITE sem linha, contencao em DQ, MRS/refresh na inicializacao, intervalo entre refreshes): 0 violacoes.
-  Inicializacao: PRECHARGE ALL, 2 AUTO REFRESH, LOAD MODE (BL=2, CL=2); refreshes periodicos: 837 no teste, maior intervalo 708 clocks (limite 800).
-LATENCIA (clocks do clock em que o pedido e aceito ate rvalid/wdone; 1 pedido por vez):
-  pagina aberta: leitura 5, escrita 1 (postada) | banco fechado: leitura 7, escrita 3 | outra linha (conflito): leitura 9, escrita 5
-  Acesso atrasado por refresh: ate 13 clocks. Custo do refresh: cerca de 1,5% do tempo (11 clocks a cada 700).
-  COMPARACAO COM A PLANILHA: W_RD_HIT=4 (acesso de leitura = 1 + 4 = 5 clocks) coincide EXATAMENTE com a leitura em pagina aberta. W_WR_HIT=2 (3 clocks) e conservador: a escrita postada leva 1.
-  A planilha nao traz parametros para acerto de pagina falho: este controlador acrescenta +2 (banco fechado) ou +4 (conflito) clocks de espera na leitura (escrita: +2 ou +4).
-  Vazao de leitura sequencial em pagina aberta: 8 bytes / 5 clocks = 160 MB/s a 100 MHz (um pedido por vez; um controlador com leituras sobrepostas chegaria a ~2 clocks por acesso de 64 bits).
-SINTESE / P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, 100 MHz, com invólucro LFSR): versao 1 (arrays indexados): 92 MHz -> FALHOU (decisao de acerto + prontidao dos temporizadores
-  no clock de aceitacao, memoria distribuida RAM16SDP4). Versao final (vetores empacotados, one-hot, mesma funcao e mesmos ciclos): 109,7 MHz PASS.
-  Controlador isolado (Yosys): 224 LUT4 + 128 ALU + ~420 MUX2 (muxes de dados e estados), ~440 FF, 0 BSRAM.
-MUTANTES: 8 alteracoes de proposito no RTL (tRCD, tRP, tRFC menores, DQM trocado, DQM de escrita removido, PRECHARGE omitido, READ/WRITE sem esperar tRCD, refresh lento) - todas detectadas.
-  Alteracoes em tRAS/tWR e ok_pre=1 NAO mudam o resultado: com um pedido por vez o fluxo ja respeita esses tempos no limite exato (confirmado: com tRAS=6 ou tWR=3 no modelo ha violacoes).
-  Um defeito real foi achado e corrigido: o contador de refresh tinha 10 bits e nao refrescava com REF_INT > 1023 (o teste so o pegou depois de acrescentar ao modelo a checagem "refresh atrasado").
-NAO COBERTO: sinais reais do SDRAM embutido do GW2AR-18 (primitivas/IO da Gowin, fase do clock da SDRAM por PLL, atrasos de E/S), temporizacao com os tempos reais do chip, modelo do fabricante,
-  varias requisicoes em voo, arbitragem F2/M, integracao com o pipeline, area de memoria de 8 MB (so 4 MB usados pelo R8064), consumo.
+MODULE 05 - Embedded SDRAM controller (Tang Nano 20K) for 64-bit R8064 accesses - simulation 2026-11-02
+ASSUMPTIONS (NOT CONFIRMED ON THE CHIP): geometry 4 banks x 2048 rows x 256 columns x 32 bits (64 Mbit; 11 row bits, 8 column bits, A10 = precharge); CL=2; BL=2 (64 bits = 2 words);
+  generic SDR timings at 100 MHz: tRCD=2, tRP=2, tRAS=5, tRC=7, tRFC=7, tWR=2, tMRD=2 clocks; refresh every 7 us (700 clocks; covers 8192 rows in 64 ms); 200 us init. Everything is a parameter.
+  The testbench's SDRAM model was written by me from these assumptions (it is not the manufacturer's model) - it verifies the protocol, it does not prove compatibility with the chip.
+WHAT WAS SIMULATED (Icarus Verilog 14.0): 71,434 accesses (64-bit writes with byte-enable and reads): sequential 8192 words, byte-enable, row conflict in bank 0,
+  4 interleaved banks, 30,000 random accesses in 4 MB (70% read), 40 us idle, 20,000 random verification reads. Shadow memory: 0 data divergences.
+  SDRAM model with checker (tRCD, tRP, tRAS, tRC, tRFC, tWR, tMRD, ACT on active bank, READ/WRITE without a row, DQ contention, MRS/refresh at initialization, interval between refreshes): 0 violations.
+  Initialization: PRECHARGE ALL, 2 AUTO REFRESH, LOAD MODE (BL=2, CL=2); periodic refreshes: 837 in the test, longest interval 708 clocks (limit 800).
+LATENCY (clocks from the clock in which the request is accepted to rvalid/wdone; 1 request at a time):
+  open page: read 5, write 1 (posted) | closed bank: read 7, write 3 | other row (conflict): read 9, write 5
+  Access delayed by refresh: up to 13 clocks. Refresh cost: about 1.5% of the time (11 clocks every 700).
+  COMPARISON WITH THE SPREADSHEET: W_RD_HIT=4 (read access = 1 + 4 = 5 clocks) matches the open-page read EXACTLY. W_WR_HIT=2 (3 clocks) is conservative: the posted write takes 1.
+  The spreadsheet has no parameters for a page miss: this controller adds +2 (closed bank) or +4 (conflict) wait clocks on reads (writes: +2 or +4).
+  Sequential read throughput on an open page: 8 bytes / 5 clocks = 160 MB/s at 100 MHz (one request at a time; a controller with overlapped reads would reach ~2 clocks per 64-bit access).
+SYNTHESIS / P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, 100 MHz, with LFSR wrapper): version 1 (indexed arrays): 92 MHz -> FAILED (hit decision + timer readiness
+  in the acceptance clock, RAM16SDP4 distributed memory). Final version (packed vectors, one-hot, same function and same cycles): 109.7 MHz PASS.
+  Isolated controller (Yosys): 224 LUT4 + 128 ALU + ~420 MUX2 (data and state muxes), ~440 FF, 0 BSRAM.
+MUTANTS: 8 deliberate changes in the RTL (smaller tRCD, tRP, tRFC, swapped DQM, write DQM removed, PRECHARGE omitted, READ/WRITE without waiting tRCD, slow refresh) - all detected.
+  Changes in tRAS/tWR and ok_pre=1 do NOT change the result: with one request at a time the flow already respects these times at the exact limit (confirmed: with tRAS=6 or tWR=3 in the model there are violations).
+  A real defect was found and fixed: the refresh counter had 10 bits and did not refresh with REF_INT > 1023 (the test only caught it after adding the "late refresh" check to the model).
+NOT COVERED: real signals of the GW2AR-18 embedded SDRAM (Gowin primitives/IO, SDRAM clock phase from the PLL, I/O delays), timing with the chip's real times, manufacturer's model,
+  several requests in flight, F2/M arbitration, integration with the pipeline, 8 MB memory area (only 4 MB used by the R8064), power consumption.

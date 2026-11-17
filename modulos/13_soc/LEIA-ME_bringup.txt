@@ -1,15 +1,15 @@
 BRING-UP DO TOPO DE PLACA (Tang Nano 20K) - r8064_board_top
 ============================================================
-1) Gerar e gravar:   pnr\gerar_bitstream_board.bat 0 3 gravar      (SRC=0: cristal de 27 MHz da placa, semente 3; grava na SRAM)
-   Sem "gravar" so gera pnr\r8064_board_src0_s3.fs. Gravacao permanente: openFPGALoader -b tangnano20k -f <arquivo>.fs
-2) Saidas de observacao (pinos 84 / 83 / 82 / 81 do QN88; 3,3 V, conferir se o seu cartucho/placa os expoe):
-     dbg_init (84) = 1 quando a SDRAM terminou a inicializacao (init_done)
-     dbg_lock (83) = 1 quando o PLL travou
-     dbg_sig  (82) = XOR registrado de varias saidas do SoC (so "mexe" se o nucleo estiver rodando)
+1) Generate and program:   pnr\gerar_bitstream_board.bat 0 3 gravar      (SRC=0: the board's 27 MHz crystal, seed 3; programs the SRAM)
+   Without "gravar" it only generates pnr\r8064_board_src0_s3.fs. Permanent programming: openFPGALoader -b tangnano20k -f <file>.fs
+2) Observation outputs (QN88 pins 84 / 83 / 82 / 81; 3.3 V, check that your cartridge/board exposes them):
+     dbg_init (84) = 1 when the SDRAM finished initialization (init_done)
+     dbg_lock (83) = 1 when the PLL locked
+     dbg_sig  (82) = registered XOR of several SoC outputs (only "moves" if the core is running)
      dbg_hb   (81) = batimento: clk/2^25, ~1,7 Hz a 57,3 MHz (use LED ou osciloscopio)
-   Esperado: lock logo apos ligar; init alguns ms depois (INIT_CYC = 20000 clocks ~ 349 us + sequencia); hb piscando.
-3) Botao (pino 88, ativo alto) = reset do SoC (sincronizado; o PLL nao e reiniciado).
-4) Se init NAO sobe: ajustar SDR_PSDA (fase do clk da SDRAM) em r8064_board_top (parametro, passos de 22,5 graus; padrao 4 = 90 graus).
-   Tente 0, 2, 4, 6, 8. Cada valor exige novo bitstream.
-5) Clock externo (SRC 1/2/3): conferir antes qual sinal chega ao pino (pinos 13 / 10 / 80) e sua amplitude (LVCMOS33).
-LIMITES: o barramento MSX (io_*, fm_*) esta com entradas em 0; nao ha como carregar programa ainda alem do que ja estiver nos .mem de ROM do pacote.
+   Expected: lock soon after power-on; init a few ms later (INIT_CYC = 20000 clocks ~ 349 us + sequence); hb blinking.
+3) Button (pin 88, active high) = SoC reset (synchronized; the PLL is not restarted).
+4) If init does NOT come up: adjust SDR_PSDA (SDRAM clk phase) in r8064_board_top (parameter, 22.5-degree steps; default 4 = 90 degrees).
+   Try 0, 2, 4, 6, 8. Each value requires a new bitstream.
+5) External clock (SRC 1/2/3): first check which signal reaches the pin (pins 13 / 10 / 80) and its amplitude (LVCMOS33).
+LIMITS: the MSX bus (io_*, fm_*) has its inputs at 0; there is still no way to load a program besides what is already in the package's ROM .mem files.

@@ -1,0 +1,63 @@
+ASSUMPTIONS OF THE R8064 INTEGER INSTRUCTIONS (16/32/64 bits) - 14/11/2026
+The instruction spreadsheet is not in the repository. The semantics below was INFERRED from the mnemonics, from the decode ROM (rom_ed_a/b: which values of the
+3rd byte each instruction accepts) and from the instructions that already existed (LDW rr,nn / LDQ rr,nn / CPLW / NEGW). REVIEW each item; whatever is wrong is fixed
+in sim/gen_r64_rom.py (one line per instruction).
+
+REGISTERS (3-bit field): 000 BC, 010 DE, 011 IY, 100 HL, 101 IX, 111 AX. 001 and 110 are not registers (they serve to distinguish instructions).
+SIZES: W = 16, L = 32, Q = 64 bits. Writing W or L to a register PRESERVES the upper bits (as the Z80 does with 8 bits within 16).
+
+1. ALU rr,rr' (ADD 3E, ADC 3F, SUB 3C, SUBC 3D, AND 38, OR 37, XOR 36, CP 02): b3 = tt ddd sss; tt = 00 W, 01 E, 10 Q; destino ddd, fonte sss.
+   ADCW/ADCL/ADCQ appear in the list as "HL,rr / EA,rr / QA,rr", but the ROM accepts any destination: I treated it as rr,rr'.
+   Flags (all ALU): S = highest bit of the size; Z; C = carry/borrow of the size; PV = overflow (arithmetic) or parity of the LOW BYTE (logical);
+   H = carry from bit 3 to 4; N; X/Y = bits 3 and 5 of the result. AND sets H. CP only changes flags.
+2. INCx / DECx rr (ED 3E / ED 3C, b3 = tt rrr 001): change S, Z, H, PV, N and KEEP C (like Z80 INC r; different from Z80 INC rr, which does not touch flags).
+3. Deslocamentos de 1 bit: SHL (ED 29, tt rrr 110), SHR (ED 28), RLC (ED 06), RRC (ED 07), SAR (ED 29, tt 110 rrr). tt = 00 B, 01 W, 10 E, 11 Q.
+   In the B forms the field is an 8-bit register with the Z80 code (B C D E H L - A). Flags: S, Z, PV = parity of the low byte, C = bit shifted out, H = N = 0.
+4. BITW/RESW n,tt (ED 30: 0/1 nnnn ttt), SETW (ED 2F: 0 nnnn ttt), BITL/RESL/SETL (ED 33/32/31: nnnnn ttt). BIT: Z = bit is 0, PV = Z, S = the tested bit when it is the highest of the size, H = 1, N = 0, C kept, X/Y = bits 3 and 5 of the register.
+   RES/SET do not change flags.
+5. LDx (ED 3B W, 3A E, 39 Q): 01 ddd sss = rr,rr' | 01 ddd 001 = rr,immediate | 00 ddd sss = rr,(rr') | 11 aaa sss = (rr),rr' (address aaa, data sss)
+   | 00 rrr 001 + 8 bytes = (nnnnnnnn),rr | 10 rrr 001 + 8 bytes = rr,(nnnnnnnn). No LD changes flags.
+6. (QIX+dd) / (QIY+dd) (ED DD / ED FD): dd = SIGNED 16-bit displacement. W: 00 rrr 001 stores rr, 01 xxx 001 stores immediate, 10 rrr 001 reads.
+   L: 00/01/10 with 110. Q: 00 rrr 000 stores, 01 xxx 000 stores immediate, 11 rrr 110 reads.
+7. Stack (ED 38): POPL 00 001 rrr, POPQ 01 001 rrr, PUSHL 10 001 rrr, PUSHQ 11 001 rrr. Uses the whole QSP (64 bits) and pushes 4 or 8 bytes.
+8. Branches: JRW nn (ED 2D) and JRW cc,nn (ED 2A 00 ccc 001): signed 16-bit displacement from the next instruction. cc = NZ Z NC C PO PE P M.
+   DJNZW nn (ED 2E): decrements B (8 bits, no flags) and jumps with a 16-bit displacement. [could be 16-bit BC: confirm]
+   JPL nnnn (ED 2C) / JPQ nnnnnnnn (ED 2B); JPL cc,nnnn (ED 2A 10 ccc 001); JPQ cc,nnnnnnnn (ED 2A 11 ccc 110);
+   JPL (vv) (ED 2A 01 vvv 001); JPQ (vv) (11 vvv 001); JPL cc,(vv) (00 ccc vvv); JPQ cc,(vv) (01 ccc vvv). JPL uses only the low 32 bits of the target.
+9. CALLL nnnn (ED 35) / CALLQ nnnnnnnn (ED 34); CALLL (rr) (ED 37 00 001 rrr); CALLL cc,(rr) (ED 37 11 ccc rrr); CALLQ = ED 36. RETL (ED 04), RETQ (ED 05),
+   RETL cc (ED 03 01 ccc 000), RETQ cc (ED 03 10 ccc 000). L pushes/pops 4 bytes of the return address; Q, 8 bytes.
+
+10. MULTIPLICATION (mul_unit of module 03, in DSP). Flags (REV40): Z = zero product, C = significant high half (as on the R800), S and PV only in the signed forms: MODELO_PRIVILEGIO.txt, item 6.
+    MLTUB A,u (ED C1, C9, D1, D9, E1, E9, F9 = R800 MULUB): HL = A * u (unsigned). MLTUW HL,BC / HL,SP (ED C3 / ED F3 = R800 MULUW): DE:HL = HL * rr.
+    ED 3E (unsigned) / ED 3F (signed), b3 = tt 001 rrr: MLTSB AL,u: AX (16 bits) = AL * u (u = 8-bit register); MLTxW HL,rr: DE:HL = HL * rr (32 bits);
+    MLTxL: QA = EA * rr (32 x 32 -> 64 bits in AX); MLTUQ QA,rr: AX = LOW 64 bits of AX * rr (the high part is lost); MLTSQ QDE:QA,rr: DE:AX = 128 bits.
+11. DIVISION (div_unit of module 03, 1 bit per clock). ED 3C (unsigned) / ED 3D (signed), b3 = tt 001 rrr. Flags (REV40): Z, S and, on error, C = PV = 1.
+    DIVxB AX,t: AX (16 bits) / t (B C D E H L) -> AL = quotient, AH = remainder.   DIVxW DX:AX,rr: DE:AX (32 bits) / rr -> AX = quotient, DE = remainder.
+    DIVxL QA,rr: AX (64 bits) / rr (32 bits) -> AX = {remainder (high 32 bits), quotient (low 32 bits)}.   DIVxQ QDE:QA,rr: DE:AX (128 bits) / rr -> AX = quotient, DE = remainder.
+    Signed: quotient truncated toward zero, remainder with the sign of the dividend. DIVISION BY ZERO or OUT-OF-RANGE QUOTIENT (REV40): with CR14 bit 2 = 0,
+    C = PV = 1, quotient = all ones, remainder = low part of the dividend; with CR14 bit 2 = 1, cause 6 exception (MODELO_PRIVILEGIO.txt).
+12. LDCR kk,rr (ED 20, b3 = kkkkk rrr): CR[kk] := rr.  STCR rr,kk (ED 21): rr := CR[kk]. They do the same as MTCR/MFCR, with any register. Privileged (REV40), like MTCR/MFCR and PGINV.
+13. PGINV (uu) (ED C4 BC, D4 DE, E4 HL, FC AX): flushes from the TLB the translation of the address in uu (same as writing CR16).
+14. XCHGL/XCHGQ rr,(rr') (ED AC, b3 = 0 q ddd sss; rr = ddd, pointer = sss): swaps the register with memory. No flags.
+    CASL/CASQ (rr'),rr (ED AD, b3 = 0 q ppp sss; pointer = ppp, new value = sss): compares A (of the size) with memory, with the CP flags;
+    if equal, memory := rr (Z = 1); otherwise A := memory (Z = 0). On a single core, with interrupts only between instructions, the sequence is already atomic.
+15. FENCE and ISYNC (ED A5 / ED A6): NOP (the core executes in order and there is no other core).
+16. ED opcode with no instruction: 2-byte NOP, as on the Z80 (it used to have length 0 and hang execution).
+
+17. DJNZW nn (REV40): the counter is 16-bit BC (before it was only B). No flags.
+18. SISTEMA (REV40): modos supervisor / usuario, excecoes, SCALL, SYSRT, JP USER, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX: tudo em MODELO_PRIVILEGIO.txt.
+
+19. FPU (REV41): 34 instructions with microcode (stack, loads, constants, add, subtract, multiply, divide, root, compare, conversions, FSTSW):
+    everything in MODELO_FPU.txt. FLUSH (ED 94): flushes the whole TLB and the pipeline; privileged.
+
+20. FPU, segunda parte (REV42): FSIN, FCOS, FSINC, FTAN, FLN, FYL2X, FYL2P, FREM, FREM1, FSAVE, FRSTR: MODELO_FPU.txt, item 5.
+
+IMPLEMENTED: INW/INL/INQ rr,(C) and OUTW/OUTL/OUTQ (C),rr (ED 27, b3 = size[7:6] rr[5:3] 001/110): 2/4/8 bytes in sequence on the same C port, least significant byte first; the read accumulates in T2 and writes rr at the end (rr may be BC). Byte range in ioff (u[41:39]) with immz.
+
+VERIFICATION: (1) sim_r64/tb_r64_fumaca.v: 21 instructions with hand-computed results. (2) sim_r64/gen_r64_prog.py: Python MODEL written from these
+assumptions + random program generator; tb_r64core.v compares the core with the model instruction by instruction (PC, AX, BC, DE, HL, IX, IY, 64-bit SP, F and
+the final memory). The test shows that the RTL does what these assumptions say; it does NOT show that the assumptions are what the original spreadsheet defined.
+(3) tb_r64core.v +livre: the same program with the instructions glued into the pipeline; compares only the final state. (4) 13_soc/sim/tb_soc_exc.v scenarios 9 to 12: user mode with MMU.
+Not covered by the random test: bank prefixes (N0-N7) together with these instructions, EXX/EX AF, page faults and the governed modes.
+56. CR NUMBERING (REV43): CRnn = bank index 32+nn. CR00-07 free; CR08 timer; CR09 vector; CR10 IE; CR11 cause; CR12 aux/address; CR13 EPC; CR14 MMU+TE+ASID; CR15 root; CR16/17 TLB and caches; CR18 mode; CR19-30 DMA (documentation); CR31 free.
+57. SIZES (REV43): B = 8, W = 16, L = 32, Q = 64 bits (before E; all 32-bit mnemonics now end in L).

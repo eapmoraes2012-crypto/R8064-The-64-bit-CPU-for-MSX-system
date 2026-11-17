@@ -1,10 +1,10 @@
-; teste de integracao Z80 + msx_mem + SDRAM. ROM no slot 0 (nao mapeado). Resultado: OUT (E0h),A  01=PASS  EE=FAIL (E1h = numero do teste)
+; Z80 + msx_mem + SDRAM integration test. ROM in slot 0 (not mapped). Result: OUT (E0h),A  01=PASS  EE=FAIL (E1h = test number)
 	org 0
 	di
 	ld sp,0FF00h
-	ld a,0FCh		; paginas 1-3 -> slot 3 (mapper); pagina 0 -> slot 0 (ROM)
+	ld a,0FCh		; pages 1-3 -> slot 3 (mapper); page 0 -> slot 0 (ROM)
 	out (0A8h),a
-	; --- T1: preenche 4000 (seg 2), 8000 (seg 1), C000 (seg 0) com padroes distintos
+	; --- T1: fills 4000 (seg 2), 8000 (seg 1), C000 (seg 0) with distinct patterns
 	ld hl,4000h
 	ld (hl),11h
 	inc hl
@@ -22,10 +22,10 @@
 	ld a,(0C000h)
 	cp 31h
 	jp nz,fail1
-	; --- T2: remapeia pagina 1 para segmento 5; escreve; volta ao segmento 2 e confere
+	; --- T2: remap page 1 to segment 5; write; go back to segment 2 and check
 	ld a,5
 	out (0FDh),a
-	ld a,(4000h)		; segmento 5 ainda zerado
+	ld a,(4000h)		; segment 5 still zeroed
 	or a
 	jp nz,fail2
 	ld a,55h
@@ -40,16 +40,16 @@
 	ld a,(4000h)
 	cp 55h
 	jp nz,fail2
-	; --- T3: pagina 3 aponta o mesmo segmento da pagina 1 (alias); leitura de porta devolve o valor
+	; --- T3: page 3 points to the same segment as page 1 (alias); port read returns the value
 	ld a,5
 	out (0FFh),a
 	ld a,(0C000h)
 	cp 55h
 	jp nz,fail3
 	in a,(0FFh)
-	cp 0C5h			; bits nao usados (6 bits de segmento) leem 1
+	cp 0C5h			; unused bits (6 segment bits) read as 1
 	jp nz,fail3
-	; --- T4: copia de bloco com LDIR entre segmentos (pagina 1 seg 5 -> pagina 2 seg 1)
+	; --- T4: block copy with LDIR between segments (page 1 seg 5 -> page 2 seg 1)
 	ld hl,4000h
 	ld de,8100h
 	ld bc,100h
@@ -76,16 +76,16 @@ chk:	ld a,(hl)
 	ld a,0E8h
 	out (0A8h),a
 	ld sp,0FF00h
-	in a,(8Eh)		; liga modo de escrita da MegaRAM
+	in a,(8Eh)		; turns on MegaRAM write mode
 	ld a,3
-	ld (6000h),a		; banco 3 na janela 4000
+	ld (6000h),a		; bank 3 in the 4000 window
 	ld a,0A3h
 	ld (4000h),a
 	ld a,4
 	ld (6000h),a		; banco 4
 	ld a,0A4h
 	ld (4000h),a
-	out (8Eh),a		; volta ao modo ASCII8 (escrita so troca banco)
+	out (8Eh),a		; back to ASCII8 mode (write only switches bank)
 	ld a,3
 	ld (6000h),a
 	ld a,(4000h)
@@ -97,7 +97,7 @@ chk:	ld a,(hl)
 	cp 0A4h
 	jp nz,fail5
 	ld a,77h
-	ld (4000h),a		; modo ROM: escrita ignorada
+	ld (4000h),a		; ROM mode: write ignored
 	ld a,(4000h)
 	cp 0A4h
 	jp nz,fail5
@@ -106,9 +106,9 @@ chk:	ld a,(hl)
 	ld a,(4000h)
 	cp 0A3h
 	jp nz,fail5
-	; --- T6: janela 2 (8000) com banco independente
+	; --- T6: window 2 (8000) with independent bank
 	ld a,4
-	ld (7000h),a		; banco da janela 8000
+	ld (7000h),a		; bank of the 8000 window
 	ld a,(8000h)
 	cp 0A4h
 	jp nz,fail6

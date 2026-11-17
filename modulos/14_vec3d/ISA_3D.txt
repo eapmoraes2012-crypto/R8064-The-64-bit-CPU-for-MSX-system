@@ -1,15 +1,17 @@
-INSTRUCOES 3D DO R8064 (integradas ao nucleo em 09_core_min / 10_mode_gov) - 09/11/2026
+R8064 3D INSTRUCTIONS (integrated into the core in 09_core_min / 10_mode_gov) - 09/11/2026
 =====================================================================================
-Vetor = 4 lanes int16 (x,y,z,w) num registrador de 64 bits (BC, DE, HL, AX; com prefixo de banco ED 0E / ED 0D: N0-N3 / N4-N7; ED 0B = sombra).
-Formato (4 bytes, 5 com prefixo de banco):  ED <op> <mod> <imm8>      mod = rd[5:3] | rs[2:0], codigos BC=0 DE=2 HL=4 AX=7 (os mesmos de LDQ rr,imm64)
+Vector = 4 int16 lanes (x,y,z,w) in a 64-bit register (BC, DE, HL, AX; with bank prefix ED 0E / ED 0D: N0-N3 / N4-N7; ED 0B = shadow).
+Format (4 bytes, 5 with bank prefix):  ED <op> <mod> <imm8>      mod = rd[5:3] | rs[2:0], codes BC=0 DE=2 HL=4 AX=7 (the same as LDQ rr,imm64)
   ED F8  VOP  rd,rs,sh   rd := rd OP rs        imm8 = (OP<<4) | sh      OP: 0 VMUL  1 VDOT4  2 VDOT3  3 VCROSS3  4 VADD  5 VSUB  6 VMIN  7 VMAX ; sh = 0..15
-  ED FB  VOP1 rd,rs      rd := OP(rs)          imm8 = (OP<<4)           OP: 9 VNEG  10 VABS     (OP 8, 11-15 reservados; no ED FB executam como VSHUF / VABS conforme o decodificador da unidade)
+  ED FB  VOP1 rd,rs      rd := OP(rs)          imm8 = (OP<<4)           OP: 9 VNEG  10 VABS     (OP 8, 11-15 reserved; on ED FB they execute as VSHUF / VABS depending on the unit's decoder)
   ED FA  VSHUF rd,rs,imm rd := swizzle(rs)     lane_i = rs.lane[imm[2i+1:2i]]
-Semantica: VMUL/VCROSS3/VADD/VSUB/VNEG/VABS saturam em int16 (-32768..32767); produtos e somas com arredondamento ao mais proximo: (valor + 2^(sh-1)) >>> sh.
-  VDOT4 = sum(a_i*b_i, i=0..3), VDOT3 = sem a lane w; resultado ESCALAR de 64 bits (com sinal) em rd.  VCROSS3 = (y1*z2-z1*y2, z1*x2-x1*z2, x1*y2-y1*x2, 0) >>> sh.
-  Nao alteram flags. Uma unica uop; o estagio M espera a unidade (latencia 4 clocks) pelo mesmo mecanismo de 'hold' dos acessos lentos.
-IDs de instrucao (pagina ED): 294 (F8), 295 (FA), 296 (FB); uops em 256+id; ctrl_b: len 4, bancavel. Montagem: ver sim/gen_prog_vec.py (09_core_min).
-Pendente: tempo dessas instrucoes nos modos Z80/R800 (a tabela do governador nao as conhece), forma de 3 operandos, reciproco/rsqrt, matriz x vetor microcodificada.
+Semantics: VMUL/VCROSS3/VADD/VSUB/VNEG/VABS saturate to int16 (-32768..32767); products and sums with rounding to nearest: (value + 2^(sh-1)) >>> sh.
+  VDOT4 = sum(a_i*b_i, i=0..3), VDOT3 = without the w lane; 64-bit SCALAR result (signed) in rd.  VCROSS3 = (y1*z2-z1*y2, z1*x2-x1*z2, x1*y2-y1*x2, 0) >>> sh.
+  They do not change flags. A single uop; the M stage waits for the unit (latency 4 clocks) through the same 'hold' mechanism as slow accesses.
+Instruction IDs (ED page): 294 (F8), 295 (FA), 296 (FB); uops at 256+id; ctrl_b: len 4, bankable. Assembly: see sim/gen_prog_vec.py (09_core_min).
+Pending: timing of these instructions in Z80/R800 modes (the governor table does not know them), 3-operand form, reciprocal/rsqrt, microcoded matrix x vector.
 
-REVISAO 10/11/2026 (2): o nucleo instancia a unidade MINIMA (parametro VEC_LANE_ALU = 0 em r8064_core_min): OP 4 VADD, 5 VSUB, 6 VMIN, 7 VMAX ficam RESERVADOS (devolvem 0).
-  Continuam: VMUL, VDOT4, VDOT3, VCROSS3 (ED F8, OP 0-3), VSHUF (ED FA), VNEG/VABS (ED FB, OP 9/10). Para a completa: VEC_LANE_ALU=1 (gen_prog_vec.py ... full gera programas com OP 4-7).
+REVISION 10/11/2026 (2): the core instantiates the MINIMAL unit (parameter VEC_LANE_ALU = 0 in r8064_core_min): OP 4 VADD, 5 VSUB, 6 VMIN, 7 VMAX are RESERVED (return 0).
+  Remaining: VMUL, VDOT4, VDOT3, VCROSS3 (ED F8, OP 0-3), VSHUF (ED FA), VNEG/VABS (ED FB, OP 9/10). For the complete one: VEC_LANE_ALU=1 (gen_prog_vec.py ... full generates programs with OP 4-7).
+NOTE 14/11/2026: the bak/ folders are not versioned (.gitignore), so 09_core_min/bak/com_vec3d/ is NOT in the repository. The core test
+ (tb_vec.v, gen_prog_vec.py) is in 14_vec3d/sim/teste_no_nucleo/ and only runs against the core WITH the 3D unit (REV29 state).

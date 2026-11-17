@@ -1,91 +1,91 @@
-MODULO 09 - Nucleo minimo sintetizavel do R8064 (esqueleto de area) - 2026-11-04
-OBJETIVO: medir quanto o nucleo (busca, decodificacao, pipeline, forwarding, ALU, LSU, banco, timer) ocupa no GW2AR-18, para validar a linha "Nucleo = 4.800 LUT4" do orcamento enxuto.
-O QUE E: rtl/r8064_core_min.v. Fila de prefetch de 32 B + alinhador de 13 bytes, decodificador ED REAL (r8064_decode: ROM_A/ROM_B/ctrl) e ROM de pagina principal,
-  ROM de microoperacoes de 48 bits (BSRAM, conteudo pseudo-aleatorio na sintese), banco 64x64 em BSRAM (modulo 01) com 3 leituras, mapeamento de registradores EXX/EX AF,
-  extracao de imediato, forwarding X2/M/W + comparador de interlock carga-uso, ALU de 2 estagios (alu_prep/alu_core do modulo 01), somadores de endereco e de alvo de desvio,
-  LSU de 64 bits (alinhamento e extensao), flags, desvio resolvido em X2 (esvazia fila), timer de 64 bits + interrupcao.
-O QUE NAO E: nao tem a semantica das ~1.480 instrucoes (so um mini-conjunto de teste: LDI, ADD 3-operandos, LD, ST, ADDI, JR, JRNZ), nem CALL/RET/PUSH/POP multi-passo, E/S, strings (LDIR...),
-  nem hazards de escrita parcial. O front-end emite 1 instrucao a cada 4 clocks (ROM A/B e ROM ctrl/uop em serie): NAO sustenta 1 instrucao/clock.
-SIMULACAO (Icarus; sim/tb_core.v): programa de 21 bytes (laco de 5 iteracoes: soma, ST, ADDI no ponteiro, ADDI -1, JRNZ, depois LD): registradores e 5 palavras de memoria conferem. RESULTADO: PROGRAMA DE TESTE OK.
-  Bug encontrado e corrigido na simulacao: apos esvaziar a fila (desvio) a flag "drop" travava a busca (a requisicao retirada nunca recebia ack).
-SINTESE / P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, 100 MHz, router2, invólucro LFSR de ~130 FF):
-  LUT4 4.904 (23 %) [~4.800 sem o invólucro], ALU (cadeias de vai-um) 426, MUX2 1.065+162+53+11, FF 2.275 (14 %), BSRAM 15, Fmax 78,8 MHz (FALHA a 100).
-  Caminho critico: ALU de 64 bits (ctl_x2 -> alu_core -> flags/fl) ~12,7 ns. Corrige-se com mais um estagio de pipeline na ALU/flags (a ALU isolada do modulo 01 fechava 110 MHz).
-  Detalhe por modulo (sintese sem achatar, contagens por instancia): alu_core 773 LUT, alu_prep 2.200 LUT (isolada; achatada dentro do nucleo cai muito), r8064_decode 149, regfile64 150 (x2), regmerge 112, resto do nucleo 2.823 LUT + 338 ALU + 2.115 FF.
-LEITURA PARA O ORCAMENTO:
-  - So o esqueleto ja gasta ~4.800 LUT4 + 426 celulas ALU = ~5.200 LUT4 equivalentes, mais do que os 4.800 do orcamento enxuto, e FALTA: decodificacao semantica das 1.480 instrucoes
-    (campos, modos de enderecamento, tamanhos), CALL/RET/PUSH/POP/strings (maquinas de estados), E/S, pre-decodificacao de comprimento para 1 instrucao/clock (+600 a 1.000 LUT4),
-    entrada de interrupcao/excecao, ligacao com MMU/FPU/caches.  Estimativa do nucleo completo: 6.200 a 8.200 LUT4 (tipico ~7.800).
-  - Com o nucleo em ~7.800, o orcamento enxuto sobe de 17.660 para ~20.640 LUT4 (99,5 %): nao fecha em 85 %. Ver aba "Núcleo medido" da planilha rev10 para as alavancas (A+B+C+E levam a ~16.530 LUT4, 80 %).
-Como rodar: cd sim; python3 gen_roms.py; iverilog -g2012 -o /tmp/core.vvp tb_core.v ../rtl/*.v; vvp /tmp/core.vvp   (P&R: pnr/pnr_core_top.v + ROMs pseudo-aleatorias: python3 gen_roms.py rand)
-NOTA 04/11: medida E (janela de 8 B) simulada pelo usuario: teste do nucleo OK (erros=0); sem instrucoes >8 B no teste. Sintese pendente.
-MEDIDA E (janela de 8 bytes) - MEDIDA PELO USUARIO (Yosys 0.70, 04/11/2026): LUT1-4 5.037 + ALU 407 = 5.444 LUT4 eq. (13 bytes: 4.904 + 426 = 5.330); FF 2.277; BSRAM 15.
-  Resultado: +114 LUT4 eq. (pior). Estimativa de -350 NAO se confirmou. Revertida: rtl/r8064_core_min.v = janela de 13 bytes; versao de 8 bytes em bak/r8064_core_min_win8.v.
+MODULE 09 - Synthesizable minimal core of the R8064 (area skeleton) - 2026-11-04
+GOAL: measure how much the core (fetch, decode, pipeline, forwarding, ALU, LSU, register file, timer) occupies on the GW2AR-18, to validate the "Core = 4,800 LUT4" line of the lean budget.
+WHAT IT IS: rtl/r8064_core_min.v. 32 B prefetch queue + 13-byte aligner, REAL ED decoder (r8064_decode: ROM_A/ROM_B/ctrl) and main page ROM,
+  48-bit microoperation ROM (BSRAM, pseudo-random content in synthesis), 64x64 register file in BSRAM (module 01) with 3 reads, EXX/EX AF register mapping,
+  immediate extraction, forwarding X2/M/W + load-use interlock comparator, 2-stage ALU (alu_prep/alu_core of module 01), address and branch-target adders,
+  64-bit LSU (alignment and extension), flags, branch resolved in X2 (flushes the queue), 64-bit timer + interrupt.
+WHAT IT IS NOT: it does not have the semantics of the ~1,480 instructions (only a test mini-set: LDI, 3-operand ADD, LD, ST, ADDI, JR, JRNZ), nor multi-step CALL/RET/PUSH/POP, I/O, strings (LDIR...),
+  nor partial-write hazards. The front-end issues 1 instruction every 4 clocks (ROM A/B and ROM ctrl/uop in series): it does NOT sustain 1 instruction/clock.
+SIMULATION (Icarus; sim/tb_core.v): 21-byte program (loop of 5 iterations: add, ST, ADDI on the pointer, ADDI -1, JRNZ, then LD): registers and 5 memory words match. RESULT: TEST PROGRAM OK.
+  Bug found and fixed in the simulation: after flushing the queue (branch) the "drop" flag stalled the fetch (the withdrawn request never received an ack).
+SYNTHESIS / P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, 100 MHz, router2, LFSR wrapper of ~130 FF):
+  LUT4 4,904 (23 %) [~4,800 without the wrapper], ALU (carry chains) 426, MUX2 1,065+162+53+11, FF 2,275 (14 %), BSRAM 15, Fmax 78.8 MHz (FAILS at 100).
+  Critical path: 64-bit ALU (ctl_x2 -> alu_core -> flags/fl) ~12.7 ns. Fixed with one more pipeline stage in the ALU/flags (the isolated ALU of module 01 closed at 110 MHz).
+  Detail per module (synthesis without flattening, counts per instance): alu_core 773 LUT, alu_prep 2,200 LUT (isolated; flattened inside the core it drops a lot), r8064_decode 149, regfile64 150 (x2), regmerge 112, rest of the core 2,823 LUT + 338 ALU + 2,115 FF.
+READING FOR THE BUDGET:
+  - The skeleton alone already spends ~4,800 LUT4 + 426 ALU cells = ~5,200 equivalent LUT4, more than the 4,800 of the lean budget, and it still LACKS: semantic decoding of the 1,480 instructions
+    (fields, addressing modes, sizes), CALL/RET/PUSH/POP/strings (state machines), I/O, length pre-decoding for 1 instruction/clock (+600 to 1,000 LUT4),
+    interrupt/exception entry, connection to MMU/FPU/caches.  Estimate for the complete core: 6,200 to 8,200 LUT4 (typical ~7,800).
+  - With the core at ~7,800, the lean budget rises from 17,660 to ~20,640 LUT4 (99.5 %): it does not close at 85 %. See the "Measured core" tab of spreadsheet rev10 for the levers (A+B+C+E lead to ~16,530 LUT4, 80 %).
+How to run: cd sim; python3 gen_roms.py; iverilog -g2012 -o /tmp/core.vvp tb_core.v ../rtl/*.v; vvp /tmp/core.vvp   (P&R: pnr/pnr_core_top.v + pseudo-random ROMs: python3 gen_roms.py rand)
+NOTE 04/11: measure E (8 B window) simulated by the user: core test OK (errors=0); no instructions >8 B in the test. Synthesis pending.
+MEASURE E (8-byte window) - MEASURED BY THE USER (Yosys 0.70, 04/11/2026): LUT1-4 5,037 + ALU 407 = 5,444 equivalent LUT4 (13 bytes: 4,904 + 426 = 5,330); FF 2,277; BSRAM 15.
+  Result: +114 equivalent LUT4 (worse). The estimate of -350 was NOT confirmed. Reverted: rtl/r8064_core_min.v = 13-byte window; the 8-byte version is in bak/r8064_core_min_win8.v.
 
-ATUALIZACAO 04/11/2026 (medido pelo usuario com rodar_tudo.bat): ALU em 2 estagios (alu_core_s: somador 2x32, Z da soma em paralelo, Z logico no estagio B),
-  estagio X3, encaminhamento incl. cargas (load-use no estagio M), snapshot da janela de busca (win_q), flush REGISTRADO (desvio tomado +1 clock).
-  Testes: alu_core_s 148.128 vetores 0 erros; modulo 01 PASS; programa de teste do nucleo OK (pc=13, erros=0).
-  Sintese: LUT1 149 + LUT2 163 + LUT3 1.465 + LUT4 2.190 = 3.967; ALU 408 (4.375 LUT4 eq.); FF 2.770; BSRAM 15 (6 SDPX9B + 9 SPX9).
+UPDATE 04/11/2026 (measured by the user with rodar_tudo.bat): 2-stage ALU (alu_core_s: 2x32 adder, sum Z in parallel, logic Z in stage B),
+  stage X3, forwarding including loads (load-use in stage M), snapshot of the fetch window (win_q), REGISTERED flush (taken branch +1 clock).
+  Tests: alu_core_s 148,128 vectors 0 errors; module 01 PASS; core test program OK (pc=13, errors=0).
+  Synthesis: LUT1 149 + LUT2 163 + LUT3 1,465 + LUT4 2,190 = 3,967; ALU 408 (4,375 LUT4 eq.); FF 2,770; BSRAM 15 (6 SDPX9B + 9 SPX9).
   Timing: Fmax 102,86 MHz PASS a 100 MHz (nextpnr-himbaechel, GW2AR-LV18QN88C8/I7). Historico: 78,8 -> 80,8 -> 81,5 -> 75,1 -> 89,0 -> 79,6 -> 102,9 MHz.
-  LIMITES: sem interlock ALU->ALU / flags->desvio (o esqueleto emite 1 instrucao a cada 5 clocks); sem teste de dois desvios seguidos; ruido do roteador de +-5 MHz entre rodadas.
+  LIMITS: no ALU->ALU / flags->branch interlock (the skeleton issues 1 instruction every 5 clocks); no test of two consecutive branches; router noise of +-5 MHz between runs.
 
-== Instrucoes de bloco (LDI/LDD/LDIR/LDDR, CPI/CPD/CPIR/CPDR, INI/IND/INIR/INDR, OUTI/OUTD/OTIR/OTDR) ==
-Uop de 80 bits; repeticao por desvio para o proprio PC; tb_blk.v: BLOCOS OK.
-Correcoes: st_x1/old_x1 (dado de escrita acompanha a instrucao), ordem DEC B / ajuste HL / OUT nos OUTx.
+== Block instructions (LDI/LDD/LDIR/LDDR, CPI/CPD/CPIR/CPDR, INI/IND/INIR/INDR, OUTI/OUTD/OTIR/OTDR) ==
+80-bit uop; repeat by branching to its own PC; tb_blk.v: BLOCKS OK.
+Fixes: st_x1/old_x1 (write data accompanies the instruction), order DEC B / HL adjust / OUT in the OUTx.
 Regressao: tb_core, tb_bank, tb_seq, tb_sys, tb_sys_seq, tb_gov, tb_mem, tb_mode, tb_cpu_gov OK.
-Pendente: tempo do governador para LDIR no sistema; sintese/Fmax do core de 80 bits; IRQ durante repeticao.
+Pending: governor timing for LDIR in the system; synthesis/Fmax of the 80-bit core; IRQ during repeat.
 
-IN r,(C) / OUT (C),r (r = B,C,D,E,H,L,A): dados OK em tb_io. Pendente: flags de IN r,(C) (S,Z,PV paridade,H=N=0, C mantido), IN F,(C), OUT (C),0.
+IN r,(C) / OUT (C),r (r = B,C,D,E,H,L,A): data OK in tb_io. Pending: flags of IN r,(C) (S,Z,PV parity,H=N=0, C kept), IN F,(C), OUT (C),0.
 
-== Flags de IN r,(C), IN F,(C), OUT (C),0 e interrupcao em instrucao repetida ==
+== Flags of IN r,(C), IN F,(C), OUT (C),0 and interrupt in a repeated instruction ==
 IN r,(C): S,Z,PV(paridade),H=N=0, C mantido (bit 73 'keepc' no uop; uop extra OR r,r). tb_io: IO(C) OK.
-IRQ: so aceita entre uops (!seq); npc/epc guardam o PC (num LDIR e o proprio PC); IE desabilita na entrada. tb_irq: IRQ EM LDIR OK
-(interrupcao com BC=3 no meio da repeticao, tratador volta por JR, resultado final igual ao sem interrupcao).
-Obs.: a entrada de interrupcao ainda nao empilha o PC (epc e um registrador interno); semantica Z80 IM0/1/2 e RETI continuam pendentes.
+IRQ: only accepted between uops (!seq); npc/epc hold the PC (in an LDIR it is the PC itself); IE disables on entry. tb_irq: IRQ IN LDIR OK
+(interrupt with BC=3 in the middle of the repeat, handler returns by JR, final result equal to the one without interrupt).
+Note: interrupt entry does not yet push the PC (epc is an internal register); Z80 IM0/1/2 semantics and RETI remain pending.
 
-== Entrada de interrupcao de verdade ==
+== Real interrupt entry ==
 EI/DI (FB/F3), IM 0/1/2, RETI/RETN (restauram IFF1 := IFF2), LD I,A, LD A,I (so dado), INT por nivel, IFF1/IFF2 limpos ao aceitar.
-IM0 e IM1: pseudo-instrucao (opcode FF para o governador) empilha o PC e salta para 0038h. IM2: vetor lido de [I:FF] (duas leituras de 8 bits, para nao cruzar palavra).
-IM legado (reset, im=3): salta para CR41 sem empilhar (comportamento antigo; tb_irq).
-tb_irq2 (+im2): interrupcao no meio de LDIR (BC=3), tratador LD A/OUT/EI/RETI, retorno ao LDIR, resultado final correto: IM1 OK e IM2 OK.
-Achados: (1) leitura de 16 bits em offset 7 da palavra de 8 bytes cruza palavra (limitacao conhecida do esqueleto) -> IM2 usa 2 leituras de 8 bits;
-(2) escrita parcial hb logo apos escrita do mesmo registrador sem folga sobrescreve o valor (sem interlock WAW) -> micro-operacoes vazias na cadeia IM2.
-Pendente: flags de LD A,I (PV=IFF2); atraso de 1 instrucao apos EI; tempo (governador usa o de RST: 11 T) vs 13 T real.
+IM0 and IM1: pseudo-instruction (opcode FF for the governor) pushes the PC and jumps to 0038h. IM2: vector read from [I:FF] (two 8-bit reads, so as not to cross a word).
+Legacy IM (reset, im=3): jumps to CR41 without pushing (old behavior; tb_irq).
+tb_irq2 (+im2): interrupt in the middle of LDIR (BC=3), handler LD A/OUT/EI/RETI, return to LDIR, correct final result: IM1 OK and IM2 OK.
+Findings: (1) a 16-bit read at offset 7 of the 8-byte word crosses a word (known limitation of the skeleton) -> IM2 uses 2 8-bit reads;
+(2) a partial write hb right after a write to the same register without slack overwrites the value (no WAW interlock) -> empty micro-operations in the IM2 chain.
+Pending: flags of LD A,I (PV=IFF2); 1-instruction delay after EI; timing (governor uses that of RST: 11 T) vs real 13 T.
 
 == Pendencias da interrupcao resolvidas ==
 - uop: campo misc [76:74] (1 EI, 2 DI, 3 RETN/RETI, 4/5/6 IM 0/1/2, 7 flags de LD A,I) substitui ife/ifv/ifr/imw/imv.
-- Atraso do EI: a interrupcao so e aceita depois da instrucao seguinte ao EI (ei_cnt). tb_irq3: ATRASO DO EI OK.
+- EI delay: the interrupt is only accepted after the instruction following EI (ei_cnt). tb_irq3: EI DELAY OK.
 - LD A,I: dado + flags (S,Z de I; H=N=0; PV=IFF2; C mantido). tb_ldai: LD A,I OK.
-- Tempo: governador ganhou a pagina 7 (aceitacao de interrupcao): Z80 13 T (+1 M1_WAIT = 14 T = 448 clocks no modo A), R800 6 ciclos (= RST; a confirmar). tb_sys_irq: TEMPO IRQ OK (448 / 96 clocks).
-  gov_rom.mem passou a 2048 entradas (gov_irq_page.py acrescenta a pagina; timing_gov.v: rom[0:2047]).
-Fmax final: semente 1 = 91.7, semente 3 = 94.1 MHz; LUT4 ~6014 (29%).
+- Timing: the governor gained page 7 (interrupt acceptance): Z80 13 T (+1 M1_WAIT = 14 T = 448 clocks in mode A), R800 6 cycles (= RST; to be confirmed). tb_sys_irq: IRQ TIMING OK (448 / 96 clocks).
+  gov_rom.mem went to 2048 entries (gov_irq_page.py adds the page; timing_gov.v: rom[0:2047]).
+Final Fmax: seed 1 = 91.7, seed 3 = 94.1 MHz; LUT4 ~6014 (29%).
 
-== Interlock de escrita parcial (WAW / RAW com produtor parcial) ==
-Bloqueia a emissao enquanto houver, em voo, uop que escreve PARCIALMENTE (8/16/32 bits sem zero-extensao, ou byte alto) um registrador que a nova uop le (A/B) ou
-mescla (destino parcial), e qualquer produtor em voo para o mesmo destino quando a nova uop e parcial. Calculado e registrado (hz_q).
-As uops vazias de folga das cadeias (IN r,(C) com byte alto, IM2, IN F,(C), LD A,I) foram removidas; todos os testes passam. Sem o interlock, tb_io falha (prova).
-Limitacao: indices de operando nao usados contam (falso positivo so contra produtor parcial do mesmo registrador; so custa tempo).
-Fmax: semente 1 = 87.0, semente 3 = 90.0 MHz; LUT4 6136 (29%).
+== Partial-write interlock (WAW / RAW with a partial producer) ==
+Blocks issue while there is, in flight, a uop that PARTIALLY writes (8/16/32 bits without zero-extension, or high byte) a register that the new uop reads (A/B) or
+merges (partial destination), and any in-flight producer for the same destination when the new uop is partial. Computed and registered (hz_q).
+The empty slack uops of the chains (IN r,(C) with high byte, IM2, IN F,(C), LD A,I) were removed; all tests pass. Without the interlock, tb_io fails (proof).
+Limitation: unused operand indices count (false positive only against a partial producer of the same register; it only costs time).
+Fmax: seed 1 = 87.0, seed 3 = 90.0 MHz; LUT4 6136 (29%).
 
-== Interface de dados com byte-enable e acessos que cruzam a palavra de 8 bytes ==
-Novo porto d_be[7:0] (core, cpu_gov, msx_sys): d_addr alinhado a 8, d_wdata ja na faixa (um rotacionador de 64 bits), d_be marca os bytes validos.
-Acesso que cruza a palavra (deslocamento + tamanho > 8) vira duas transacoes (beat 0 na palavra A, beat 1 em A+8); leitura recompoe os dois beats (rotacao + mascara).
-Os testbenches deixaram de espiar dut.addr_m (usam d_be). msx_sys: lane do byte (mem_wdata/mem_addr) deduzida de d_be.
-IM2 voltou a ler o vetor com UMA leitura de 16 bits em [I:FF]. tb_xing: PUSH/POP/CALL/RET com SP impar, transacoes e byte-enables conferidos: CRUZAMENTO DE PALAVRA OK.
+== Data interface with byte-enable and accesses that cross the 8-byte word ==
+New port d_be[7:0] (core, cpu_gov, msx_sys): d_addr aligned to 8, d_wdata already in the lane (a 64-bit rotator), d_be marks the valid bytes.
+An access that crosses the word (offset + size > 8) becomes two transactions (beat 0 in word A, beat 1 at A+8); the read reassembles the two beats (rotation + mask).
+The testbenches stopped peeking at dut.addr_m (they use d_be). msx_sys: byte lane (mem_wdata/mem_addr) deduced from d_be.
+IM2 went back to reading the vector with ONE 16-bit read at [I:FF]. tb_xing: PUSH/POP/CALL/RET with odd SP, transactions and byte-enables checked: WORD CROSSING OK.
 Bugs achados e corrigidos no caminho:
- (1) um HOLD (acesso lento em M) congelava o estagio XR, mas a saida sincrona do banco passava a seguir o candidato seguinte -> operando errado (alvo do CALL = SP).
-     Correcao: sob hold o endereco de leitura do banco e o do proprio XR (a_xr/b_xr/d_xr).
- (2) seqc e ds contavam clocks durante o hold, encurtando a distancia produtor-consumidor (INC SP duplo perdia um incremento) -> agora so contam sem hold.
-Custo: LUT4 ~7100 (34%); Fmax semente 1 = 83.1 MHz. Pendente: tempo extra de um beat adicional no governador (R800/Z80) quando o acesso cruza a palavra.
+ (1) a HOLD (slow access in M) froze the XR stage, but the synchronous output of the register file started following the next candidate -> wrong operand (CALL target = SP).
+     Fix: under hold the register file read address is that of XR itself (a_xr/b_xr/d_xr).
+ (2) seqc and ds counted clocks during the hold, shortening the producer-consumer distance (double INC SP lost an increment) -> now they only count without hold.
+Cost: LUT4 ~7100 (34%); Fmax seed 1 = 83.1 MHz. Pending: extra time of an additional beat in the governor (R800/Z80) when the access crosses the word.
 
-== Recuperacao de frequencia apos o byte-enable ==
-xing (cruza a palavra) e o endereco da palavra seguinte (addr8_m) passaram a ser calculados em X3 e registrados com a uop (fora do caminho do hold e do d_addr).
-Fmax: semente 1 = 93.6 MHz, semente 3 = 89.4 MHz; LUT4 ~7017 (33%). Regressao completa OK.
-Pendencia "tempo do segundo beat" ENCERRADA: nos modos Z80/R800 a tabela de tempo ja conta todos os ciclos de barramento (inclusive os dois acessos de 1 byte de um PUSH/CALL),
-entao o beat extra e artefato interno da interface de 8 bytes e NAO deve somar tempo; no modo nativo (sem governador) o beat custa ciclos reais.
+== Frequency recovery after the byte-enable ==
+xing (crosses the word) and the next word address (addr8_m) are now computed in X3 and registered with the uop (off the hold path and off d_addr).
+Fmax: seed 1 = 93.6 MHz, seed 3 = 89.4 MHz; LUT4 ~7017 (33%). Full regression OK.
+"Second beat timing" pending item CLOSED: in the Z80/R800 modes the timing table already counts all bus cycles (including the two 1-byte accesses of a PUSH/CALL),
+so the extra beat is an internal artifact of the 8-byte interface and must NOT add time; in native mode (no governor) the beat costs real cycles.
 
 
 == Unidade 3D (10/11/2026) ==
-uop[80]=vec (uop de 81 bits); vec3d_unit instanciada em X1 (a=opa_x1, b=opb_x1, op/sh do imm8), resultado esperado em M por hold (latencia 4), ldval += vo. ED F8/FA/FB (ids 294-296).
-Testes: sim/tb_vec.v + gen_prog_vec.py (programa aleatorio, modelo em Python) OK; regressao dos modulos 09/10/13 identica. Area/ISA: ../14_vec3d/resultados_modulo14.txt, ISA_3D.txt.
-Obs.: os .mem de sim/ devem ser gerados com 'python gen_roms.py' (sem 'rand') para simular; a sintese usa 'gen_roms.py rand'. 10_mode_gov/sim/prog_blk_pcs.vh passou a fazer parte do pacote.
+uop[80]=vec (81-bit uop); vec3d_unit instantiated in X1 (a=opa_x1, b=opb_x1, op/sh from imm8), result expected in M by hold (latency 4), ldval += vo. ED F8/FA/FB (ids 294-296).
+Tests: sim/tb_vec.v + gen_prog_vec.py (random program, Python model) OK; regression of modules 09/10/13 identical. Area/ISA: ../14_vec3d/resultados_modulo14.txt, ISA_3D.txt.
+Note: the .mem files in sim/ must be generated with 'python gen_roms.py' (without 'rand') to simulate; synthesis uses 'gen_roms.py rand'. 10_mode_gov/sim/prog_blk_pcs.vh became part of the package.

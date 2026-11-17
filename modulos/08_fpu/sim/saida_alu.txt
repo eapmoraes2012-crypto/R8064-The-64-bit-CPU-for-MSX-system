@@ -1,16 +1,16 @@
-vetores: 39000  erros: 0
-  op 0: 3000 vetores, erros 0, latencia clocks min/med/max = 5/11/13
-  op 1: 3000 vetores, erros 0, latencia clocks min/med/max = 5/11/13
-  op 2: 3000 vetores, erros 0, latencia clocks min/med/max = 5/15/19
-  op 3: 3000 vetores, erros 0, latencia clocks min/med/max = 5/55/78
-  op 4: 3000 vetores, erros 0, latencia clocks min/med/max = 5/56/75
-  op 5: 3000 vetores, erros 0, latencia clocks min/med/max = 5/5/6
-  op 6: 3000 vetores, erros 0, latencia clocks min/med/max = 3/6/7
-  op 7: 3000 vetores, erros 0, latencia clocks min/med/max = 5/7/8
-  op 8: 3000 vetores, erros 0, latencia clocks min/med/max = 5/9/12
-  op 9: 3000 vetores, erros 0, latencia clocks min/med/max = 3/6/7
-  op 10: 3000 vetores, erros 0, latencia clocks min/med/max = 3/6/7
-  op 11: 3000 vetores, erros 0, latencia clocks min/med/max = 5/8/9
-  op 12: 3000 vetores, erros 0, latencia clocks min/med/max = 5/8/9
-RESULTADO: TODOS OS VETORES PASSARAM
+vectors: 39000  errors: 0
+  op 0: 3000 vectors, errors 0, latency clocks min/avg/max = 5/11/13
+  op 1: 3000 vectors, errors 0, latency clocks min/avg/max = 5/11/13
+  op 2: 3000 vectors, errors 0, latency clocks min/avg/max = 5/15/19
+  op 3: 3000 vectors, errors 0, latency clocks min/avg/max = 5/55/78
+  op 4: 3000 vectors, errors 0, latency clocks min/avg/max = 5/56/75
+  op 5: 3000 vectors, errors 0, latency clocks min/avg/max = 5/5/6
+  op 6: 3000 vectors, errors 0, latency clocks min/avg/max = 3/6/7
+  op 7: 3000 vectors, errors 0, latency clocks min/avg/max = 5/7/8
+  op 8: 3000 vectors, errors 0, latency clocks min/avg/max = 5/9/12
+  op 9: 3000 vectors, errors 0, latency clocks min/avg/max = 3/6/7
+  op 10: 3000 vectors, errors 0, latency clocks min/avg/max = 3/6/7
+  op 11: 3000 vectors, errors 0, latency clocks min/avg/max = 5/8/9
+  op 12: 3000 vectors, errors 0, latency clocks min/avg/max = 5/8/9
+RESULT: ALL VECTORS PASSED
 tb_alu.v:33: $finish called at 6708950000 (1ps)

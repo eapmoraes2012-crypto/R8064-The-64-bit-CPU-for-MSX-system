@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Roda r8064_pipe2 (fila de prefetch) e compara com o modelo da planilha. Uso: run_pipe2.py <pasta de trabalho>
+# Runs r8064_pipe2 (prefetch queue) and compares with the spreadsheet model. Usage: run_pipe2.py <working folder>
 import json, subprocess, sys, os, re
 W = sys.argv[1]
 meta = json.load(open(W + '/programs.json')); tab = json.load(open(W + '/idtab.json'))
@@ -11,20 +11,20 @@ def sheet(ids, wrd, wwr, wio):
     return t + 6
 base = dict(WRD=4, WWR=2, WIO=1, DEC_D=1, LEN_LAT=1, QCAP=32, TGT_OFF=-1)
 cfgs = [
- ('E: fila 32 B, D=1, len 1 clock, wait da planilha', dict(base)),
- ('F: fila 32 B, D=2 (decodificador real), len 2',    dict(base, DEC_D=2, LEN_LAT=2)),
- ('G: fila 16 B, D=2, len 2',                          dict(base, DEC_D=2, LEN_LAT=2, QCAP=16)),
- ('H: fila 64 B, D=2, len 2',                          dict(base, DEC_D=2, LEN_LAT=2, QCAP=64)),
- ('I: SEM wait (W=0), fila 32 B, D=1, len 1',          dict(base, WRD=0, WWR=0, WIO=0)),
- ('K: fila 24 B (minimo pratico), D=2, len 2',                dict(base, DEC_D=2, LEN_LAT=2, QCAP=24)),
- ('J: SEM wait (W=0), fila 32 B, D=2, len 2',          dict(base, WRD=0, WWR=0, WIO=0, DEC_D=2, LEN_LAT=2)),
+ ('E: queue 32 B, D=1, len 1 clock, spreadsheet wait', dict(base)),
+ ('F: 32 B queue, D=2 (real decoder), len 2',    dict(base, DEC_D=2, LEN_LAT=2)),
+ ('G: 16 B queue, D=2, len 2',                          dict(base, DEC_D=2, LEN_LAT=2, QCAP=16)),
+ ('H: 64 B queue, D=2, len 2',                          dict(base, DEC_D=2, LEN_LAT=2, QCAP=64)),
+ ('I: NO wait (W=0), queue 32 B, D=1, len 1',          dict(base, WRD=0, WWR=0, WIO=0)),
+ ('K: 24 B queue (practical minimum), D=2, len 2',                dict(base, DEC_D=2, LEN_LAT=2, QCAP=24)),
+ ('J: NO wait (W=0), queue 32 B, D=2, len 2',          dict(base, WRD=0, WWR=0, WIO=0, DEC_D=2, LEN_LAT=2)),
 ]
 sel = [int(a) for a in sys.argv[2:]] or range(len(cfgs))
 out = []
 for ci in sel:
     cn, p = cfgs[ci]
-    out.append(f'\n== Configuracao {cn} {p}')
-    out.append(f'{"programa":24s} {"instr":>5s} {"pipeline":>9s} {"planilha":>9s} {"dif%":>7s} {"CPI pipe":>8s} {"CPI plan":>8s} {"chk_err":>7s} {"busca":>6s} {"wp":>5s} {"fila vazia":>10s}')
+    out.append(f'\n== Configuration {cn} {p}')
+    out.append(f'{"program":24s} {"instr":>5s} {"pipeline":>9s} {"sheet":>9s} {"diff%":>7s} {"CPI pipe":>8s} {"CPI sheet":>8s} {"chk_err":>7s} {"fetch":>6s} {"wp":>5s} {"queue empty":>10s}')
     for pn, m in meta.items():
         exe = f'{W}/s2_{os.getpid()}'
         args = ['iverilog', '-g2012', '-o', exe, f'-Ptb_pipe2.NTRACE={m["n"]}', f'-Ptb_pipe2.TRACE_FILE="{pn}.mem"'] + \

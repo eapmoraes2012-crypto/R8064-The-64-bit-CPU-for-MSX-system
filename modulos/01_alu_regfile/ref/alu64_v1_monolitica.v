@@ -1,13 +1,13 @@
 // alu64.v - ALU do R8064 (combinacional): 8/16/32/64 bits.
 // Semantica de flags (PREMISSAS minhas, extensao natural do Z80; confirmar - pendencia P03/P28):
-//   F = {S,Z,Y,H,X,PV,N,C}  (bits 7..0, como na aba "Registradores e codigos")
-//   ADD/ADC/SUB/SBC/CP/INC/DEC/NEG: C=vai-um (empresta-um na subtracao), H=vai-um do bit 3 para o 4,
-//     PV=overflow com sinal no tamanho da operacao, N=0 (soma) ou 1 (subtracao), S=msb, Z=resultado zero.
-//   INC/DEC preservam C. CP: resultado de SUB nao e gravado (o chamador descarta); X,Y vem do operando b.
-//   AND/OR/XOR: C=0, N=0, H=1 so no AND, PV=paridade par do byte baixo.
-//   SHL/SHR/SAR/ROL/ROR (1 bit): C=bit que saiu, N=0, H=0, PV=paridade do byte baixo.
+//   F = {S,Z,Y,H,X,PV,N,C}  (bits 7..0, as in the "Registers and codes" tab)
+//   ADD/ADC/SUB/SBC/CP/INC/DEC/NEG: C=carry (borrow on subtraction), H=carry from bit 3 to 4,
+//     PV=signed overflow at the operation size, N=0 (add) or 1 (subtract), S=msb, Z=zero result.
+//   INC/DEC preserve C. CP: the SUB result is not written (the caller discards it); X,Y come from operand b.
+//   AND/OR/XOR: C=0, N=0, H=1 only on AND, PV=even parity of the low byte.
+//   SHL/SHR/SAR/ROL/ROR (1 bit): C=bit shifted out, N=0, H=0, PV=parity of the low byte.
 //   CPL: preserva S,Z,PV,C; H=1, N=1.
-//   X e Y = copia dos bits 3 e 5 do resultado.
+//   X and Y = copy of bits 3 and 5 of the result.
 module alu64(
     input  wire [63:0] a,
     input  wire [63:0] b,
@@ -75,7 +75,7 @@ module alu64(
         if (op >= SHL && op <= ROR) c = sh_out;
     end
 
-    wire par = ~^r[7:0];     // paridade par do byte baixo
+    wire par = ~^r[7:0];     // even parity of the low byte
     wire zf  = ((r & m) == 64'd0);
     always @* begin
         res = r & m;
@@ -89,6 +89,6 @@ module alu64(
         fout[1] = n;                            // N
         fout[0] = (op == CPL) ? fin[0] : c;     // C
         if (op == CPL) begin fout[7] = fin[7]; fout[6] = fin[6]; end
-        if (op > ROR) fout = fin;               // operacao nao definida: preserva
+        if (op > ROR) fout = fin;               // undefined operation: preserves
     end
 endmodule

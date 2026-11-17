@@ -1,15 +1,15 @@
-// z80_ce.v - gerador de clock-enable do Z80 (acumulador de fase) com modo turbo.
+// z80_ce.v - Z80 clock-enable generator (phase accumulator) with turbo mode.
 // F_cpu = STEP_BASE * 2^turbo * clk / 2^32.   turbo: 0 = 3,58 MHz (Z80 do MSX)  1 = 7,16 MHz (clock do R800)
 //                                                     2 = 14,3 MHz             3 = 28,6 MHz
 // Padrao: clk = 57,2727 MHz (3,579545 x 16) -> STEP_BASE = 2^28 = 268435456 (exato).
-// Limite: pulsos de ce separados por >= 3 clocks => step <= 2^32/3; se STEP_BASE<<turbo passar disso, o turbo e reduzido em 1 degrau
+// Limit: ce pulses separated by >= 3 clocks => step <= 2^32/3; if STEP_BASE<<turbo exceeds that, the turbo is reduced by 1 step
 // (a 57,27 MHz: turbo 3 = 28,6 MHz vira 14,3 MHz).
-// Outros valores de STEP_BASE para 3.579545 MHz:  clk=100 MHz -> 153740287 ; 85,92 MHz -> 178934226 ; 114,545 MHz -> 134217711
+// Other STEP_BASE values for 3.579545 MHz:  clk=100 MHz -> 153740287 ; 85.92 MHz -> 178934226 ; 114.545 MHz -> 134217711
 module z80_ce #(parameter [31:0] STEP_BASE = 32'd268435456)(
   input  wire       clk,
   input  wire       rst_n,
   input  wire [1:0] turbo,
-  input  wire       use_ext,    // 1 = usa ce_ext (pulso por T-state vindo do clock do slot, para sincronismo exato com o barramento MSX)
+  input  wire       use_ext,    // 1 = uses ce_ext (one pulse per T-state coming from the slot clock, for exact synchronism with the MSX bus)
   input  wire       ce_ext,
   output reg        ce
 );

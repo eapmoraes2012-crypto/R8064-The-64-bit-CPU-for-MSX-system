@@ -1,4 +1,4 @@
-// Wrapper de medida: cache de INSTRUCOES 4 KB (cache_dm WR=0, IDX=7, STATS=0), we=0, lado CPU/memoria por LFSR, saida = paridade. Nao e o projeto final.
+// Measurement wrapper: 4 KB INSTRUCTION cache (cache_dm WR=0, IDX=7, STATS=0), we=0, CPU/memory side from LFSR, output = parity. Not the final design.
 module pnr_icache_top(input wire clk, input wire din, output wire dout);
     reg [3:0] rc = 0; wire rstw; reg [63:0] l = 64'h1; reg [63:0] m = 64'hACE1;
     always @(posedge clk) begin l <= {l[62:0], l[63]^l[62]^l[60]^l[59]^din}; m <= {m[62:0], m[63]^m[61]^m[60]^m[58]}; end

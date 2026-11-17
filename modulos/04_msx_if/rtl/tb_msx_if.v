@@ -1,8 +1,8 @@
 `timescale 1ns/100ps
-// Testbench: modelo de Z80 do MSX (ciclos de E/S de 4 T-states a 3,579545 MHz, 21+2 T-states por byte em OTIR/INIR) + modelo do programa do R8064 (polling de portas, XOR 5A) + monitores.
+// Testbench: MSX Z80 model (I/O cycles of 4 T-states at 3.579545 MHz, 21+2 T-states per byte in OTIR/INIR) + R8064 program model (port polling, XOR 5A) + monitors.
 module tb_msx_if;
     parameter [7:0] BASE = 8'h40;
-    parameter SKEW = 0;                 // atraso aleatorio (ns) entre linhas do barramento
+    parameter SKEW = 0;                 // random delay (ns) between bus lines
     real T = 279.4;
     reg clk = 0; always #5 clk = ~clk;
     reg iorq_n = 1, rd_n = 1, wr_n = 1, m1_n = 1, reset_n = 1; reg [7:0] a = 8'hFF; reg [7:0] zd = 0; reg z_en = 0;
@@ -32,7 +32,7 @@ module tb_msx_if;
             #(sk(0)) a = ad; #(400) iorq_n = 0; rd_window = 1; #(80 + sk(0)) rd_n = 0; #(520) dt = bus_val; #(80) rd_n = 1; #(20 + sk(0)) iorq_n = 1; #(150) rd_window = 0;
         end
     endtask
-    // ---------- programa do R8064: espera INICIAR, le LEN, le len bytes, aplica XOR 5A, grava o resultado, avisa CONCLUIDO
+    // ---------- R8064 program: waits for START, reads LEN, reads len bytes, applies XOR 5A, writes the result, signals DONE
     task r_io_rd(input [7:0] p, output [7:0] v);
         begin @(posedge clk); r_port <= p; r_rd <= 1; @(posedge clk); v = r_rdata; r_rd <= 0; r_port <= 0; end
     endtask
@@ -57,7 +57,7 @@ module tb_msx_if;
             end
         end
     end
-    // ---------- teste
+    // ---------- test
     integer errs = 0, i, n, seed0, tstart, tend; reg [7:0] v, st; reg [7:0] exp [0:2047]; reg [31:0] lf;
     task block(input integer len, input integer irq, input integer measure);
         integer k; integer t0, t1, t2;
@@ -71,54 +71,54 @@ module tb_msx_if;
             t1 = $time;
             z_out(BASE + 1, irq ? 8'h05 : 8'h01);
             st = 0; while (!st[3]) begin z_in(BASE + 1, st); end
-            if (irq && int_buf !== 1'b0) begin errs = errs + 1; $display("ERRO: INT nao ativou"); end
-            if (!irq && int_buf !== 1'b1) begin errs = errs + 1; $display("ERRO: INT ativou sem habilitar"); end
+            if (irq && int_buf !== 1'b0) begin errs = errs + 1; $display("ERROR: INT did not assert"); end
+            if (!irq && int_buf !== 1'b1) begin errs = errs + 1; $display("ERROR: INT asserted without enabling"); end
             z_in(BASE + 2, v); n = v; z_in(BASE + 3, v); n = n + (v << 8);
-            if (n !== len) begin errs = errs + 1; $display("ERRO: len de retorno %0d != %0d", n, len); end
+            if (n !== len) begin errs = errs + 1; $display("ERROR: len de retorno %0d != %0d", n, len); end
             t2 = $time;
             for (k = 0; k < len; k = k + 1) begin
                 z_in(BASE, v); #(T * 23 - 1150 > 0 ? T * 23 - 1150 : 1);
-                if (v !== exp[k]) begin errs = errs + 1; if (errs < 8) $display("ERRO dado k=%0d obtido=%h esperado=%h", k, v, exp[k]); end
+                if (v !== exp[k]) begin errs = errs + 1; if (errs < 8) $display("ERROR data k=%0d got=%h expected=%h", k, v, exp[k]); end
             end
-            z_out(BASE + 1, 8'h84);     // limpa CONCLUIDO/IRQ, mantem IRQ habilitada
+            z_out(BASE + 1, 8'h84);     // clears DONE/IRQ, keeps IRQ enabled
             z_out(BASE + 1, 8'h00);
-            if (int_buf !== 1'b1) begin errs = errs + 1; $display("ERRO: INT nao desativou"); end
+            if (int_buf !== 1'b1) begin errs = errs + 1; $display("ERROR: INT did not deassert"); end
             if (measure) $display("VAZAO: %0d bytes: MSX->FPGA %0.0f B/s | FPGA->MSX %0.0f B/s (OTIR/INIR a 23 T-states por byte)", len, len * 1e9 / (t1 - t0), len * 1e9 / ($time - t2));
         end
     endtask
     initial begin
         #200 reset_n = 0; #400 reset_n = 1; #400;
-        z_in(BASE + 1, st); if (st !== 8'h02) begin errs = errs + 1; $display("ERRO STATUS apos reset = %h (esperado 02)", st); end
-        // 1) blocos de varios tamanhos (um com IRQ)
+        z_in(BASE + 1, st); if (st !== 8'h02) begin errs = errs + 1; $display("ERROR STATUS after reset = %h (expected 02)", st); end
+        // 1) blocks of several sizes (one with IRQ)
         block(1, 0, 0); block(7, 1, 0); block(513, 0, 0);
-        // 2) bloco de 2048 bytes (FIFOs cheios) com medida de vazao
+        // 2) 2048-byte block (FIFOs full) with throughput measurement
         block(2048, 1, 1);
         // 3) estouro e sub-fluxo
-        z_out(BASE + 1, 8'h02);                                   // limpa FIFOs
+        z_out(BASE + 1, 8'h02);                                   // clears FIFOs
         for (i = 0; i < 2049; i = i + 1) begin z_out(BASE, i[7:0]); #(T * 3); end
-        z_in(BASE + 1, st); if (st[5] !== 1'b1 || st[1] !== 1'b0) begin errs = errs + 1; $display("ERRO estouro/cheio STATUS=%h", st); end
+        z_in(BASE + 1, st); if (st[5] !== 1'b1 || st[1] !== 1'b0) begin errs = errs + 1; $display("ERROR overflow/full STATUS=%h", st); end
         z_out(BASE + 1, 8'h02); #1000;
-        z_in(BASE + 1, st); if (st[5] !== 1'b0 || st[1] !== 1'b1) begin errs = errs + 1; $display("ERRO limpeza STATUS=%h", st); end
+        z_in(BASE + 1, st); if (st[5] !== 1'b0 || st[1] !== 1'b1) begin errs = errs + 1; $display("ERROR limpeza STATUS=%h", st); end
         z_in(BASE, v); z_in(BASE + 1, st);
-        if (v !== 8'h00 || st[6] !== 1'b1) begin errs = errs + 1; $display("ERRO sub-fluxo v=%h STATUS=%h", v, st); end
+        if (v !== 8'h00 || st[6] !== 1'b1) begin errs = errs + 1; $display("ERROR sub-fluxo v=%h STATUS=%h", v, st); end
         z_out(BASE + 1, 8'h02);
-        // 4) portas fora da faixa e ciclo de reconhecimento de interrupcao (M1+IORQ): nada pode ser dirigido ou escrito
+        // 4) ports out of range and interrupt acknowledge cycle (M1+IORQ): nothing can be driven or written
         for (i = 0; i < 64; i = i + 1) begin
             if (i != BASE[7:2]) begin z_out(i[7:0] * 4 + 8'h01, 8'hAA); z_in(i[7:0] * 4, v); end
         end
         m1_n = 0; z_out(BASE, 8'h55); z_in(BASE, v); m1_n = 1; #1000;
-        z_in(BASE + 1, st); if (st !== 8'h02) begin errs = errs + 1; $display("ERRO: porta fora da faixa/M1 alterou o estado STATUS=%h", st); end
-        // 5) pulsos curtos (ruido de 15 ns) em WR/RD com endereco valido: nao podem escrever
+        z_in(BASE + 1, st); if (st !== 8'h02) begin errs = errs + 1; $display("ERROR: out-of-range port/M1 changed the state STATUS=%h", st); end
+        // 5) short pulses (15 ns noise) on WR/RD with valid address: they must not write
         a = BASE; iorq_n = 0; #50 wr_n = 0; #15 wr_n = 1; #50 wr_n = 0; #15 wr_n = 1; #50 iorq_n = 1; a = 8'hFF; #300;
-        z_in(BASE + 1, st); if (st !== 8'h02) begin errs = errs + 1; $display("ERRO: ruido em WR escreveu STATUS=%h", st); end
-        // 5b) pulsos curtos tambem em RD (nao pode habilitar o buffer) e em WR no registrador CMD/DATA (nao pode alterar o estado)
+        z_in(BASE + 1, st); if (st !== 8'h02) begin errs = errs + 1; $display("ERROR: ruido em WR escreveu STATUS=%h", st); end
+        // 5b) short pulses also on RD (must not enable the buffer) and on WR in the CMD/DATA register (must not change the state)
         a = BASE + 1; iorq_n = 0; #50 rd_n = 0; #15 rd_n = 1; #30 rd_n = 0; #15 rd_n = 1; #50 wr_n = 0; #15 wr_n = 1; #50 iorq_n = 1; a = 8'hFF; #300;
         a = BASE; iorq_n = 0; #50 wr_n = 0; #15 wr_n = 1; #50 iorq_n = 1; a = 8'hFF; #300;
-        z_in(BASE + 1, st); if (st !== 8'h02 || dut.fi_lvl !== 0) begin errs = errs + 1; $display("ERRO: ruido alterou o estado STATUS=%h nivel=%0d", st, dut.fi_lvl); end
-        // 6) reinicio do R8064 por CMD b3
+        z_in(BASE + 1, st); if (st !== 8'h02 || dut.fi_lvl !== 0) begin errs = errs + 1; $display("ERROR: noise changed the state STATUS=%h level=%0d", st, dut.fi_lvl); end
+        // 6) R8064 restart by CMD b3
         z_out(BASE + 1, 8'h08); #500;
-        if (rst_pulses == 0) begin errs = errs + 1; $display("ERRO: r_reset nao pulsou"); end
-        $display("Resumo: erros=%0d conflitos de barramento=%0d acionamentos indevidos do buffer=%0d jobs do R8064=%0d r_reset=%0d SKEW=%0d", errs, conflicts, wrong_drive, jobs, rst_pulses, SKEW);
+        if (rst_pulses == 0) begin errs = errs + 1; $display("ERROR: r_reset did not pulse"); end
+        $display("Summary: errors=%0d bus conflicts=%0d improper buffer drives=%0d R8064 jobs=%0d r_reset=%0d SKEW=%0d", errs, conflicts, wrong_drive, jobs, rst_pulses, SKEW);
         if (errs == 0 && conflicts == 0 && wrong_drive == 0) $display("PASS"); else $display("FAIL");
         $finish;
     end

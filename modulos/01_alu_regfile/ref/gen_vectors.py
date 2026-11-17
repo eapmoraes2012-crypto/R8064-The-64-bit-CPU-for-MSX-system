@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Modelo de referencia INDEPENDENTE da ALU (inteiros do Python) e gerador dos vetores do testbench."""
+"""INDEPENDENT reference model of the ALU (Python integers) and testbench vector generator."""
 import random, sys
 random.seed(8064)
 C,N,PV,X,H,Y,Z,S=1,2,4,8,16,32,64,128
@@ -72,4 +72,4 @@ with open('merge_old.mem','w') as fo, open('merge_new.mem','w') as fn, open('mer
         e={0:(o&~0xFF)|(n&0xFF),1:(o&~0xFF00)|((n&0xFF)<<8),2:(o&~0xFFFF)|(n&0xFFFF),3:(o&~0xFFFFFFFF)|(n&0xFFFFFFFF),4:n}[w]
         fo.write('%016X\n'%o); fn.write('%016X\n'%n); fc2.write('%X\n'%w); fe.write('%016X\n'%e)
 open('nvec.txt','w').write(str(len(V)))
-print('vetores ALU:',len(V))
+print('ALU vectors:',len(V))

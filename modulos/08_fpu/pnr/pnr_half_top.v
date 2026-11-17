@@ -1,4 +1,4 @@
-// Wrapper de P&R da fpu_alu: entradas por LFSR, saida = paridade registrada (nao e o projeto final).
+// fpu_alu P&R wrapper: inputs from LFSR, output = registered parity (not the final design).
 module pnr_half_top(input wire clk, input wire din, output wire dout);
     reg [127:0] l = 128'h1; reg [63:0] m = 64'hACE1; reg [3:0] rc = 0; wire rstw = (rc != 15);
     always @(posedge clk) begin if (rc != 15) rc <= rc + 1; l <= {l[126:0], l[127]^l[126]^l[125]^l[120]^din}; m <= {m[62:0], m[63]^m[61]^m[60]^m[58]}; end

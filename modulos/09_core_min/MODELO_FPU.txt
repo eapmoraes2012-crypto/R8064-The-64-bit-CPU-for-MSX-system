@@ -1,0 +1,89 @@
+R8064 FPU IN THE CORE (REV41 / REV42, 15/11/2026)
+==========================================
+Made from the instruction list sent by the project author + four decisions of his: arithmetic in a new COMPACT UNIT inside the core;
+transcendentals and remainders in another stage; FSTSW writes to F; FIST/FISTP write a 64-bit integer. What the list did not say is marked [CHOICE].
+
+1. HARDWARE
+   08_fpu/rtl/fpu_seq.v   80-bit arithmetic core (add, subtract, multiply, divide, root, compare, conversions). Same results, bit by
+                          bit, as the old fpu_alu.v. REORGANIZED in REV42: the working register only receives 8 sources, there is ONE 68-bit adder, and
+                          multiplication, division and square root are bit by bit in it (2 to 3 clocks per bit).
+   08_fpu/rtl/fpu_unit.v  ST0-ST7 stack (80 bits), empty marks, status word, microcode commands and (REV42) a "program" executor:
+                          sequences of fpu_seq operations among ST, 8 temporaries and constants, stored with the constants in a 512 x 36
+                          bit ROM (1 RAM block). This is how the transcendentals and remainders are done.
+   08_fpu/ref/gen_fpu_prog.py  SINGLE source of these programs and constants: generates the marked section of fpu_unit.v and is used by the test model.
+   In the core the FPU enters through the same path as MLT/DIV (the uop waits in stage M until the unit finishes). 107-bit uop: [106] fpu.
+   Arithmetic core latency (clocks, min/avg/max): add 6/26/76, multiplication 6/108/191, division 6/106/185, square root 6/159/233, comparison 6,
+   FILD 6/13/26, FIST 6/19/49, FRINT 6/26/67, FLD32/64 6/6/10, FST32/64 6/15/50. A sine or logarithm is 35 to 55 of these operations (a few thousand clocks).
+   AREA (whole unit synthesized alone): 4,400 LUT, 460 ALU, 690 flip-flops, 40 RAM16 and 1 RAM block. The arithmetic core dropped from ~3,300 to
+   ~2,570 LUT with the reorganization (22 %, not the half I had estimated); the rest is the stack, the executor and the 80-bit multiplexers.
+
+2. FORMATO E ARREDONDAMENTO
+   80-bit registers in the x87 extended format (sign, 15-bit exponent, 64-bit significand with the explicit integer bit).
+   [CHOICE] FIXED control word: round to nearest (tie to even), 64-bit precision, all exceptions MASKED:
+   the instruction always returns the x87 default response (NaN, infinity, denormal, INDEFINITE) and only raises the mark. There is no instruction to change this in the list.
+   There is no FPU exception to the CPU. fpu_seq accepts the other rounding/precision modes (they are in the vectors), there is just no way to select them yet.
+   Rules inherited from the module 08 model (ref/fpref.py): unsupported format (unnormal, pseudo-NaN...) = IE + INDEFINITE; "tiny" before rounding;
+   with two NaNs the one with the larger significand stays; denormal at input raises DE.
+
+3. STACK
+   Push decrements TOP; pop marks the register as empty and increments TOP. FINIT empties everything and clears the marks (it does not erase the data).
+   [CHOICE] Read an EMPTY register: IE + SF, C1 = 0, and the value used is the INDEFINITE (FFFF C000000000000000); the destination is marked as occupied.
+   [CHOICE] Push with ST7 occupied: IE + SF, C1 = 1, and what enters is the INDEFINITE.
+   C1: "rounded up" in arithmetic and conversions; 0 in the others (except the stack overflow case above).
+
+4. BASIC INSTRUCTIONS (34)                                        code            effect
+   FLD STn                                                                ED BC 10+n        pushes a copy of STn
+   FXCH STn                                                               ED BC 08+n        swaps ST0 with STn
+   FSTP STn                                                               ED BC 18+n        STn := ST0; desempilha
+   FADD / FSUB / FMUL / FDIV ST0,STn                                      ED BC 00+n / ED 18+n / ED 98+n / ED 88+n      ST0 := ST0 op STn
+   FSQRT / FRINT / FCHS / FABS                                            ED 11 / ED BC 43 / ED BC 40 / ED BC 41       ST0 := f(ST0)
+   FCOM STn                                                               ED BC 20+n        compares ST0 with STn: C3 C2 C0 = 000 greater, 001 less, 100 equal, 111 unordered
+   FCOPP                                                                  ED 80             compares ST0 with ST1 and pops both
+   FSTSW                                                                  ED 14             F := {S=0, Z=C3, 0, H=0, 0, PV=C2, N=0, C=C0}   (JR Z = equal, JR C = less, JP PE = unordered)
+   FLD1 FLDZ FLDPI FLDL2 FLDLG FLDLN                                      ED BC 42, ED 92, ED 91, ED 86, ED 87, ED 90  empilha 1, 0, pi, log2(10), log10(2), ln(2)
+   FINIT                                                                  ED 82
+   FILD (QHL)                                                             ED BC 48          pushes the signed 64-bit integer at (QHL)
+   FLD32 / FLD64 / FLD80 (QHL)                                            ED BC 49 / ED BC 4A / ED 85                 pushes the 32 / 64 / 80-bit (10 bytes) value at (QHL)
+   FST32 / FST64 / FST80 (QHL)                                            ED BC 4B / ED BC 4D / ED 12                 stores ST0; the stack stays
+   FSP32 / FSP64 / FSTP8 (QHL)                                            ED BC 4C / ED BC 4E / ED 13                 stores ST0 and pops
+   FIST / FISTP (QHL)                                                     ED 83 / ED 84     stores ST0 rounded as a 64-bit integer (FISTP pops);
+                                                                                            out of range, NaN or infinity: IE and writes 8000000000000000
+   FLUSH                                                                  ED 94             flushes the whole TLB (CR17 := 1) and the pipeline. Privileged. [not an FPU instruction; it came in the list]
+   QHL = 64-bit HL as an address. On stores with a pop the stack only moves AFTER the write: a page fault restarts the instruction with no loss.
+
+5. TRANSCENDENTAIS, RESTOS, FSAVE / FRSTR (REV42)
+   FSIN ED 97, FCOS ED 81: ST0 := sin / cos (ST0).   FTAN ED 15: ST0 := tan(ST0) (does not push the x87's 1.0).
+   FSINC ED 10: ST0 := sin, ST1 := cos of the old ST0 (the stack grows by one), as in the list.   [on the x87 the order is the opposite]
+   FLN ED 93: ST0 := ln(ST0).   FYL2X ED 17: ST1 := ST1 * log2(ST0), desempilha.   FYL2P ED 16: ST1 := ST1 * log2(ST0 + 1), desempilha.
+        [CHOICE] The list said "ST0 <- ...": I did it like the x87 (the result takes the place of ST1 and the stack goes down), which gives ST0 = result at the end.
+   FREM ED 95, FREM1 ED 96: ST0 := ST0 - ST1 * int(ST0 / ST1), int = truncate (FREM) or round (FREM1). It is the formula of the list to the letter, with the
+        division rounded: it is NOT the exact x87 remainder (no partial reduction nor C2; for quotients above 2^64 the result is meaningless).
+   ALGORITHMS (gen_fpu_prog.py): sine/cosine: k = round(x * 2/pi), r = x - k*pi/2 with pi/2 in three pieces (exact for |k| < 2^31), Taylor
+        polynomials (11 and 12 terms) and swap by quadrant. Logarithm: x = m * 2^e, f = (m-1)/(m+1), 20-term series; FYL2P uses f = x/(2+x).
+   ACCURACY measured against exact references (08_fpu/ref/confere_precisao.py, 120 points per function): maximum error in units of the last place of the
+        64-bit significand: sine 0.8; cosine 1.2; tangent 1.7; FYL2X 1.9; FYL2P 2.1; FLN 8.9 (worse when the result is near zero).
+        The results are NOT correctly rounded; angles above ~2^31 lose accuracy (and above 2^63 the result is worthless).
+   [ESCOLHA] CASOS ESPECIAIS: FLN / FYL2X so aceitam ST0 normal e positivo; zero, negativo, denormal, infinito ou NaN dao IE + INDEFINIDO (o x87 da
+        -infinity with ZE for zero). In the others, infinity and NaN follow through the operations and come out as NaN/INDEFINITE with IE. Empty operand: IE + SF + INDEFINITE.
+        The exception marks accumulate those of ALL the internal steps (PE is almost always set); C1 is that of the last step.
+   FSAVE (uu) ED AF 08 BC | 0A DE | 0C HL | 0F AX   writes 88 bytes: 8 of state ([15:0] status word, [23:16] empties) + the 8 PHYSICAL registers
+   FRSTR (uu) ED AF 48 BC | 4A DE | 4C HL | 4F AX   (10 bytes each, position 0 to 7, not relative to the top). FSAVE does NOT reinitialize the FPU (the x87 one does).
+   WITHOUT MICROCODE now only the 16/32/64-bit I/O.
+
+6. TESTS
+   08_fpu/sim/tb_seq.v (rodar_seq.bat): fpu_seq against the exact model fpref.py: the repository's 39,000 vectors plus 78,000 new ones, all modes: 0 errors.
+   09_core_min/sim_r64: the generator gained a model of the stack and of the 33 FPU instructions (the arithmetic comes from fpref.py); the trace now carries the status word and the
+   FPU empties, checked at every instruction, and at the end the 8 80-bit registers and the memory are checked. Step by step and with the core free-running (+livre).
+   NOT tested: FLUSH in the SoC (only that it does not change the CPU state and that it is privileged); FPU together with page faults; FPU in the Z80 / R800 timing modes.
+
+7. AREA AND THE SWITCH TO REMOVE THE FPU
+   In the cloud tool the core + governor WITH the FPU still does not fit in the GW2AR-18 (see REV42 in 13_soc/resultado_soc.txt); without the FPU it is 11,293
+   LUT4. The cloud numbers are higher than those of the author's OSS CAD Suite (there the whole REV40 BOARD gave 12,003 LUT4), so the real result only comes out by
+   running rodar_pnr_board.bat. If it does not fit or timing does not close, the FPU goes out with a macro, without touching anything else:
+       in the .ys files (13_soc/pnr/ys_board.ys etc.) replace   read_verilog -sv ...   with   read_verilog -sv -DR8064_NO_FPU ...
+   With the macro, the FPU instructions finish at once, return zero and store nothing (the rest of the core stays the same).
+
+8. PENDENCIAS
+   - AREA: still ~4,400 LUT. The remaining fat is outside the arithmetic core (80-bit multiplexers for the stack write and for the results).
+   - Programmable control word (rounding / precision / masks); exact remainder (FPREM); special cases of the logarithm as in the x87.
+   - Not tested: FPU together with page faults, FPU in the Z80 / R800 timing modes, FLUSH in the SoC.

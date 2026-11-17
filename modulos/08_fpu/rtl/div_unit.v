@@ -1,8 +1,9 @@
-// div_unit.v - divisor iterativo de 1 bit por clock (restaurador), sem sinal e com sinal.
-//   Dividendo de 2*sz bits = {hi,lo}, divisor d de sz bits; sz: 0=8,1=16,2=32,3=64. Quociente e resto de sz bits.
-//   Sem sinal: ocupa sz+2 clocks (LOAD + sz iteracoes + DONE). Com sinal: sz+4 (PRE + LOAD + sz + POST + DONE).
-//   err = 1 em divisao por zero ou quociente fora da faixa (estouro). Em erro, termina mais cedo.
-//   Com sinal: quociente truncado para zero; resto com o sinal do dividendo.
+// div_unit.v - iterative divider, 1 bit per clock (restoring), unsigned and signed.
+//   Dividend of 2*sz bits = {hi,lo}, divisor d of sz bits; sz: 0=8,1=16,2=32,3=64. Quotient and remainder of sz bits.
+//   Unsigned: takes sz+2 clocks (LOAD + sz iterations + DONE). Signed: sz+7 (PRE, PRE2, PRE3 + LOAD + sz + POST, POST2 + DONE):
+//   REV44: ONE single 64-bit negator (before there were 5) serves the 3 input negations and the 2 output ones, one per clock (+3 clocks only on signed division).
+//   err = 1 on divide by zero or quotient out of range (overflow). On error, it finishes earlier.
+//   Signed: quotient truncated toward zero; remainder with the sign of the dividend.
 module div_unit(
     input  wire        clk, rst,
     input  wire        start,
@@ -14,8 +15,8 @@ module div_unit(
     output reg  [63:0] q, r,
     output reg         err
 );
-    localparam IDLE = 3'd0, PRE = 3'd1, LOAD = 3'd2, ITER = 3'd3, POST = 3'd4, DONE = 3'd5;
-    reg [2:0] st; reg [1:0] s; reg sg; reg [63:0] rh, rl, rd; reg sd, sv; reg [6:0] cnt; reg rlz;
+    localparam IDLE = 4'd0, PRE = 4'd1, LOAD = 4'd2, ITER = 4'd3, POST = 4'd4, DONE = 4'd5, PRE2 = 4'd6, PRE3 = 4'd7, POST2 = 4'd8;
+    reg [3:0] st; reg [1:0] s; reg sg; reg [63:0] rh, rl, rd; reg sd, sv; reg [6:0] cnt; reg rlz;
     reg [64:0] rem; reg [63:0] ql;
     assign busy = (st != IDLE) && (st != DONE);
     assign done = (st == DONE);
@@ -24,19 +25,24 @@ module div_unit(
     wire [63:0] M = mask(s);
     wire        msb_lo = (s == 2'd0) ? ql[7] : (s == 2'd1) ? ql[15] : (s == 2'd2) ? ql[31] : ql[63];
     wire [64:0] nr   = {rem[63:0], msb_lo};
-    wire        ge   = (nr >= {1'b0, rd});
-    wire [64:0] rem_n = ge ? (nr - {1'b0, rd}) : nr;
+    // REV44: a single 66-bit subtractor serves the iteration and the LOAD overflow check (rh >= rd); before there were 2 comparators + 1 subtractor
+    wire [65:0] dif  = ((st == LOAD) ? {2'b00, rh} : {1'b0, nr}) - {2'b00, rd};
+    wire        ge   = ~dif[65];
+    wire [64:0] rem_n = ge ? dif[64:0] : nr;
     wire [63:0] ql_n  = ((ql << 1) | {63'd0, ge}) & M;
-    // PRE: valor absoluto
+    // PRE: absolute value
     wire        top_hi = (s == 2'd0) ? rh[7] : (s == 2'd1) ? rh[15] : (s == 2'd2) ? rh[31] : rh[63];
     wire        top_d  = (s == 2'd0) ? rd[7] : (s == 2'd1) ? rd[15] : (s == 2'd2) ? rd[31] : rd[63];
-    wire [63:0] lo_neg = (~rl + 64'd1) & M;
-    wire [63:0] hi_neg = (~rh + {63'd0, rlz}) & M;
-    wire [63:0] d_neg  = (~rd + 64'd1) & M;
+    // single negator: 2's complement of nin (with carry-in cin; the dividend high part uses rlz = "low was zero")
+    wire [63:0] nin  = (st == PRE) ? rl : (st == PRE2) ? rh : (st == PRE3) ? rd : (st == POST) ? ql : rem[63:0];
+    wire        ncin = (st == PRE2) ? rlz : 1'b1;
+    wire [63:0] nout = (~nin + {63'd0, ncin}) & M;
     // POST
     wire        qneg = sd ^ sv;
     wire [63:0] half = (s == 2'd0) ? 64'h80 : (s == 2'd1) ? 64'h8000 : (s == 2'd2) ? 64'h8000_0000 : 64'h8000_0000_0000_0000;
-    wire        qbad = qneg ? (ql > half) : (ql >= half);
+    wire        qtop = (s == 2'd0) ? ql[7] : (s == 2'd1) ? ql[15] : (s == 2'd2) ? ql[31] : ql[63];   // ql >= half  <=>  bit alto do tamanho
+    wire        qlow = |(ql & (M >> 1));                                                            // ql >  half  <=>  high bit and some bit below
+    wire        qbad = qtop & (qneg ? qlow : 1'b1);
     always @(posedge clk) begin
         if (rst) begin st <= IDLE; err <= 0; q <= 0; r <= 0; end
         else case (st)
@@ -46,15 +52,16 @@ module div_unit(
                     st <= sgn ? PRE : LOAD;
                 end else st <= IDLE;
             end
-            PRE: begin
+            PRE: begin                       // signs + negates the low part of the dividend
                 sd <= top_hi; sv <= top_d;
-                if (top_hi) begin rl <= lo_neg; rh <= hi_neg; end
-                if (top_d) rd <= d_neg;
-                st <= LOAD;
+                if (top_hi) rl <= nout;
+                st <= PRE2;
             end
+            PRE2: begin if (sd) rh <= nout; st <= PRE3; end      // nega o alto (carry = baixo era zero)
+            PRE3: begin if (sv) rd <= nout; st <= LOAD; end      // nega o divisor
             LOAD: begin
                 cnt <= nbits(s); rem <= {1'b0, rh}; ql <= rl;
-                if (rd == 64'd0 || rh >= rd) begin err <= 1; q <= 0; r <= 0; st <= DONE; end
+                if (rd == 64'd0 || ge) begin err <= 1; q <= 0; r <= 0; st <= DONE; end
                 else st <= ITER;
             end
             ITER: begin
@@ -65,13 +72,10 @@ module div_unit(
                 end
             end
             POST: begin
-                if (qbad) begin err <= 1; q <= 0; r <= 0; end
-                else begin
-                    q <= qneg ? ((~ql + 64'd1) & M) : ql;
-                    r <= sd ? ((~rem[63:0] + 64'd1) & M) : rem[63:0];
-                end
-                st <= DONE;
+                if (qbad) begin err <= 1; q <= 0; r <= 0; st <= DONE; end
+                else begin q <= qneg ? nout : ql; st <= POST2; end
             end
+            POST2: begin r <= sd ? nout : rem[63:0]; st <= DONE; end
             default: st <= IDLE;
         endcase
     end

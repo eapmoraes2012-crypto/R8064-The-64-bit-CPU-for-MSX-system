@@ -1,6 +1,8 @@
-import re
+import re,sys
+# usage: python3 cmpt.py <R8064_Z80_instrucoes_fpga.txt>   (the instruction table is NOT in this repository; run in the tdump.txt folder)
+if len(sys.argv)<2: sys.exit('uso: python3 cmpt.py <R8064_Z80_instrucoes_fpga.txt>')
 pages={}; cur=None
-for ln in open('/mnt/user-data/outputs/R8064_Z80_instrucoes_fpga.txt',encoding='latin-1'):
+for ln in open(sys.argv[1],encoding='latin-1'):
     m=re.match(r'^\[(Z80_\w+)\]',ln)
     if m: cur=m.group(1); pages[cur]={}; continue
     if ln.startswith('['): cur=None; continue
@@ -20,5 +22,5 @@ for ln in open('tdump.txt'):
     if not e: miss.append((p,op,tmax)); continue
     tot+=1
     if (max(e[0],e[1]),min(e[0],e[1]))!=(tmax,tmin): bad.append((p,op,e,(tmax,tmin)))
-print('comparados',tot,'sem entrada na tabela (opcodes ED/DD/FD nao-op)',len(miss),'divergencias',len(bad))
+print('compared',tot,'without a table entry (non-op ED/DD/FD opcodes)',len(miss),'divergences',len(bad))
 for b in bad: print(b)

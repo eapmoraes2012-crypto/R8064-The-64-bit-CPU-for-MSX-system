@@ -1,11 +1,14 @@
-MODULO 01 - ALU 64 bits + banco de registradores (R8064)  [simulacao 2026-11-02]
-Funcional (Icarus e Verilator, modelo Python independente, semente 8064):
-  ALU 148128 vetores: 0 erros | regmap 0 | regmerge 0 | regfile (40000 ops aleatorias) 0 | 5 mutantes detectados.
-Sintese/P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, alvo 100 MHz, sem BSRAM na ALU):
-  ALU monolitica (1 estagio): 1727 LUT4, Fmax 82-83 MHz  -> NAO atinge 100 MHz.
-  ALU em 2 estagios (alu_prep no estagio R com mascara/inversao/vai-um; alu_core no X):
-      Fmax 110,4 MHz (PASS), ~1100 LUT4 (medido 1306 incluindo LFSR do invólucro), 66 celulas ALU.
+MODULE 01 - 64-bit ALU + register file (R8064)  [simulation 2026-11-02]
+Functional (Icarus and Verilator, independent Python model, seed 8064):
+  ALU 148128 vectors: 0 errors | regmap 0 | regmerge 0 | regfile (40000 random ops) 0 | 5 mutants detected.
+Synthesis/P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, 100 MHz target, no BSRAM in the ALU):
+  Monolithic ALU (1 stage): 1727 LUT4, Fmax 82-83 MHz  -> does NOT reach 100 MHz.
+  2-stage ALU (alu_prep in the R stage with mask/inversion/carry; alu_core in X):
+      Fmax 110.4 MHz (PASS), ~1100 LUT4 (measured 1306 including the wrapper's LFSR), 66 ALU cells.
   Banco de registradores: 366 LUT4, 260 DFF, 4 BSRAM, Fmax 116 MHz (PASS).
-Consequencia: a ALU precisa de registrador entre R e X (ja previsto no pipeline de 7 estagios); verificar no modulo 02.
-PREMISSAS A CONFIRMAR: semantica dos flags (H, PV, X/Y, CPL, shifts em 1 bit, INC/DEC mantem C) e ordem dos tamanhos.
-Ressalva: Fmax do nextpnr e estimativa pre-silicio, sem restricoes de E/S reais.
+Consequence: the ALU needs a register between R and X (already planned in the 7-stage pipeline); check in module 02.
+ASSUMPTIONS TO CONFIRM: flag semantics (H, PV, X/Y, CPL, 1-bit shifts, INC/DEC keep C) and size order.
+Caveat: nextpnr's Fmax is a pre-silicon estimate, without real I/O constraints.
+UPDATE 14/11/2026: regfile64 gained write forwarding (registered bypass, 08/11) and the testbench still expected the old value when reading the address
+  written in the same clock: it gave FAIL with 597 register-file errors. tb_alu_regfile.v fixed (model with forwarding): ALU 148128 / regmap / regmerge / regfile = 0 errors, PASS
+  (Icarus 12, with this module's alu_core and with the one from 09_core_min).

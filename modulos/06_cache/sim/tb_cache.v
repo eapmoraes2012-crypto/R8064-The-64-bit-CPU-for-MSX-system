@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// Testbench do cache 8+8 KB: 2 geradores de CPU (D e I) -> cache8k x2 -> mem_arb -> sdram_ctrl -> sdram_model; memoria sombra para conferir cada leitura.
+// 8+8 KB cache testbench: 2 CPU generators (D and I) -> cache8k x2 -> mem_arb -> sdram_ctrl -> sdram_model; shadow memory to check every read.
 module cpu_drv #(parameter REGION = 0, parameter CANWRITE = 1)(
     input wire clk, rst,
     output reg req, we, output reg [18:0] addr, output reg [63:0] wd, output reg [7:0] be,
@@ -19,9 +19,9 @@ module cpu_drv #(parameter REGION = 0, parameter CANWRITE = 1)(
         if (rst) begin req <= 0; end
         else begin
             if (rvalid) begin
-                if (eh == et) begin errs = errs + 1; $display("ERRO(%0d): rvalid sem leitura pendente t=%0t", REGION, $time); end
+                if (eh == et) begin errs = errs + 1; $display("ERROR(%0d): rvalid without pending read t=%0t", REGION, $time); end
                 else begin
-                    if (rdata !== ed[eh % 4096]) begin errs = errs + 1; if (errs < 10) $display("ERRO(%0d): dado %h esperado %h t=%0t", REGION, rdata, ed[eh % 4096], $time); end
+                    if (rdata !== ed[eh % 4096]) begin errs = errs + 1; if (errs < 10) $display("ERROR(%0d): data %h expected %h t=%0t", REGION, rdata, ed[eh % 4096], $time); end
                     eh = eh + 1; rv_cyc = cyc; nrd = nrd + 1;
                 end
             end
@@ -81,10 +81,10 @@ module tb_cache;
         bad = 0;
         for (a = 0; a < 524288; a = a + 1)
             if ({mdl.mem[{a[18:0], 1'b1}], mdl.mem[{a[18:0], 1'b0}]} !== shadow[a]) begin bad = bad + 1; if (bad < 5) $display("  MEM diferente em %h: sdram=%h sombra=%h", a, {mdl.mem[{a[18:0], 1'b1}], mdl.mem[{a[18:0], 1'b0}]}, shadow[a]); end
-        if (bad) begin errs = errs + 1; $display("FALHA %0s: %0d palavras diferentes", nome, bad); end else $display("ok   %0s: memoria SDRAM == sombra", nome);
+        if (bad) begin errs = errs + 1; $display("FAIL %0s: %0d different words", nome, bad); end else $display("ok   %0s: SDRAM memory == shadow", nome);
     end endtask
     task rep(input [255:0] nome); begin
-        if (dd.errs + di.errs) begin errs = errs + 1; $display("FALHA %0s: erros D=%0d I=%0d", nome, dd.errs, di.errs); end else $display("ok   %0s (D: %0d leit %0d esc | I: %0d leit)", nome, dd.nrd, dd.nwr, di.nrd);
+        if (dd.errs + di.errs) begin errs = errs + 1; $display("FAIL %0s: errors D=%0d I=%0d", nome, dd.errs, di.errs); end else $display("ok   %0s (D: %0d rd %0d wr | I: %0d rd)", nome, dd.nrd, dd.nwr, di.nrd);
     end endtask
     initial begin
         errs = 0;
@@ -92,52 +92,52 @@ module tb_cache;
         repeat (4) @(posedge clk); rst = 0;
         wait (init_done); repeat (3) @(posedge clk);
         // T1: latencia de falha e de acerto (D)
-        dd.push(0, 19'h00100, 0, 0); waitq; $display("T1 latencia de falha de leitura (aceite->rvalid) D: %0d clocks", dd.rv_cyc - dd.acc_cyc);
-        dd.push(0, 19'h00101, 0, 0); waitq; $display("T1 latencia de acerto (mesma linha) D: %0d clock(s)", dd.rv_cyc - dd.acc_cyc);
-        di.push(0, 19'h40100, 0, 0); waitq; $display("T1 latencia de falha de leitura I: %0d clocks", di.rv_cyc - di.acc_cyc);
+        dd.push(0, 19'h00100, 0, 0); waitq; $display("T1 read miss latency (accept->rvalid) D: %0d clocks", dd.rv_cyc - dd.acc_cyc);
+        dd.push(0, 19'h00101, 0, 0); waitq; $display("T1 hit latency (same line) D: %0d clock(s)", dd.rv_cyc - dd.acc_cyc);
+        di.push(0, 19'h40100, 0, 0); waitq; $display("T1 read miss latency I: %0d clocks", di.rv_cyc - di.acc_cyc);
         rep("T1");
-        // T2: vazao de acertos - varre 256 palavras (2 KB) duas vezes; a 2a passagem deve ser 1 acesso/clock
+        // T2: hit throughput - sweeps 256 words (2 KB) twice; the 2nd pass must be 1 access/clock
         for (n = 0; n < 256; n = n + 1) dd.push(0, n, 0, 0); waitq;
-        dd.push(0, 19'h0, 0, 0); // primeiro item da 2a passagem
+        dd.push(0, 19'h0, 0, 0); // first item of the 2nd pass
         t0 = dd.cyc; for (n = 1; n < 256; n = n + 1) dd.push(0, n, 0, 0); waitq; t1 = dd.rv_cyc;
-        $display("T2 2a passagem de 256 leituras com acerto: %0d clocks (esperado ~256)", t1 - t0);
+        $display("T2 2nd pass of 256 hit reads: %0d clocks (expected ~256)", t1 - t0);
         rep("T2");
-        // T3: escritas (byte-enable) sobre linha presente e ausente, depois leitura
+        // T3: writes (byte-enable) on a present and an absent line, then read
         dd.push(1, 19'h00005, 64'hAABBCCDD11223344, 8'b00001111); dd.push(0, 19'h00005, 0, 0);
         dd.push(1, 19'h00006, 64'h0123456789ABCDEF, 8'b10000001); dd.push(0, 19'h00006, 0, 0);
-        dd.push(1, 19'h20050, 64'hDEADBEEFCAFEF00D, 8'hF0); dd.push(0, 19'h20050, 0, 0);   // escrita sem alocar + leitura (falha)
-        dd.push(1, 19'h20051, 64'h1111111111111111, 8'hFF); dd.push(0, 19'h20051, 0, 0);   // mesma linha agora presente
+        dd.push(1, 19'h20050, 64'hDEADBEEFCAFEF00D, 8'hF0); dd.push(0, 19'h20050, 0, 0);   // write without allocate + read (miss)
+        dd.push(1, 19'h20051, 64'h1111111111111111, 8'hFF); dd.push(0, 19'h20051, 0, 0);   // same line now present
         waitq; rep("T3"); drain; check_mem("T3");
-        // T4: conflito no conjunto (3 enderecos, 2 vias) e LRU
+        // T4: set conflict (3 addresses, 2 ways) and LRU
         for (n = 0; n < 40; n = n + 1) begin dd.push(0, 19'h00080 | ((n % 3) << 9), 0, 0); end
         dd.push(0, 19'h00080, 0, 0); dd.push(0, 19'h00280, 0, 0); dd.push(0, 19'h00080, 0, 0); dd.push(0, 19'h00480, 0, 0); dd.push(0, 19'h00280, 0, 0);
         waitq; rep("T4");
-        // T4b: LRU exato (A B A C A -> 3 falhas; depois B -> falha)
+        // T4b: exact LRU (A B A C A -> 3 misses; then B -> miss)
         n = dc.st_rd_miss;
         dd.push(0, 19'h01490, 0, 0); dd.push(0, 19'h01690, 0, 0); dd.push(0, 19'h01490, 0, 0); dd.push(0, 19'h01890, 0, 0); dd.push(0, 19'h01490, 0, 0); waitq;
-        if (dc.st_rd_miss - n != 3) begin errs = errs + 1; $display("FALHA T4b LRU: %0d falhas (esperado 3)", dc.st_rd_miss - n); end else $display("ok   T4b LRU mantem A (3 falhas)");
+        if (dc.st_rd_miss - n != 3) begin errs = errs + 1; $display("FAIL T4b LRU: %0d misses (expected 3)", dc.st_rd_miss - n); end else $display("ok   T4b LRU keeps A (3 misses)");
         n = dc.st_rd_miss; dd.push(0, 19'h01690, 0, 0); waitq;
         if (dc.st_rd_miss - n != 1) begin errs = errs + 1; $display("FALHA T4b LRU: B deveria ter sido expulsa"); end else $display("ok   T4b LRU expulsou B");
         // T5: coerencia - alteracao externa + inv
         dd.push(0, 19'h00300, 0, 0); waitq; bk_write(19'h00300, 64'h5555AAAA5555AAAA); dd.push(0, 19'h00300, 0, 0); waitq;
-        $display("T5 sem inv: leitura devolveu valor antigo da cache (esperado: erro de coerencia deliberado: %0d)", dd.errs);
-        dd.errs = 0; dd.eh = dd.et; // descarta
+        $display("T5 without inv: read returned the old cache value (expected: deliberate coherence error: %0d)", dd.errs);
+        dd.errs = 0; dd.eh = dd.et; // discards
         @(posedge clk); inv_d <= 1; @(posedge clk); inv_d <= 0; repeat (200) @(posedge clk);
-        dd.push(0, 19'h00300, 0, 0); waitq; if (dd.errs) begin errs = errs + 1; $display("FALHA T5: apos inv ainda o valor antigo"); end else $display("ok   T5 inv devolve o valor novo");
+        dd.push(0, 19'h00300, 0, 0); waitq; if (dd.errs) begin errs = errs + 1; $display("FAIL T5: after inv still the old value"); end else $display("ok   T5 inv returns the new value");
         // T6: I-cache e D-cache simultaneos, aleatorio, muitos conflitos
         dd.set_base = 0; dd.g_sets = 4; dd.g_tags = 5; dd.p_wr = 35; dd.p_idle = 20; di.g_sets = 4; di.g_tags = 4; di.p_idle = 10;
         dd.rand_en = 1; di.rand_en = 1; repeat (60000) @(posedge clk); dd.rand_en = 0; di.rand_en = 0; waitq; rep("T6 aleatorio conflitante"); drain; check_mem("T6");
-        // T7: aleatorio com mais conjuntos, escrita intensa, sem ociosidade
+        // T7: random with more sets, heavy writes, no idle
         dd.g_sets = 64; dd.g_tags = 3; dd.p_wr = 50; dd.p_idle = 0; di.g_sets = 128; di.g_tags = 2; di.p_idle = 0;
-        dd.rand_en = 1; di.rand_en = 1; repeat (80000) @(posedge clk); dd.rand_en = 0; di.rand_en = 0; waitq; rep("T7 aleatorio escrita intensa"); drain; check_mem("T7");
+        dd.rand_en = 1; di.rand_en = 1; repeat (80000) @(posedge clk); dd.rand_en = 0; di.rand_en = 0; waitq; rep("T7 random heavy write"); drain; check_mem("T7");
         // T8: conjunto de trabalho que cabe (acerto alto)
         dd.g_sets = 32; dd.g_tags = 2; dd.p_wr = 20; dd.p_idle = 0; di.g_sets = 100; di.g_tags = 1; di.p_idle = 0;
         dd.rand_en = 1; di.rand_en = 1; repeat (40000) @(posedge clk); dd.rand_en = 0; di.rand_en = 0; waitq; rep("T8 conjunto cabe"); drain; check_mem("T8");
         $display("Estatisticas D: leit acerto=%0d falha=%0d | esc=%0d acerto=%0d", dc.st_rd_hit, dc.st_rd_miss, dc.st_wr, dc.st_wr_hit);
         $display("Estatisticas I: leit acerto=%0d falha=%0d", ic.st_rd_hit, ic.st_rd_miss);
-        $display("SDRAM: violacoes de temporizacao do modelo = %0d", mdl.viol);
+        $display("SDRAM: model timing violations = %0d", mdl.viol);
         if (mdl.viol) errs = errs + 1;
-        if (errs == 0) $display("RESULTADO: TODOS OS TESTES PASSARAM"); else $display("RESULTADO: %0d FALHAS", errs);
+        if (errs == 0) $display("RESULT: ALL TESTS PASSED"); else $display("RESULT: %0d FAILURES", errs);
         $finish;
     end
     initial begin #400000000; $display("TIMEOUT"); $finish; end

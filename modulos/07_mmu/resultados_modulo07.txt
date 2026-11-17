@@ -1,21 +1,21 @@
-MODULO 07 - MMU / TLB (mmu.v)   [premissas minhas: a planilha so define PGINV, PROT, JP USER, LDCR/STCR]
-Projeto: VA 64 bits traduzidos em 39 (estilo Sv39: bits 63:39 = copia do 38, senao falta de pagina), pagina 4 KB, megapagina 2 MB (folha no nivel 1), 3 niveis, PTE 64 b:
-  [0]V [1]R [2]W [3]X [4]U [5]G [6]A [7]D [29:10]PPN. A/D gerenciados por software (A=0 ou escrita com D=0 -> causa 3). Usuario so U=1; supervisor nao executa U=1.
-  PA 32 bits (byte); memoria de 4 MB (indice de palavra de 19 b): PPN[19:10]!=0 -> causa 4. Causas: 1 pagina, 2 permissao, 3 A/D, 4 fora da memoria.
-  TLB totalmente associativa, 16 entradas (parametro NENT), ASID 8 b, bit global, descarga: tudo / por VA (PGINV, vale p/ megapagina) / por ASID (preserva globais).
-  2 estagios (1: comparacao de todas as entradas -> vetor mt2 registrado; 2: selecao + permissoes), 1 traducao por clock; caminhador de hardware pelo protocolo m_req/m_accept/m_done (igual ao da cache).
-  Com en=0: identidade. p_valid e um pulso de 1 clock.
-SIMULACAO (Icarus; tb_mmu.v): tabelas reais em memoria com latencia aleatoria (1..14), dado capturado no aceite; modelo de referencia percorre as tabelas; fila de esperados.
-  Latencia de acerto: 2 clocks; vazao: 1 traducao/clock (200 em 202 clocks). Falha de TLB (3 niveis): 31 clocks com memoria de 4..12 clocks/leitura (~10 clocks por PTE).
-  Testes: T1 en=0, T2/T2b latencia e vazao, T3 permissoes R/W/X x usuario/supervisor x U/A/D, T4 faltas (nao canonico, V=0, folha nivel 2, fora da memoria), T5 megapaginas (contagem de caminhadas = 2),
-  T6 PGINV/fl_all com remapeamento, T7 dois espacos de enderecos com ASID e pagina global sem descarga (15 caminhadas), T8 aleatorio (pressao de capacidade, 6 sementes), T9 remapeamento+descarga,
-  T10 descarga durante a caminhada (reinicio), T11 PGINV em offsets variados, T12 PGINV de megapagina em outro offset, T13 descarga por ASID. ~26 mil traducoes conferidas, 0 erros.
-  Mutantes (20): 18 mortos (um por travamento) e 2 equivalentes por especificacao: s2_stale na corrida com descarga (pedido concorrente com PGINV pode ver o mapeamento antigo ou o novo) e limpeza de wf_valid em p_valid.
-SINTESE/P&R (Yosys synth_gowin + nextpnr, GW2AR-LV18QN88C8/I7, 100 MHz, wrapper LFSR com saidas registradas): 2331 LUT4, 1541 FF, 0 BSRAM (TLB em flip-flops); Fmax 111.6 MHz (semente 1), 116.0 MHz (semente 2).
-  Evolucao: versao de 1 estagio (mmu_v1_1estagio.v) 67 MHz (comparacao + selecao + ready no mesmo ciclo); versao final com 2 estagios 112-116 MHz.
+MODULE 07 - MMU / TLB (mmu.v)   [my assumptions: the spreadsheet only defines PGINV, PROT, JP USER, LDCR/STCR]
+Design: 64-bit VA translated to 39 (Sv39 style: bits 63:39 = copy of 38, otherwise page fault), 4 KB page, 2 MB megapage (leaf at level 1), 3 levels, 64-bit PTE:
+  [0]V [1]R [2]W [3]X [4]U [5]G [6]A [7]D [29:10]PPN. A/D managed by software (A=0 or write with D=0 -> cause 3). User only U=1; supervisor does not execute U=1.
+  32-bit PA (byte); 4 MB memory (19-bit word index): PPN[19:10]!=0 -> cause 4. Causes: 1 page, 2 permission, 3 A/D, 4 outside memory.
+  Fully associative TLB, 16 entries (parameter NENT), ASID 8 b, global bit, flush: all / by VA (PGINV, applies to megapage) / by ASID (preserves globals).
+  2 stages (1: compare all entries -> registered vector mt2; 2: selection + permissions), 1 translation per clock; hardware walker via the m_req/m_accept/m_done protocol (same as the cache).
+  With en=0: identity. p_valid is a 1-clock pulse.
+SIMULATION (Icarus; tb_mmu.v): real tables in memory with random latency (1..14), data captured on accept; reference model walks the tables; queue of expected values.
+  Hit latency: 2 clocks; throughput: 1 translation/clock (200 in 202 clocks). TLB miss (3 levels): 31 clocks with memory at 4..12 clocks/read (~10 clocks per PTE).
+  Tests: T1 en=0, T2/T2b latency and throughput, T3 permissions R/W/X x user/supervisor x U/A/D, T4 faults (non-canonical, V=0, level-2 leaf, outside memory), T5 megapages (walk count = 2),
+  T6 PGINV/fl_all with remapping, T7 two address spaces with ASID and global page without flush (15 walks), T8 random (capacity pressure, 6 seeds), T9 remapping+flush,
+  T10 flush during the walk (restart), T11 PGINV at varied offsets, T12 megapage PGINV at another offset, T13 flush by ASID. ~26 thousand translations checked, 0 errors.
+  Mutants (20): 18 killed (one per hang) and 2 equivalent by specification: s2_stale in the race with flush (a request concurrent with PGINV may see the old or the new mapping) and clearing of wf_valid in p_valid.
+SYNTHESIS/P&R (Yosys synth_gowin + nextpnr, GW2AR-LV18QN88C8/I7, 100 MHz, LFSR wrapper with registered outputs): 2331 LUT4, 1541 FF, 0 BSRAM (TLB in flip-flops); Fmax 111.6 MHz (seed 1), 116.0 MHz (seed 2).
+  Evolution: 1-stage version (mmu_v1_1estagio.v) 67 MHz (compare + select + ready in the same cycle); final 2-stage version 112-116 MHz.
 RESSALVAS / INTEGRACAO:
-  - Cache VIPT: o indice da cache (bits 11:3 do byte) cabe no deslocamento da pagina, mas a cache atual compara a tag no ciclo do aceite; com tag fisica (latencia 2 da TLB) a comparacao teria de ir para o estagio 1 da cache (era o caminho critico do cache8k). Alternativas: cache PIPT (traduz antes; +2 clocks por acesso) ou reprojetar o estagio de acerto.
-  - O caminhador usa porta propria; no sistema precisa de um 3o mestre no mem_arb (hoje 2 mestres) e passa por fora da cache de dados (coerencia das tabelas com a D-cache nao tratada).
-  - Dois pedidos concorrentes com PGINV/fl_* podem ver mapeamento antigo ou novo: o pipeline deve serializar (esvaziar) apos PGINV.
-  - Sem bits de acessado/sujo por hardware, sem paginas de 1 GB, sem excecao precisa (so p_fault/p_cause; o vetor de excecao e responsabilidade do pipeline).
-  - 2 instancias (ITLB e DTLB) dobram 2331 LUT/1541 FF; NENT=8 para o ITLB reduz.
+  - VIPT cache: the cache index (byte bits 11:3) fits in the page offset, but the current cache compares the tag in the accept cycle; with a physical tag (TLB latency 2) the compare would have to move to cache stage 1 (it was the critical path of cache8k). Alternatives: PIPT cache (translates first; +2 clocks per access) or redesign the hit stage.
+  - The walker uses its own port; in the system it needs a 3rd master in mem_arb (today 2 masters) and bypasses the data cache (coherence of the tables with the D-cache is not handled).
+  - Two concurrent requests with PGINV/fl_* may see the old or new mapping: the pipeline must serialize (drain) after PGINV.
+  - No hardware accessed/dirty bits, no 1 GB pages, no precise exception (only p_fault/p_cause; the exception vector is the pipeline's responsibility).
+  - 2 instances (ITLB and DTLB) double 2331 LUT/1541 FF; NENT=8 for the ITLB reduces it.

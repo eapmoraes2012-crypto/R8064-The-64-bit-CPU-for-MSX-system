@@ -1,3 +1,3 @@
-Modulo 03 - mul_unit.v (DSP 18x18) e div_unit.v. Como rodar (Icarus): copie rtl/*.v e sim/*.mem para uma pasta; python3 ref/gen_muldiv.py <pasta> regera os vetores (semente 8064);
-read NM ND < nvec.txt; iverilog -g2012 -o sim -Ptb_muldiv.NM=$NM -Ptb_muldiv.ND=$ND tb_muldiv.v mul_unit.v div_unit.v && vvp sim  -> deve imprimir PASS.
-ref/*_v1*.v sao as primeiras versoes (nao atingiam 100 MHz). pnr/: invólucros e logs. Resultados e premissas: resultados_modulo03.txt.
+Module 03 - mul_unit.v (DSP 18x18) and div_unit.v. How to run (Icarus): copy rtl/*.v and sim/*.mem to a folder; python3 ref/gen_muldiv.py <folder> regenerates the vectors (seed 8064);
+read NM ND < nvec.txt; iverilog -g2012 -o sim -Ptb_muldiv.NM=$NM -Ptb_muldiv.ND=$ND tb_muldiv.v mul_unit.v div_unit.v && vvp sim  -> must print PASS.
+ref/*_v1*.v are the first versions (they did not reach 100 MHz). pnr/: wrappers and logs. Results and assumptions: resultados_modulo03.txt.

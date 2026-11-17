@@ -1,5 +1,5 @@
 @echo off
-rem Simulacao do Z80: RTL x modelo C (traco por instrucao). Rode no terminal do OSS CAD Suite.
+rem Z80 simulation: RTL x C model (per-instruction trace). Run in the OSS CAD Suite terminal.
 cd /d %~dp0
 echo === compilando ===
 iverilog -g2012 -Wall -o simz80.vvp tb_z80.v ..\rtl\z80_core.v ..\rtl\z80_ucode.v > compila.log 2>&1
@@ -19,5 +19,5 @@ vvp simz80.vvp +mem=vec/zex_mem.hex +regs=vec/zex_regs.txt +trace=vec/zex_trace.
 type resultado_z80.txt
 :fim
 echo.
-echo Terminou. Resultado em resultado_z80.txt e compila.log
+echo Finished. Result in resultado_z80.txt and compila.log
 pause

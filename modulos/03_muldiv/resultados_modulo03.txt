@@ -1,22 +1,22 @@
-MODULO 03 - Multiplicador (DSP 18x18) e divisor iterativo do R8064 - simulacao 2026-11-02
-SIMULACAO FUNCIONAL (Icarus Verilog 14.0, modelo de referencia em inteiros do Python, semente 8064):
-  Multiplicador: 24.968 vetores (8/16/32/64 bits, com e sem sinal, cantos e aleatorios): 0 erros.
-     Fluxo de 18.726 operacoes pequenas emitidas 1 por clock: 0 erros, todas recebidas em ordem.
-     6.242 operacoes de 64 bits em sequencia: 0 erros, 4,00 clocks por operacao (iguais ao EX=4 da planilha).
-     Latencia (aceitacao ate out_valid): 8/16/32 bits = 5 clocks; 64 bits = 8 clocks.
-  Divisor: 20.108 vetores (inclui 2.363 com erro: divisao por zero e estouro, MIN/-1 etc.): 0 erros de q, r e err.
-     Clocks ocupados (sem estouro): sem sinal 10/18/34/66 e com sinal 12/20/36/68 para 8/16/32/64 bits = IGUAIS a coluna ocupacao_X da planilha (DIVUB..DIVUQ, DIVSB..DIVSQ).
-  Mutantes: 6 (versao 1) + 4 (versao final) alteracoes de proposito no RTL; todos detectados (FAIL).
-SINTESE E P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, alvo 100 MHz; com invólucro LFSR, entradas/saidas nao reais):
-  Multiplicador, versao 1 (3 estagios): 72 MHz  -> FALHOU. Caminho: soma de 4 termos + acumulador de 128 bits no mesmo clock.
-  Multiplicador, versao final (S3 em 3 estagios, latencia 5/8): 120,9 MHz PASS; 4 MULT18X18 (8% dos 48); unidade isolada (Yosys): 218 LUT4 + 268 ALU(cadeia de vai-um) + 70 MUX2_LUT5, 837 FF.
-  Divisor, versao 1: 97 MHz -> FALHOU (zero-detect de lo na mesma cadeia da negacao). Versao final (rlz registrado na captura): 113,4 MHz PASS; unidade isolada: 520 LUT4 + 513 ALU + 312 MUX2, 465 FF; 0 DSP.
-  (nextpnr com invólucro: mul 1.356 LUT4 / 1.093 FF; div 2.096 LUT4 / 851 FF; os invólucros somam ~800-1.000 LUT4 de LFSR.)
-IMPLICACOES PARA O PIPELINE
-  1) MLTxB/W/E (EX=1) so mantem vazao de 1 por clock; o resultado sai 5 clocks apos a emissao (X+M+W cobrem 3): instrucao dependente precisa esperar ~2 clocks extras
-     (ou o pipeline precisa de bypass de multiplicacao/estagios extras). MLTSQ/MLTUQ: 8 clocks de latencia, 4 de ocupacao.
-  2) Divisor ocupa X por sz+2 / sz+4 clocks (planilha ja considerava); em estouro ele termina em 2-3 clocks (excecao de divisao: definir vetor/flag).
-  3) Os 4 DSP usados pelo multiplicador sao os mesmos que a FPU (mantissa 64 bits) e a MMU precisarao: compartilhar ou reservar (48 disponiveis).
-PREMISSAS A CONFIRMAR (a planilha nao especifica): resultado das MLT (ex.: MLTSB AL,u -> AX; MLTUW HL,rr -> 32 bits em qual par; MLTUQ QA,rr gera 128 bits e qual metade fica em QA);
-  divisao: truncamento para zero, resto com sinal do dividendo, erro por divisor zero ou quociente fora da faixa (como x86); flags das MLT/DIV nao modelados.
-Nao testado: Verilator, simulacao pos-sintese, integracao com o pipeline (modulo 02) e com o banco de registradores.
+MODULE 03 - Multiplier (DSP 18x18) and iterative divider of the R8064 - simulation 2026-11-02
+FUNCTIONAL SIMULATION (Icarus Verilog 14.0, Python integer reference model, seed 8064):
+  Multiplier: 24,968 vectors (8/16/32/64 bits, signed and unsigned, corners and random): 0 errors.
+     Stream of 18,726 small operations issued 1 per clock: 0 errors, all received in order.
+     6,242 64-bit operations in sequence: 0 errors, 4.00 clocks per operation (equal to EX=4 of the spreadsheet).
+     Latency (acceptance to out_valid): 8/16/32 bits = 5 clocks; 64 bits = 8 clocks.
+  Divider: 20,108 vectors (includes 2,363 with error: divide by zero and overflow, MIN/-1 etc.): 0 errors in q, r and err.
+     Busy clocks (no overflow): unsigned 10/18/34/66 and signed 15/23/39/71 (REV44: single negator, +3 clocks; before 12/20/36/68) for 8/16/32/64 bits = EQUAL to the ocupacao_X column of the spreadsheet (updated in REV44) (DIVUB..DIVUQ, DIVSB..DIVSQ).
+  Mutants: 6 (version 1) + 4 (final version) deliberate changes in the RTL; all detected (FAIL).
+SYNTHESIS AND P&R (Yosys 0.70 + nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, 100 MHz target; with LFSR wrapper, non-real inputs/outputs):
+  Multiplier, version 1 (3 stages): 72 MHz  -> FAILED. Path: sum of 4 terms + 128-bit accumulator in the same clock.
+  Multiplier, final version (S3 in 3 stages, latency 5/8): 120.9 MHz PASS; 4 MULT18X18 (8% of 48); isolated unit (Yosys): 218 LUT4 + 268 ALU (carry chain) + 70 MUX2_LUT5, 837 FF.
+  Divider, version 1: 97 MHz -> FAILED (zero-detect of lo in the same chain as the negation). Final version (rlz registered on capture): 113.4 MHz PASS; isolated unit: 520 LUT4 + 513 ALU + 312 MUX2, 465 FF; 0 DSP.
+  (nextpnr with wrapper: mul 1,356 LUT4 / 1,093 FF; div 2,096 LUT4 / 851 FF; the wrappers add up to ~800-1,000 LUT4 of LFSR.)
+IMPLICATIONS FOR THE PIPELINE
+  1) MLTxB/W/L (EX=1) only keeps a throughput of 1 per clock; the result comes out 5 clocks after issue (X+M+W cover 3): a dependent instruction has to wait ~2 extra clocks
+     (or the pipeline needs multiply bypass/extra stages). MLTSQ/MLTUQ: 8 clocks of latency, 4 of occupancy.
+  2) The divider occupies X for sz+2 / sz+7 clocks (REV44: single negator; before sz+4); on overflow it finishes in 2-3 clocks (divide exception: define vector/flag).
+  3) The 4 DSPs used by the multiplier are the same ones the FPU (64-bit mantissa) and the MMU will need: share or reserve (48 available).
+ASSUMPTIONS TO CONFIRM (the spreadsheet does not specify): result of the MLT (e.g.: MLTSB AL,u -> AX; MLTUW HL,rr -> 32 bits in which pair; MLTUQ QA,rr generates 128 bits and which half stays in QA);
+  division: truncation toward zero, remainder with the sign of the dividend, error on zero divisor or out-of-range quotient (as on x86); MLT/DIV flags not modeled.
+Not tested: Verilator, post-synthesis simulation, integration with the pipeline (module 02) and with the register file.

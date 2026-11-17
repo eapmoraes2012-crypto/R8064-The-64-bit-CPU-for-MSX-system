@@ -1,5 +1,5 @@
 @echo off
-rem Integracao Z80 + memoria MSX (mapper/MegaRAM) + SDRAM: 4 modos de turbo. Rode no terminal do OSS CAD Suite.
+rem Z80 + MSX memory (mapper/MegaRAM) + SDRAM integration: 4 turbo modes. Run in the OSS CAD Suite terminal.
 cd /d %~dp0
 set R=..\rtl
 set M=..\..\10_msx_mem\rtl\msx_mem.v
@@ -16,5 +16,5 @@ for %%T in (0 1 2 3) do (
 type resultado_msx.txt
 :fim
 echo.
-echo Terminou. Resultado em resultado_msx.txt e compila_msx.log
+echo Finished. Result in resultado_msx.txt and compila_msx.log
 pause
