@@ -1,6 +1,6 @@
 // r8064_cart_top.v - MSX CARTRIDGE top for the V9968_Cartridge board (Tang Nano 20K): clkgen + SoC + embedded SDRAM + slot I/O interface (r8064_slot_if).
 // The board connects only A0-A7, D0-D7, /IORQ, /RD, /WR, /RESET, WAIT, INT and DIR/BUSDIR to the FPGA: the R8064 is an MSX I/O peripheral (ports 0Bh/0Ch/0Dh, layer 1 of the protocol:
-// FIFOs + state + length). Layer 2 (16 KB window at 8000h-BFFFh) requires /SLTSL, A8-A15 and /MERQ, which the board does NOT have; window accesses are disabled (sb_* = 0).
+// FIFOs + state + length). Layer 2 (16 KB window at 8000h-BFFFh) requires /SLTSL, A8-A15 and /MREQ, which the board does NOT have; window accesses are disabled (sb_* = 0).
 // Clock: the board's 14.31818 MHz crystal (pin 80) -> rPLL x4 = 57.2727 MHz (SRC = 3).
 // SoC reset = PLL + button + slot /RESET (synchronized) + "restart the R8064" command (CMD.b3 of the FIFO), stretched by 16 clocks. Any reset redoes the SDRAM and the boot (BOOT=1).
 module r8064_cart_top #(parameter SRC = 3, parameter [3:0] SDR_PSDA = 4'd4, parameter BOOT = 1)(
