@@ -1,7 +1,7 @@
-06_cache: rtl/cache8k.v (WR=1 cache de dados, WR=0 de instrucoes), rtl/mem_arb.v (arbitro D>I), rtl/cache8k_v2_validvec.v (versao anterior, 71 MHz). sim/tb_cache.v + sdram_ctrl.v + sdram_model.v:
-  iverilog -g2012 -o c6.vvp tb_cache.v cache8k.v mem_arb.v sdram_ctrl.v sdram_model.v ; vvp c6.vvp   (saida em sim/saida_sim.txt)
+06_cache: rtl/cache8k.v (WR=1 data cache, WR=0 instruction cache), rtl/mem_arb.v (D>I arbiter), rtl/cache8k_v2_validvec.v (previous version, 71 MHz). sim/tb_cache.v + sdram_ctrl.v + sdram_model.v:
+  iverilog -g2012 -o c6.vvp tb_cache.v cache8k.v mem_arb.v sdram_ctrl.v sdram_model.v ; vvp c6.vvp   (output in sim/saida_sim.txt)
 pnr/: pnr_cache_top.v (wrapper), stat.txt, pnr1.log. Ver resultados_modulo06.txt.
-Cache usada no SoC (13_soc): rtl/cache_dm.v (mapeamento direto; D = IDX 8 / 8 KB, I = IDX 7 / 4 KB; parametro B2B). E o MESMO arquivo de 13_soc/rtl/cache_dm.v: mantenha as copias iguais.
-  iverilog -g2012 -o cdm.vvp tb_cache_dm.v cache_dm.v mem_arb.v sdram_ctrl.v sdram_model.v ; vvp cdm.vvp   (saida em sim/saida_sim_dm.txt; o T4b confere o mapeamento direto, nao LRU)
-  O testbench usa B2B=1 (padrao). Com B2B=0 (como o SoC instancia) os mesmos testes passam; so a vazao do T2 cai para 1 acesso a cada 2 clocks (513 clocks).
-Os logs de PnR (pnr*.log) nao sao versionados (.gitignore).
+Cache used in the SoC (13_soc): rtl/cache_dm.v (direct-mapped; D = IDX 8 / 8 KB, I = IDX 7 / 4 KB; parameter B2B). It is the SAME file as 13_soc/rtl/cache_dm.v: keep the copies identical.
+  iverilog -g2012 -o cdm.vvp tb_cache_dm.v cache_dm.v mem_arb.v sdram_ctrl.v sdram_model.v ; vvp cdm.vvp   (output in sim/saida_sim_dm.txt; T4b checks the direct mapping, not LRU)
+  The testbench uses B2B=1 (default). With B2B=0 (as the SoC instantiates it) the same tests pass; only the T2 throughput drops to 1 access every 2 clocks (513 clocks).
+The PnR logs (pnr*.log) are not versioned (.gitignore).

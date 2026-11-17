@@ -1,5 +1,5 @@
 // Tang Nano 20K na placa V9968_Cartridge (4a revisao): topo r8064_cart_top. Pinos conforme fpga/V9968_Cartridge_TangNano20K/src/tangnano20k_vdp_cartridge.cst
-// (fatos de ligacao da placa: A0-A7 e D0-D7 por SN74LVC8T245, /IORQ /RD /WR /RESET so entrada, WAIT/INT/BUSDIR por MOSFET). SDRAM embutida: sem IO_LOC.
+// (board wiring facts: A0-A7 and D0-D7 through SN74LVC8T245, /IORQ /RD /WR /RESET input only, WAIT/INT/BUSDIR through MOSFET). Embedded SDRAM: no IO_LOC.
 IO_LOC "clk27" 4;
 IO_PORT "clk27" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
 IO_LOC "clk14m" 80;
@@ -54,7 +54,7 @@ IO_PORT "slot_data_dir" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
 IO_PORT "slot_wait" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
 IO_PORT "slot_intr" IO_TYPE=LVTTL33 PULL_MODE=DOWN DRIVE=8;
 IO_PORT "oe_n" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-// observacao: pads da placa sem ligacao (IOB6A/IOB6B do modulo, pinos 25 e 26)
+// observation: unconnected board pads (IOB6A/IOB6B of the module, pins 25 and 26)
 IO_LOC "dbg_sig" 25;
 IO_LOC "dbg_hb" 26;
 IO_PORT "dbg_sig" IO_TYPE=LVCMOS33 DRIVE=8;

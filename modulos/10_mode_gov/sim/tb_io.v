@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// instrucoes de bloco do Z80: LDIR, LDDR, CPIR, INIR, OTIR (nucleo isolado; memoria byte-a-byte)
+// Z80 block instructions: LDIR, LDDR, CPIR, INIR, OTIR (isolated core; byte-by-byte memory)
 module tb_io;
     wire [7:0] d_be; reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -24,7 +24,7 @@ module tb_io;
     end
     always @* io_rdata = (io_a == 8'h78) ? ((n_ir==0)?8'h00 : (n_ir==1)?8'h80 : (n_ir==2)?8'h07 : (n_ir==4)?8'h00 : 8'hFF) : 8'hFF;
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     reg [7:0] sf [0:3]; reg [3:0] gs = 0;
     `define SNAPF(N, PCX) always @(posedge clk) if (dut.issue && !dut.seq && dut.dpc[15:0] == PCX && !gs[N]) begin gs[N] <= 1; sf[N] <= dut.fl; end
@@ -37,8 +37,8 @@ module tb_io;
         chk("D (IN D)", dut.u_rf1.mem_a[2][15:8], 8'h00); chk("E (IN E)", dut.u_rf1.mem_a[2][7:0], 8'h07); chk("A (IN A)", dut.u_rf1.mem_a[0][7:0], 8'h80); chk("BC (IN B)", dut.u_rf1.mem_a[1][15:0], 16'hFF78);
         chk("fl IN D (00): Z PV C", sf[0] & 8'hD7, 8'h45); chk("fl IN A (80): S C", sf[1] & 8'hD7, 8'h81); chk("fl IN E (07): C (PV=0)", sf[2] & 8'hD7, 8'h01); chk("fl IN B (FF): S PV C", sf[3] & 8'hD7, 8'h85);
         chk("HL intacto", dut.u_rf1.mem_a[3][15:0], 16'h1234);
-        $display("pc=%h erros=%0d", dbg_pc, errs);
-        if (errs == 0) $display("RESULTADO: IO(C) OK"); else $display("RESULTADO: %0d ERROS", errs);
+        $display("pc=%h errors=%0d", dbg_pc, errs);
+        if (errs == 0) $display("RESULT: IO(C) OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

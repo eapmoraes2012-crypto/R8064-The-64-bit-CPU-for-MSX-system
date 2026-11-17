@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// SoC completo: programa de sequencias (LD SP/PUSH/POP/CALL/RET/OUT/IN) executado a partir da SDRAM (modelo com verificacao de protocolo) atraves de MMU (bypass) + caches + arbitros.
+// Full SoC: sequence program (LD SP/PUSH/POP/CALL/RET/OUT/IN) executed from the SDRAM (model with protocol checking) through MMU (bypass) + caches + arbiters.
 module tb_soc_nat;
     wire mmu_en_w, mmu_user_w; integer sc = 1; integer nfi = 0, nfd = 0; reg clk = 0, rst = 1; always #5 clk = ~clk;
     reg io_we = 0, io_re = 0; reg [7:0] io_a = 0, io_wd = 0; wire [7:0] io_rd; wire io_oe, iox_we, iox_re; wire [7:0] iox_a, iox_wd;
@@ -21,7 +21,7 @@ module tb_soc_nat;
     function [7:0] pb(input [23:0] pa); reg [31:0] q; begin q = mdl.mem[2*(pa>>3) + ((pa>>2)&1)]; pb = q >> (8*(pa&3)); end endfunction
     task wio(input [7:0] ad, input [7:0] d); begin @(posedge clk); #1 io_a = ad; io_wd = d; io_we = 1; @(posedge clk); #1 io_we = 0; end endtask
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     reg [7:0] by [0:511]; reg [63:0] w; integer p;
     task emit(input [7:0] x); begin by[p] = x; p = p + 1; end endtask
@@ -34,9 +34,9 @@ module tb_soc_nat;
     initial begin
         if (!$value$plusargs("sc=%d", sc)) sc = 1;
         for (k = 0; k < 512; k = k + 1) by[k] = 8'h00; p = 0;
-        ldrr(7, 16'h0006); emit(8'hD3); emit(8'hE4); ldrr(7, 16'h0000); emit(8'hD3); emit(8'hE5);   // modo NATIVO
+        ldrr(7, 16'h0006); emit(8'hD3); emit(8'hE4); ldrr(7, 16'h0000); emit(8'hD3); emit(8'hE5);   // NATIVE mode
         for (k = 0; k < 16; k = k + 1) emit(8'h00);
-        // MMU desligada. A8h=E8h (pag1,2 = slot 2 MegaRAM; pag3 = slot 3 mapper). Escritas por PUSH, leituras por POP (o nucleo minimo nao tem LD (nn),A).
+        // MMU off. A8h=E8h (page 1,2 = slot 2 MegaRAM; page 3 = slot 3 mapper). Writes by PUSH, reads by POP (the minimal core has no LD (nn),A).
         ldrr(7, 16'h00E8); emit(8'hD3); emit(8'hA8);
         ldrr(7, 16'h0005); emit(8'hD3); emit(8'hFF);                                   // pag3 = segmento 5
         ldrr(0, 16'h0077); emit(8'h31); emit(8'h02); emit(8'hC0); emit(8'hC5);         // PUSH BC em C000h -> PA 014000h
@@ -44,12 +44,12 @@ module tb_soc_nat;
         ldrr(0, 16'h0088); emit(8'h31); emit(8'h02); emit(8'hC0); emit(8'hC5);         // -> PA 018000h
         ldrr(7, 16'h0005); emit(8'hD3); emit(8'hFF);                                   // volta ao segmento 5
         emit(8'h31); emit(8'h00); emit(8'hC0); emit(8'hD1);                            // POP DE (le C000h) -> 0077
-        emit(8'h31); emit(8'h02); emit(8'h30); emit(8'hD5);                            // PUSH DE em 3000h (pag0, sem traducao)
-        emit(8'hDB); emit(8'h8E);                                                      // IN A,(8Eh): MegaRAM em modo de escrita
-        ldrr(0, 16'h0303); emit(8'h31); emit(8'h02); emit(8'h60); emit(8'hC5);         // grava 03 em 6000/6001 -> banco da janela 4000h = 3
+        emit(8'h31); emit(8'h02); emit(8'h30); emit(8'hD5);                            // PUSH DE at 3000h (page 0, no translation)
+        emit(8'hDB); emit(8'h8E);                                                      // IN A,(8Eh): MegaRAM in write mode
+        ldrr(0, 16'h0303); emit(8'h31); emit(8'h02); emit(8'h60); emit(8'hC5);         // writes 03 at 6000/6001 -> bank of the 4000h window = 3
         ldrr(0, 16'h9999); emit(8'h31); emit(8'h02); emit(8'h40); emit(8'hC5);         // 99 em 4000h -> PA 406000h
-        ldrr(7, 16'h0000); emit(8'hD3); emit(8'h8E);                                   // OUT (8Eh): modo ASCII8 (somente leitura)
-        ldrr(0, 16'hAAAA); emit(8'h31); emit(8'h02); emit(8'h40); emit(8'hC5);         // deve ser ignorado
+        ldrr(7, 16'h0000); emit(8'hD3); emit(8'h8E);                                   // OUT (8Eh): ASCII8 mode (read-only)
+        ldrr(0, 16'hAAAA); emit(8'h31); emit(8'h02); emit(8'h40); emit(8'hC5);         // must be ignored
         emit(8'h31); emit(8'h00); emit(8'h40); emit(8'hD1);                            // POP DE (le 4000h) -> 9999
         emit(8'h31); emit(8'h04); emit(8'h30); emit(8'hD5);                            // PUSH DE em 3002h
         emit(8'h18); emit(8'hFE);
@@ -62,12 +62,12 @@ module tb_soc_nat;
         repeat (90000) @(posedge clk);
         chk("pag3 seg5 (PA 014000h)", pb(24'h014000), 8'h77);
         chk("pag3 seg6 (PA 018000h)", pb(24'h018000), 8'h88);
-        chk("leitura via mapper seg5 -> 3000h", pb(24'h003000), 8'h77);
+        chk("read via mapper seg5 -> 3000h", pb(24'h003000), 8'h77);
         chk("MegaRAM banco 3 (PA 406000h) = 99h", pb(24'h406000), 8'h99);
-        chk("MegaRAM ASCII8: escrita ignorada, leitura -> 3002h", pb(24'h003002), 8'h99);
-        chk("modo R800 (nao nativo)", nat, 0); chk("R800", z80, 0);
+        chk("MegaRAM ASCII8: write ignored, read -> 3002h", pb(24'h003002), 8'h99);
+        chk("R800 mode (not native)", nat, 0); chk("R800", z80, 0);
         $display("pc=%h a8=%h mreg3=%h breg0=%h z80=%b rom=%b nwd=%0d AX=%h SP=%h BC=%h DE=%h", dbg_pc, dut.u_sys.u_mmd.a8, dut.u_sys.u_mmd.mreg[3], dut.u_sys.u_mmd.breg[0], z80, rom, nwd, rf(0), rf(11), rf(1), rf(2));
-        if (errs == 0) $display("RESULTADO: MAPPER+MEGARAM NATIVO OK"); else $display("RESULTADO: %0d ERROS", errs);
+        if (errs == 0) $display("RESULT: NATIVE MAPPER+MEGARAM OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

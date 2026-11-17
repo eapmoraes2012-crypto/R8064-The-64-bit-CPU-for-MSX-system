@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// Teste de integracao: Z80 + msx_mem + adaptador + sdram_ctrl + sdram_model. ROM de teste no slot 0 (nao mapeado). +turbo=N  +hex=arquivo
+// Integration test: Z80 + msx_mem + adapter + sdram_ctrl + sdram_model. Test ROM in slot 0 (not mapped). +turbo=N  +hex=file
 module tb_z80_msx;
   reg clk = 0, rst_n = 0; always #5 clk = ~clk;
   reg [1:0] turbo = 0; integer tv;
@@ -31,8 +31,8 @@ module tb_z80_msx;
     repeat (8) @(posedge clk); #1 rst_n = 1;
     wait (done);
     repeat (50) @(posedge clk);
-    if (res == 8'h01 && mdl.viol == 0) $display("PASS: integracao Z80+MSX+SDRAM (turbo=%0d) tempo=%0t violacoes SDRAM=%0d", tv, $time, mdl.viol);
-    else $display("FAIL: resultado=%h teste=%0d violacoes SDRAM=%0d", res, tnum, mdl.viol);
+    if (res == 8'h01 && mdl.viol == 0) $display("PASS: Z80+MSX+SDRAM integration (turbo=%0d) time=%0t SDRAM violations=%0d", tv, $time, mdl.viol);
+    else $display("FAIL: result=%h test=%0d SDRAM violations=%0d", res, tnum, mdl.viol);
     $finish;
   end
   initial begin #400000000; $display("TIMEOUT (done=%b pc=%h)", done, dut.u_sys.u_z80.u_core.dbg_pc); $finish; end

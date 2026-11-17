@@ -1,4 +1,4 @@
-# gera bank.mem (512 x 1 bit): 1 = instrucao ED aceita prefixo de banco (operando de registrador BC/DE/HL/AX); a partir de ref/instr_ids.csv
+# generates bank.mem (512 x 1 bit): 1 = ED instruction accepts a bank prefix (BC/DE/HL/AX register operand); from ref/instr_ids.csv
 import re,sys
 csv=sys.argv[1]; ctrl=[int(x,16) for x in open(sys.argv[2]).read().split()]
 bk=[0]*512; n=0; tot=0
@@ -13,4 +13,4 @@ for ln in open(csv,encoding='utf-8-sig').read().splitlines()[1:]:
     if tok.search(mn) and (ctrl[i]&15)<=12:
         bk[i]=1; n+=1
 open('ctrl_b.mem','w').write('\n'.join('%08x'%(ctrl[i]|(bk[i]<<28)) for i in range(len(ctrl)))+'\n')
-print('ED ids',tot,'bancaveis',n)
+print('ED ids',tot,'bankable',n)

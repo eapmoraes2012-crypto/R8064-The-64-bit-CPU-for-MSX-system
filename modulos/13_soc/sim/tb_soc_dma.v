@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// SoC completo + DMA: o nucleo programa o canal 0 por MTCR (CR19..21), espera o fim pela porta EEh e confere que a cache de dados foi invalidada (LD DE,(2000h) devolve o dado novo).
+// Full SoC + DMA: the core programs channel 0 by MTCR (CR19..21), waits for the end on port EEh and checks that the data cache was invalidated (LD DE,(2000h) returns the new data).
 module tb_soc_dma;
     reg clk = 0, rst = 1; always #5 clk = ~clk;
     reg io_we = 0, io_re = 0; reg [7:0] io_a = 0, io_wd = 0; wire [7:0] io_rd; wire io_oe, iox_we, iox_re; wire [7:0] iox_a, iox_wd;
@@ -20,7 +20,7 @@ module tb_soc_dma;
     always @(posedge clk) begin if (iox_we) begin n_ow <= n_ow + 1; lw_a <= iox_a; lw_d <= iox_wd; end if (iox_re) n_ir <= n_ir + 1; end
     task wio(input [7:0] ad, input [7:0] d); begin @(posedge clk); #1 io_a = ad; io_wd = d; io_we = 1; @(posedge clk); #1 io_we = 0; end endtask
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     task emit(input [7:0] x); begin by[p] = x; p = p + 1; end endtask
     task ldw(input [2:0] rr, input [15:0] v); begin emit(8'hED); emit(8'h3B); emit(8'h40 | (rr << 3) | 8'h01); emit(v[7:0]); emit(v[15:8]); end endtask
@@ -31,12 +31,12 @@ module tb_soc_dma;
     integer ndma = 0, ninv = 0; always @(posedge clk) begin if (dut.dma_inv) ninv <= ninv + 1; if (dut.u_mem.x_done) ndma <= ndma + 1; end
     initial begin
         for (k = 0; k < 512; k = k + 1) by[k] = 8'h00; p = 0;
-        emit(8'h31); emit(8'h00); emit(8'h48); emit(8'hE1);                    // LD BC,(2000h): traz a linha do destino para a cache de dados
+        emit(8'h31); emit(8'h00); emit(8'h48); emit(8'hE1);                    // LD BC,(2000h): brings the destination line into the data cache
         ldw(7, 16'h4400); mtcr(5'd19);                                         // SRC0 = 1000h
         ldw(7, 16'h4800); mtcr(5'd20);                                         // DST0 = 2000h
-        lde(7, 32'h8000_0008); mtcr(5'd21);                                    // CTRL0: START, modo 0, 8 palavras
-        emit(8'h00); emit(8'h00); emit(8'h00); emit(8'h00); emit(8'h00); emit(8'h00);   // espera: NOPs (o DMA termina em ~1 us)
-        emit(8'h31); emit(8'h00); emit(8'h48); emit(8'hD1);                    // LD DE,(2000h): deve ver o dado copiado
+        lde(7, 32'h8000_0008); mtcr(5'd21);                                    // CTRL0: START, mode 0, 8 words
+        emit(8'h00); emit(8'h00); emit(8'h00); emit(8'h00); emit(8'h00); emit(8'h00);   // wait: NOPs (the DMA finishes in ~1 us)
+        emit(8'h31); emit(8'h00); emit(8'h48); emit(8'hD1);                    // LD DE,(2000h): must see the copied data
         emit(8'h18); emit(8'hFE);
         for (k = 0; k < 64; k = k + 1) begin
             w = {by[8*k+7], by[8*k+6], by[8*k+5], by[8*k+4], by[8*k+3], by[8*k+2], by[8*k+1], by[8*k]};
@@ -44,21 +44,21 @@ module tb_soc_dma;
         end
         for (k = 0; k < 8; k = k + 1) begin
             mdl.mem[2*(16'h880 + k)] = src(k); mdl.mem[2*(16'h880 + k) + 1] = src(k) >> 32;               // fonte: 1000h
-            mdl.mem[2*(16'h900 + k)] = 32'hDEAD5A00 + k; mdl.mem[2*(16'h900 + k) + 1] = 32'hBEEF0000 + k; // destino: 2000h (valor antigo)
+            mdl.mem[2*(16'h900 + k)] = 32'hDEAD5A00 + k; mdl.mem[2*(16'h900 + k) + 1] = 32'hBEEF0000 + k; // destination: 2000h (old value)
         end
-        mdl.mem[2*(16'h908)] = 32'h77777777; mdl.mem[2*(16'h908) + 1] = 32'h88888888;                // palavra logo apos o destino: intacta
+        mdl.mem[2*(16'h908)] = 32'h77777777; mdl.mem[2*(16'h908) + 1] = 32'h88888888;                // word right after the destination: intact
         repeat (4) @(posedge clk); rst = 0;
         wait (init_done);
         
         repeat (40000) @(posedge clk);
         
-        chk("HL = valor antigo (linha entrou na cache)", rf(3) & 64'hFFFF, 64'h5A00); chk("DE = valor novo (cache invalidada)", rf(2) & 64'hFFFF, src(0) & 64'hFFFF);
+        chk("HL = old value (line entered the cache)", rf(3) & 64'hFFFF, 64'h5A00); chk("DE = new value (cache invalidated)", rf(2) & 64'hFFFF, src(0) & 64'hFFFF);
         for (k = 0; k < 8; k = k + 1) begin w = {mdl.mem[2*(16'h900 + k) + 1], mdl.mem[2*(16'h900 + k)]}; chk("destino", w, src(k)); end
-        w = {mdl.mem[2*16'h908 + 1], mdl.mem[2*16'h908]}; chk("palavra seguinte intacta", w, 64'h8888888877777777);
-        chk("8 leituras + 8 escritas do DMA", ndma, 16); chk("1 pulso inv", ninv, 1);
-        chk("sem falta I", i_fault, 0); chk("sem falta D", d_fault, 0); chk("violacoes SDRAM", mdl.viol, 0);
+        w = {mdl.mem[2*16'h908 + 1], mdl.mem[2*16'h908]}; chk("next word intact", w, 64'h8888888877777777);
+        chk("8 DMA reads + 8 writes", ndma, 16); chk("1 inv pulse", ninv, 1);
+        chk("no I fault", i_fault, 0); chk("no D fault", d_fault, 0); chk("SDRAM violations", mdl.viol, 0);
         $display("dbg_pc=%h BC=%h DE=%h", dbg_pc, rf(3), rf(2));
-        if (errs == 0) $display("RESULTADO: SOC+DMA OK"); else $display("RESULTADO: %0d ERROS", errs);
+        if (errs == 0) $display("RESULT: SOC+DMA OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

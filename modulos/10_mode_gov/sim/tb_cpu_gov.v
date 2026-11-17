@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// programa de teste do nucleo sob o governador: modo Z80 ROM (padrao) ou nativo (+native). Mede o tempo ate o laco final.
+// core test program under the governor: Z80 ROM mode (default) or native (+native). Measures the time until the final loop.
 module tb_cpu_gov;
     reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f, d_be; wire dbg_sig;
@@ -20,7 +20,7 @@ module tb_cpu_gov;
     end
     task wio(input [7:0] ad, input [7:0] d); begin @(posedge clk); #1 io_a = ad; io_wd = d; io_we = 1; @(posedge clk); #1 io_we = 0; end endtask
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     initial begin
         repeat (4) @(posedge clk); rst = 0;
@@ -32,8 +32,8 @@ module tb_cpu_gov;
         chk("AX", dut.u_core.u_rf1.mem_a[0], 64'd15); chk("BC", dut.u_core.u_rf1.mem_a[1], 64'd0);
         chk("DE", dut.u_core.u_rf1.mem_a[2], 64'd15); chk("HL", dut.u_core.u_rf1.mem_a[3], 64'h68);
         chk("m40", mem[9'h40/8], 5); chk("m60", mem[9'h60/8], 15);
-        $display("modo: nativo=%0d z80=%0d rom=%0d | instrucoes=%0d | tempo ate o laco final = %0d clocks | menor espaco entre emissoes = %0d clocks", nat, z80, rom, n_iss, tfin, min_sp);
-        if (errs == 0) $display("RESULTADO: PROGRAMA OK SOB O GOVERNADOR"); else $display("RESULTADO: %0d ERROS", errs);
+        $display("mode: native=%0d z80=%0d rom=%0d | instructions=%0d | time to the final loop = %0d clocks | smallest gap between issues = %0d clocks", nat, z80, rom, n_iss, tfin, min_sp);
+        if (errs == 0) $display("RESULT: PROGRAM OK UNDER THE GOVERNOR"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

@@ -1,9 +1,9 @@
-Modulo 14 - unidade 3D (prototipo). Rodar: cd sim; python3 gen_vec3d.py .; iverilog -g2012 -o s tb_vec3d.v ../rtl/vec3d_unit.v; vvp s  -> "VEC3D OK".
-Sintese: pnr/ (pnr_vec_top.v, pins.cst). Resultados e proposta: resultados_modulo14.txt. rtl/vec3d_unit.v = versao final; rtl/*_v?.v = versoes anteriores (referencia).
+Module 14 - 3D unit (prototype). Run: cd sim; python3 gen_vec3d.py .; iverilog -g2012 -o s tb_vec3d.v ../rtl/vec3d_unit.v; vvp s  -> "VEC3D OK".
+Synthesis: pnr/ (pnr_vec_top.v, pins.cst). Results and proposal: resultados_modulo14.txt. rtl/vec3d_unit.v = final version; rtl/*_v?.v = previous versions (reference).
 
 Revisao 10/11/2026: rtl/vec3d_unit.v = v6 (otimizada, sh 4 bits, latencia 4, 10 DSP); v5_lane_alu / v5_completa = versoes anteriores; v7_janelas_descartada = experimento pior.
-Medir area: ./ys_unit.sh rtl/vec3d_unit.v (soma LUT1-4 + ALU; o nextpnr tambem conta os MUX2_LUT). ISA e encodificacao: ISA_3D.txt. Teste no nucleo: 09_core_min/sim/tb_vec.v.
+Measure area: ./ys_unit.sh rtl/vec3d_unit.v (sum of LUT1-4 + ALU; nextpnr also counts the MUX2_LUT). ISA and encoding: ISA_3D.txt. Core test: 09_core_min/sim/tb_vec.v.
 
-[10/11/2026] A unidade 3D foi REMOVIDA do nucleo (ver 13_soc/resultado_soc.txt REV30). Este modulo fica como arquivo de projeto: nada o instancia. Estado do nucleo com a 3D: 09_core_min/bak/com_vec3d/.
-NOTA 14/11/2026: as pastas bak/ nao sao versionadas (.gitignore), entao 09_core_min/bak/com_vec3d/ NAO esta no repositorio. O teste no nucleo
- (tb_vec.v, gen_prog_vec.py) esta em 14_vec3d/sim/teste_no_nucleo/ e so roda contra o nucleo COM a unidade 3D (estado da REV29).
+[10/11/2026] The 3D unit was REMOVED from the core (see 13_soc/resultado_soc.txt REV30). This module stays as a design archive: nothing instantiates it. Core state with the 3D: 09_core_min/bak/com_vec3d/.
+NOTE 14/11/2026: the bak/ folders are not versioned (.gitignore), so 09_core_min/bak/com_vec3d/ is NOT in the repository. The core test
+ (tb_vec.v, gen_prog_vec.py) is in 14_vec3d/sim/teste_no_nucleo/ and only runs against the core WITH the 3D unit (REV29 state).

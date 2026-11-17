@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
-// sistema MSX completo executando o programa de sequencias (LD SP/PUSH/POP/CALL/RET/OUT/IN) em Z80 ROM, R800 DRAM e nativo.
-// programa e pilha ficam no mapper (slot 3, segmento 1 -> fisico 4000h); memoria byte-a-byte so responde a enderecos fisicos.
+// full MSX system executing the sequence program (LD SP/PUSH/POP/CALL/RET/OUT/IN) in Z80 ROM, R800 DRAM and native.
+// program and stack stay in the mapper (slot 3, segment 1 -> physical 4000h); byte-by-byte memory only answers physical addresses.
 module tb_sys_ldir;
     wire [7:0] d_be; reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we, i_hit, d_hit, d_wr_ok; wire [63:0] i_paddr, d_paddr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -29,7 +29,7 @@ module tb_sys_ldir;
     end
     task wio(input [7:0] ad, input [7:0] d); begin @(posedge clk); #1 io_a = ad; io_wd = d; io_we = 1; @(posedge clk); #1 io_we = 0; end endtask
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     initial begin
         repeat (4) @(posedge clk); rst = 0;
@@ -41,9 +41,9 @@ module tb_sys_ldir;
         $display("commits=%0d  LDIR(BC=5) = %0d clocks (cv3..cv8)", ncv, tc[8]-tc[3]);
         for (k = 3; k < 9; k = k + 1) $display("  cv%0d -> %0d clocks", k, tc[k+1]-tc[k]);
         chk("LDIR total", tc[8]-tc[3], $test$plusargs("r800") ? EXP_R : 1760);
-        chk("dados copiados [200..204]", {mem[16'h4204],mem[16'h4203],mem[16'h4202],mem[16'h4201],mem[16'h4200]}, 64'h4544434241);
-        $display("modo nativo=%0d z80=%0d rom=%0d | laco final em %0d clocks | dbg_pc=%h", nat, z80, rom, tw, dbg_pc);
-        if (errs == 0) $display("RESULTADO: TEMPO LDIR OK"); else $display("RESULTADO: %0d ERROS", errs);
+        chk("data copied [200..204]", {mem[16'h4204],mem[16'h4203],mem[16'h4202],mem[16'h4201],mem[16'h4200]}, 64'h4544434241);
+        $display("native mode=%0d z80=%0d rom=%0d | final loop at %0d clocks | dbg_pc=%h", nat, z80, rom, tw, dbg_pc);
+        if (errs == 0) $display("RESULT: LDIR TIMING OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

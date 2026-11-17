@@ -1,13 +1,13 @@
-MODULO 10 - Memoria mapeada MSX + MegaRAM (msx_mem.v)  -  SIMULADO: PASS 0 erros (Icarus, 04/11/2026, pelo usuario); sintese ainda nao feita
-Compilar: cd sim; iverilog -g2012 -o t.vvp tb_msx_mem.v ../rtl/msx_mem.v && vvp t.vvp   (espera "PASS: msx_mem 0 erros")
-- Mapper: portas FC,FD,FE,FF = segmento das paginas 0000,4000,8000,C000 (16 KB). Leitura devolve o valor com bits nao usados em 1. Reset 3,2,1,0.
-- MegaRAM ASCII8: bancos de 8 KB para 4000,6000,8000,A000; escrita em 6000-67FF,6800-6FFF,7000-77FF,7800-7FFF escolhe o banco.
-- Slot primario A8h incluido (SLOT_MAP=3, SLOT_MEGA=2, parametros). Slots expandidos (FFFFh) NAO implementados.
-- Uma instancia por nucleo (registradores proprios, memoria fisica compartilhada pelo arbitro). Entrada 'en' desliga o bloco (R8064 fora do modo Z80).
-SUPOSICOES A CONFIRMAR: (1) portas FC,FD,FE,FF (o pedido dizia FC,FC,FE,FF); (2) modo escrita da MegaRAM via IN/OUT 8Eh; em modo de escrita, escrever em 6000-7FFF
- tambem grava na RAM; (3) tamanhos padrao: mapper 1 MB (base 0), MegaRAM 1 MB (base 100000h); cabe ate 4 MB / 2 MB por parametro.
-Custo estimado (nao medido): ~120 LUT4 e ~75 FF por instancia, ~240 LUT4 para dois nucleos.
-Pendente: ligar ao arbitro/SDRAM (modulo 05), instanciar no Z80 classico (ainda nao escrito) e no R8064, expansao de slot.
-ATUALIZACAO 14/11/2026: os itens "sintese ainda nao feita" e "Z80 classico (ainda nao escrito)" acima ficaram velhos: msx_mem ja e instanciado e sintetizado
- no Z80 classico (12_z80/rtl/z80_msx_sys.v) e no R8064 (10_mode_gov/rtl/r8064_msx_sys.v -> 13_soc). Continua pendente: slots expandidos (FFFFh).
- Este modulo divide o numero 10 com 10_mode_gov (pastas diferentes; os scripts usam os dois caminhos, por isso nao foi renumerado).
+MODULE 10 - MSX mapped memory + MegaRAM (msx_mem.v)  -  SIMULATED: PASS 0 errors (Icarus, 04/11/2026, by the user); synthesis not yet done
+Compile: cd sim; iverilog -g2012 -o t.vvp tb_msx_mem.v ../rtl/msx_mem.v && vvp t.vvp   (expects "PASS: msx_mem 0 errors")
+- Mapper: ports FC,FD,FE,FF = segment of pages 0000,4000,8000,C000 (16 KB). Read returns the value with unused bits as 1. Reset 3,2,1,0.
+- MegaRAM ASCII8: 8 KB banks for 4000,6000,8000,A000; a write to 6000-67FF,6800-6FFF,7000-77FF,7800-7FFF chooses the bank.
+- Primary slot A8h included (SLOT_MAP=3, SLOT_MEGA=2, parameters). Expanded slots (FFFFh) NOT implemented.
+- One instance per core (own registers, physical memory shared by the arbiter). Input 'en' turns the block off (R8064 outside Z80 mode).
+ASSUMPTIONS TO CONFIRM: (1) ports FC,FD,FE,FF (the request said FC,FC,FE,FF); (2) MegaRAM write mode via IN/OUT 8Eh; in write mode, writing to 6000-7FFF
+ also writes to RAM; (3) default sizes: mapper 1 MB (base 0), MegaRAM 1 MB (base 100000h); fits up to 4 MB / 2 MB by parameter.
+Estimated cost (not measured): ~120 LUT4 and ~75 FF per instance, ~240 LUT4 for two cores.
+Pending: connect to the arbiter/SDRAM (module 05), instantiate in the classic Z80 (not yet written) and in the R8064, slot expansion.
+UPDATE 14/11/2026: the items "synthesis not yet done" and "classic Z80 (not yet written)" above became outdated: msx_mem is already instantiated and synthesized
+ no Z80 classico (12_z80/rtl/z80_msx_sys.v) and in the R8064 (10_mode_gov/rtl/r8064_msx_sys.v -> 13_soc). Still pending: expanded slots (FFFFh).
+ This module shares the number 10 with 10_mode_gov (different folders; the scripts use both paths, so it was not renumbered).

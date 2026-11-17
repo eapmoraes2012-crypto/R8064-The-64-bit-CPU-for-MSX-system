@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// instrucoes de bloco do Z80: LDIR, LDDR, CPIR, INIR, OTIR (nucleo isolado; memoria byte-a-byte)
+// Z80 block instructions: LDIR, LDDR, CPIR, INIR, OTIR (isolated core; byte-by-byte memory)
 module tb_ldai;
     wire [7:0] d_be; reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -24,19 +24,19 @@ module tb_ldai;
     end
     always @* io_rdata = (io_a == 8'h78) ? 8'h5A : 8'hFF;
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     reg [7:0] sf [0:1]; reg [1:0] gs = 0;
-    always @(posedge clk) if (dut.issue && !dut.seq && dut.dpc[15:0] == 16'd9  && !gs[0]) begin gs[0] <= 1; sf[0] <= dut.fl; end   // apos o 1o LD A,I (instrucao em 9 = DI)
-    always @(posedge clk) if (dut.issue && !dut.seq && dut.dpc[15:0] == 16'd14 && !gs[1]) begin gs[1] <= 1; sf[1] <= dut.fl; end  // laco (JR) apos o 2o LD A,I
+    always @(posedge clk) if (dut.issue && !dut.seq && dut.dpc[15:0] == 16'd9  && !gs[0]) begin gs[0] <= 1; sf[0] <= dut.fl; end   // after the 1st LD A,I (instruction at 9 = DI)
+    always @(posedge clk) if (dut.issue && !dut.seq && dut.dpc[15:0] == 16'd14 && !gs[1]) begin gs[1] <= 1; sf[1] <= dut.fl; end  // loop (JR) after the 2nd LD A,I
     initial begin
         repeat (4) @(posedge clk); rst = 0; @(posedge clk); #1 dut.fl = 8'h01;
         repeat (4000) @(posedge clk);
-        chk("A (2o LD A,I com I=80)", dut.u_rf1.mem_a[0][7:0], 8'h80);
-        chk("flags 1o LD A,I (IFF2=1): S PV C", sf[0] & 8'hD7, 8'h85); chk("flags 2o LD A,I apos DI (IFF2=0): S C", sf[1] & 8'hD7, 8'h81);
+        chk("A (2nd LD A,I with I=80)", dut.u_rf1.mem_a[0][7:0], 8'h80);
+        chk("flags 1st LD A,I (IFF2=1): S PV C", sf[0] & 8'hD7, 8'h85); chk("flags 2nd LD A,I after DI (IFF2=0): S C", sf[1] & 8'hD7, 8'h81);
         chk("I", dut.ireg, 8'h80);
-        $display("erros=%0d sf0=%h sf1=%h", errs, sf[0], sf[1]);
-        if (errs == 0) $display("RESULTADO: LD A,I OK"); else $display("RESULTADO: %0d ERROS", errs);
+        $display("errors=%0d sf0=%h sf1=%h", errs, sf[0], sf[1]);
+        if (errs == 0) $display("RESULT: LD A,I OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

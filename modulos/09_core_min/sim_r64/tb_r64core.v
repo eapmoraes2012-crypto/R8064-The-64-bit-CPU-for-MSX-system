@@ -1,15 +1,15 @@
 `timescale 1ns/1ps
-// tb_r64core.v - instrucoes inteiras do R8064 (16/32/64 bits) no nucleo contra o modelo em Python (gen_r64_prog.py), instrucao a instrucao.
-// Libera UMA instrucao por vez (gov_go), espera o pipeline esvaziar e compara PC, AX, BC, DE, HL, IX, IY, SP (64 bits) e F; no fim compara os 64 KB de memoria.
-// Com +livre o nucleo roda SOLTO (gov_go = 1, instrucoes coladas no pipeline) e so o estado final (registradores, F, memoria) e comparado:
-// pega dependencias entre instrucoes vizinhas (encaminhamento, troca de modo, vetor de excecao escrito logo antes da excecao) que o passo a passo esconde.
+// tb_r64core.v - R8064 integer instructions (16/32/64 bits) in the core against the Python model (gen_r64_prog.py), instruction by instruction.
+// Releases ONE instruction at a time (gov_go), waits for the pipeline to drain and compares PC, AX, BC, DE, HL, IX, IY, SP (64 bits) and F; at the end it compares the 64 KB of memory.
+// With +livre the core runs FREE (gov_go = 1, instructions glued into the pipeline) and only the final state (registers, F, memory) is compared:
+// it catches dependencies between neighboring instructions (forwarding, mode switch, exception vector written right before the exception) that step-by-step hides.
 // Plusargs: +hex=<prefixo>_mem.hex +trace=<prefixo>_trace.txt +fim=<prefixo>_fim.hex [+fpu=<prefixo>_fpu.hex] [+v] [+livre]
 module tb_r64core;
     reg clk = 0, rst = 1, go = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f, d_be; wire dbg_sig;
     reg i_ack = 0, d_ack = 0; reg [63:0] i_rdata = 0, d_rdata = 0; reg [7:0] mem [0:65535]; reg [7:0] fim [0:65535];
     wire io_we, io_re; wire [7:0] io_a, io_wd;
-    reg [7:0] io_n = 0, io_chk = 0; wire [7:0] io_rd = io_a + 8'd37 * io_n + io_chk;   // porta de teste: leitura = C + 37*n + chk; gravacao atualiza chk
+    reg [7:0] io_n = 0, io_chk = 0; wire [7:0] io_rd = io_a + 8'd37 * io_n + io_chk;   // test port: read = C + 37*n + chk; write updates chk
     always @(posedge clk) begin if (io_re) io_n <= io_n + 8'd1; if (io_we) io_chk <= {io_chk[6:0], io_chk[7]} ^ io_wd ^ io_a; end
     r8064_core_min dut(.i_flt(1'b0), .d_flt(1'b0), .i_cs(3'd0), .d_cs(3'd0), .clk(clk), .rst(rst), .irq(1'b0),
         .i_req(i_req), .i_addr(i_addr), .i_ack(i_ack), .i_rdata(i_rdata),
@@ -38,11 +38,11 @@ module tb_r64core;
         if ($test$plusargs("livre")) begin : solto
             rc = 11; while (rc == 11) begin rc = $fscanf(fd, "%h %h %h %h %h %h %h %h %h %h %h", g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], pc0[7:0], e_sw, e_em); if (rc == 11) begin n = n + 1; for (k = 0; k < 8; k = k + 1) e[k] = g[k]; e_f = pc0[7:0]; end end
             go = 1; tmo = 0;
-            while (!(dut.flush_br && dut.flush_tgt_raw == e[0])) begin @(posedge clk); tmo = tmo + 1; if (tmo > 30000000) begin $display("ERRO: o programa nao chegou ao fim (pc=%h)", dut.npc); errs = errs + 1; disable solto; end end
-            repeat (40) @(posedge clk);                    // o ultimo desvio (ou o JR $ final) ja foi tomado: o estado nao muda mais
+            while (!(dut.flush_br && dut.flush_tgt_raw == e[0])) begin @(posedge clk); tmo = tmo + 1; if (tmo > 30000000) begin $display("ERROR: the program did not reach the end (pc=%h)", dut.npc); errs = errs + 1; disable solto; end end
+            repeat (40) @(posedge clk);                    // the last branch (or the final JR $) was already taken: the state no longer changes
             g[0] = e[0]; g[1] = dut.u_rf1.mem_a[0]; g[2] = dut.u_rf1.mem_a[1]; g[3] = dut.u_rf1.mem_a[2]; g[4] = dut.u_rf1.mem_a[3]; g[5] = dut.u_rf1.mem_a[9]; g[6] = dut.u_rf1.mem_a[10]; g[7] = dut.u_rf1.mem_a[11];
-            for (k = 1; k < 8; k = k + 1) if (g[k] !== e[k]) begin errs = errs + 1; $display("DIVERGENCIA no estado final, registrador %0d: nucleo %h modelo %h", k, g[k], e[k]); end
-            if (dut.fl !== e_f) begin errs = errs + 1; $display("DIVERGENCIA no estado final, F: nucleo %h modelo %h", dut.fl, e_f); end
+            for (k = 1; k < 8; k = k + 1) if (g[k] !== e[k]) begin errs = errs + 1; $display("DIVERGENCE in final state, register %0d: core %h model %h", k, g[k], e[k]); end
+            if (dut.fl !== e_f) begin errs = errs + 1; $display("DIVERGENCE in final state, F: core %h model %h", dut.fl, e_f); end
         end else
         begin : laco
             forever begin
@@ -50,37 +50,37 @@ module tb_r64core;
                 if (rc != 11) disable laco;
                 pc0 = dut.npc;
                 go = 1; tmo = 0; @(posedge clk);
-                while (!dut.consume && !dut.flush_br && !dut.ex_take) begin @(posedge clk); tmo = tmo + 1; if (tmo > 60000) begin $display("ERRO: instrucao %0d (pc=%h) nao foi emitida", n, pc0); errs = errs + 1; disable laco; end end
+                while (!dut.consume && !dut.flush_br && !dut.ex_take) begin @(posedge clk); tmo = tmo + 1; if (tmo > 60000) begin $display("ERROR: instruction %0d (pc=%h) was not issued", n, pc0); errs = errs + 1; disable laco; end end
                 #1 go = 0; idle = 0; tmo = 0;
-                while (idle < 3) begin @(posedge clk); #1; idle = busy ? 0 : idle + 1; tmo = tmo + 1; if (tmo > 60000) begin $display("ERRO: instrucao %0d (pc=%h) nao terminou", n, pc0); errs = errs + 1; disable laco; end end
+                while (idle < 3) begin @(posedge clk); #1; idle = busy ? 0 : idle + 1; tmo = tmo + 1; if (tmo > 60000) begin $display("ERROR: instruction %0d (pc=%h) did not finish", n, pc0); errs = errs + 1; disable laco; end end
                 n = n + 1;
                 g[0] = dut.npc; g[1] = dut.u_rf1.mem_a[0]; g[2] = dut.u_rf1.mem_a[1]; g[3] = dut.u_rf1.mem_a[2]; g[4] = dut.u_rf1.mem_a[3];
                 g[5] = dut.u_rf1.mem_a[9]; g[6] = dut.u_rf1.mem_a[10]; g[7] = dut.u_rf1.mem_a[11];
                 if (verb) $display("#%0d pc=%h op=%h %h %h %h -> pc=%h ax=%h bc=%h f=%h", n, pc0[15:0], mem[pc0[15:0]], mem[pc0[15:0]+16'd1], mem[pc0[15:0]+16'd2], mem[pc0[15:0]+16'd3], g[0], g[1], g[2], dut.fl);
                 q = 0; for (k = 0; k < 8; k = k + 1) if (g[k] !== e[k]) q = 1;
-                if (dut.u_fpu.sw !== e_sw || dut.u_fpu.emp !== e_em) begin q = 1; $display("  FPU: estado %h vazios %b; modelo: estado %h vazios %b", dut.u_fpu.sw, dut.u_fpu.emp, e_sw, e_em); end
+                if (dut.u_fpu.sw !== e_sw || dut.u_fpu.emp !== e_em) begin q = 1; $display("  FPU: state %h empties %b; model: state %h empties %b", dut.u_fpu.sw, dut.u_fpu.emp, e_sw, e_em); end
                 if (q || dut.fl !== e_f) begin
                     errs = errs + 1;
-                    $display("DIVERGENCIA na instrucao %0d: pc=%h opcode %h %h %h %h %h", n, pc0, mem[pc0[15:0]], mem[pc0[15:0]+16'd1], mem[pc0[15:0]+16'd2], mem[pc0[15:0]+16'd3], mem[pc0[15:0]+16'd4]);
-                    $display("  nucleo: pc=%h ax=%h bc=%h de=%h hl=%h ix=%h iy=%h sp=%h f=%h", g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], dut.fl);
-                    $display("  modelo: pc=%h ax=%h bc=%h de=%h hl=%h ix=%h iy=%h sp=%h f=%h", e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e_f);
+                    $display("DIVERGENCE at instruction %0d: pc=%h opcode %h %h %h %h %h", n, pc0, mem[pc0[15:0]], mem[pc0[15:0]+16'd1], mem[pc0[15:0]+16'd2], mem[pc0[15:0]+16'd3], mem[pc0[15:0]+16'd4]);
+                    $display("  core: pc=%h ax=%h bc=%h de=%h hl=%h ix=%h iy=%h sp=%h f=%h", g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], dut.fl);
+                    $display("  model: pc=%h ax=%h bc=%h de=%h hl=%h ix=%h iy=%h sp=%h f=%h", e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e_f);
                     disable laco;
                 end
             end
         end
         if (errs == 0 && $value$plusargs("fim=%s", ffim)) begin
             $readmemh(ffim, fim);
-            for (k = 0; k < 65536; k = k + 1) if (mem[k] !== fim[k]) begin merr = merr + 1; if (merr <= 5) $display("MEMORIA difere em %h: nucleo %h modelo %h", k[15:0], mem[k], fim[k]); end
+            for (k = 0; k < 65536; k = k + 1) if (mem[k] !== fim[k]) begin merr = merr + 1; if (merr <= 5) $display("MEMORY differs at %h: core %h model %h", k[15:0], mem[k], fim[k]); end
             errs = errs + merr;
         end
-        if (errs == 0 && $value$plusargs("fpu=%s", ffpu)) begin                 // estado final da FPU: palavra de estado, vazios e os registradores fisicos escritos
+        if (errs == 0 && $value$plusargs("fpu=%s", ffpu)) begin                 // final FPU state: status word, empties and the physical registers written
             $readmemh(ffpu, fpe);
-            if (dut.u_fpu.sw !== fpe[0][15:0]) begin errs = errs + 1; $display("FPU: palavra de estado %h, modelo %h", dut.u_fpu.sw, fpe[0][15:0]); end
-            if (dut.u_fpu.emp !== fpe[1][7:0]) begin errs = errs + 1; $display("FPU: vazios %b, modelo %b", dut.u_fpu.emp, fpe[1][7:0]); end
-            for (k = 0; k < 8; k = k + 1) if (fpe[2 + k] !== 80'hx && dut.u_fpu.stk[k] !== fpe[2 + k]) begin errs = errs + 1; $display("FPU: registrador fisico %0d = %h, modelo %h", k, dut.u_fpu.stk[k], fpe[2 + k]); end
+            if (dut.u_fpu.sw !== fpe[0][15:0]) begin errs = errs + 1; $display("FPU: status word %h, model %h", dut.u_fpu.sw, fpe[0][15:0]); end
+            if (dut.u_fpu.emp !== fpe[1][7:0]) begin errs = errs + 1; $display("FPU: empties %b, model %b", dut.u_fpu.emp, fpe[1][7:0]); end
+            for (k = 0; k < 8; k = k + 1) if (fpe[2 + k] !== 80'hx && dut.u_fpu.stk[k] !== fpe[2 + k]) begin errs = errs + 1; $display("FPU: physical register %0d = %h, model %h", k, dut.u_fpu.stk[k], fpe[2 + k]); end
         end
-        $display("%0d instrucoes comparadas, %0d bytes de memoria diferentes", n, merr);
-        if (errs == 0) $display("RESULTADO: R8064 16/32/64 NO NUCLEO OK"); else $display("RESULTADO: %0d ERROS", errs);
+        $display("%0d instructions compared, %0d memory bytes different", n, merr);
+        if (errs == 0) $display("RESULT: R8064 16/32/64 IN CORE OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

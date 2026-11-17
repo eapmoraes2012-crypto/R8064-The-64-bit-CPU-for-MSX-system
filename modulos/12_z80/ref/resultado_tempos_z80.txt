@@ -1,7 +1,7 @@
-VERIFICACAO DOS T-STATES DO Z80 (05/11/2026)
-Fonte: tabela [Z80_00] [Z80_CB] [Z80_ED] [Z80_DD] [Z80_FD] [Z80_DDCB] [Z80_FDCB] de R8064_Z80_instrucoes_fpga.txt (mesma da aba Z80 da planilha).
-Metodo: verifica_tempos_z80.py deriva os T-states por REGRAS de decodificacao (campos x,y,z,p,q do opcode) a partir do Zilog Z80 CPU User Manual (UM0080), sem ler a tabela; depois compara T e T_ALT.
-Resultado: 1.270 linhas (00:252 CB:256 ED:80 DD:85 FD:85 DDCB:256 FDCB:256), 0 diferencas.
-Limites: (1) confere T-states TOTAIS, nao a sequencia de ciclos de maquina (M1/MR/MW/IO) nem a pagina de enderecos em cada T; (2) o MSX insere 1 estado de espera em cada ciclo M1 e em cada ciclo de E/S
-(hardware do slot), entao o tempo no MSX e maior que o da tabela: M1 = 5 T no MSX; (3) a regra foi escrita por mim a partir da minha leitura do manual, mesma fonte de conhecimento que gerou a tabela; um erro comum aos dois nao seria detectado.
-Instrucoes nao documentadas conferidas pelas mesmas regras (ED espelhos, DD/FD com IXH/IXL, DDCB/FDCB com copia para registrador).
+VERIFICATION OF THE Z80 T-STATES (05/11/2026)
+Source: table [Z80_00] [Z80_CB] [Z80_ED] [Z80_DD] [Z80_FD] [Z80_DDCB] [Z80_FDCB] of R8064_Z80_instrucoes_fpga.txt (same as the Z80 tab of the spreadsheet).
+Method: verifica_tempos_z80.py derives the T-states by decoding RULES (opcode fields x,y,z,p,q) from the Zilog Z80 CPU User Manual (UM0080), without reading the table; then compares T and T_ALT.
+Result: 1,270 lines (00:252 CB:256 ED:80 DD:85 FD:85 DDCB:256 FDCB:256), 0 differences.
+Limits: (1) it checks TOTAL T-states, not the sequence of machine cycles (M1/MR/MW/IO) nor the address page in each T; (2) the MSX inserts 1 wait state in each M1 cycle and in each I/O cycle
+(slot hardware), so the time on the MSX is longer than the table: M1 = 5 T on the MSX; (3) the rule was written by me from my reading of the manual, the same source of knowledge that generated the table; an error common to both would not be detected.
+Undocumented instructions checked by the same rules (ED mirrors, DD/FD with IXH/IXL, DDCB/FDCB with copy to register).

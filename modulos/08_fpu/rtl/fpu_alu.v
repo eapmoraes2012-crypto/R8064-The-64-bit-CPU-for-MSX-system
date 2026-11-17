@@ -1,7 +1,7 @@
-// fpu_alu.v - nucleo aritmetico da FPU de 80 bits (x87 estendido) do R8064.
+// fpu_alu.v - arithmetic core of the R8064 80-bit FPU (extended x87).
 // Operacoes (op): 0 ADD, 1 SUB, 2 MUL, 3 DIV, 4 SQRT, 5 CMP, 6 FILD(int64), 7 FIST(int64), 8 RNDINT, 9 LD32, 10 LD64, 11 ST32, 12 ST64.
-// a = ST0 (ou dado de memoria), b = segundo operando. rc: 0 nearest-even, 1 -inf, 2 +inf, 3 zero. pc: 0=24, 2=53, 3=64 bits (so ADD/SUB/MUL/DIV/SQRT).
-// Resultado: res, flags {PE,UE,OE,ZE,DE,IE}, up (arredondou para cima = C1), cc {c3,c2,c0} (so CMP). Excecoes mascaradas = resposta padrao; quem mascara/propaga e a pilha (fpu_top).
+// a = ST0 (or memory data), b = second operand. rc: 0 nearest-even, 1 -inf, 2 +inf, 3 zero. pc: 0=24, 2=53, 3=64 bits (ADD/SUB/MUL/DIV/SQRT only).
+// Result: res, flags {PE,UE,OE,ZE,DE,IE}, up (rounded up = C1), cc {c3,c2,c0} (CMP only). Masked exceptions = default response; whoever masks/propagates is the stack (fpu_top).
 module fpu_alu(
     input  wire        clk, rst, start,
     input  wire [3:0]  op,
@@ -43,7 +43,7 @@ module fpu_alu(
     assign busy = (st != S_IDLE);
     reg [3:0] op_r; reg [1:0] rc_r, pc_r; reg [79:0] A_r, B_r;
     reg f_ie, f_de, f_ze, f_oe, f_ue, f_pe, f_up;
-    // ---------------- decodificacao
+    // ---------------- decoding
     function [2:0] cls(input [79:0] x);
         reg [14:0] ex; reg [63:0] m;
         begin
@@ -75,7 +75,7 @@ module fpu_alu(
     endfunction
     reg [2:0] a_c, b_c; reg a_s, b_s; reg [63:0] a_m, b_m; reg signed [17:0] a_E, b_E; reg [6:0] a_lz, b_lz;
     wire a_nan = (a_c == C_QNAN) || (a_c == C_SNAN), b_nan = (b_c == C_QNAN) || (b_c == C_SNAN);
-    // ---------------- deslocadores compartilhados (carregados no estado anterior, consumidos no seguinte)
+    // ---------------- shared shifters (loaded in the previous state, consumed in the next)
     function [67:0] shr_st(input [67:0] x, input [6:0] n);
         reg [67:0] y; reg st1;
         begin
@@ -98,7 +98,7 @@ module fpu_alu(
     reg r_s; reg signed [17:0] r_E, r_emin, r_emax; reg [63:0] r_m; reg r_g, r_st; reg [6:0] r_p; reg [1:0] r_fmt, r_rc;
     reg [65:0] r1_F; reg signed [17:0] r1_E; reg r1_tiny;
     reg [63:0] r2_m; reg signed [17:0] r2_E; reg r2_inex, r2_inc, r2_tiny;
-    // ---------------- soma
+    // ---------------- addition
     reg ad_ssub, ad_bs; reg signed [17:0] ad_bE; reg [63:0] ad_bm, ad_sm; reg [7:0] ad_d; reg [66:0] ad_x; reg [67:0] ad_sum; reg [7:0] ad_lz; reg ad_sign;
     // ---------------- mul / div
     reg mu_in; wire mu_ready, mu_ov; wire [127:0] mu_p; reg [127:0] ml_p;
@@ -111,10 +111,10 @@ module fpu_alu(
     wire [66:0] sq_tr = {sq_q, 2'b01};
     wire [67:0] sq_df = {1'b0, sq_rn} - {1'b0, sq_tr};
     wire        sq_ge = !sq_df[67];
-    // ---------------- conversao inteiro/float, para inteiro
+    // ---------------- integer/float conversion, to integer
     reg cv_s; reg [63:0] cv_mag; reg signed [17:0] cv_bias; reg [6:0] cv_lz; reg cv_rnd; // cv_rnd: veio de RNDINT
     reg [63:0] ti_I; reg ti_rb, ti_st; reg [64:0] ti_k; reg ti_inex, ti_inc, ti_ovfI;
-    // ---------------- comparacao e especiais
+    // ---------------- comparison and specials
     reg spr; reg [79:0] sp_resr; reg [5:0] sp_flr; reg [2:0] sp_ccr;
     reg sp; reg [79:0] sp_res; reg [5:0] sp_fl; reg [2:0] sp_cc;
     wire [79:0] indef = {1'b1, 15'h7FFF, 64'hC000000000000000};
@@ -186,7 +186,7 @@ module fpu_alu(
         default: ;
         endcase
     end
-    // ---------------- carga de registradores de arredondamento
+    // ---------------- loading of rounding registers
     task load_round(input s, input signed [17:0] e, input [63:0] m, input g, input stk, input [6:0] p, input signed [17:0] emn, input signed [17:0] emx, input [1:0] fmt);
         begin r_s <= s; r_E <= e; r_m <= m; r_g <= g; r_st <= stk; r_p <= p; r_emin <= emn; r_emax <= emx; r_fmt <= fmt; r_rc <= rc_r;
               sh_in <= {2'b00, m, g, stk}; end
@@ -206,14 +206,14 @@ module fpu_alu(
     wire r3_ovf = (r2_E > r_emax) && (r2_m != 0);
     wire r3_inf = (r_rc == 2'd0) || (r_rc == 2'd2 && !r_s) || (r_rc == 2'd1 && r_s);
     wire [63:0] r3_maxm = (r_p == 7'd24) ? 64'hFFFFFF0000000000 : (r_p == 7'd53) ? 64'hFFFFFFFFFFFFF800 : 64'hFFFFFFFFFFFFFFFF;
-    // ---------------- soma: estagio AD1
+    // ---------------- addition: stage AD1
     reg ad_bigr; reg signed [18:0] ad_ddr;
     wire a_big = ad_bigr;
     wire signed [18:0] ad_dd = ad_ddr;
     wire [66:0] ad_big67 = {ad_bm, 3'd0};
     wire [67:0] ad_s_sum = ad_ssub ? ({1'b0, ad_big67} - {1'b0, ad_x}) : ({1'b0, ad_big67} + {1'b0, ad_x});
     // ---------------- CMP
-    // ---------------- escrita de resultado final
+    // ---------------- final result write
     always @(posedge clk) begin
         done <= 0; mu_in <= 0; dv_start <= 0;
         if (rst) st <= S_IDLE;
@@ -286,7 +286,7 @@ module fpu_alu(
             reg [67:0] n; reg signed [17:0] e;
             if (ad_lz == 0) begin n = {1'b0, ad_sum[67:2], ad_sum[1] | ad_sum[0]}; e = ad_bE + 18'sd1; end
             else begin n = lf_r; e = ad_bE - $signed({10'd0, ad_lz}) + 18'sd1; end
-            // n[66:0] com MSB em n[66]
+            // n[66:0] with MSB in n[66]
             load_round(ad_sign, e, n[66:3], n[2], n[1] | n[0], pbits, EMIN80, EMAX80, 2'd0);
             st <= S_R1;
         end
@@ -334,7 +334,7 @@ module fpu_alu(
             cc <= 3'b000;
             if (a_c == C_ZERO && b_c == C_ZERO) cc <= 3'b100;
             else begin
-                // sinal efetivo (zero conta como positivo)
+                // effective sign (zero counts as positive)
                 if ((a_c == C_ZERO ? 1'b0 : a_s) != (b_c == C_ZERO ? 1'b0 : b_s)) cc <= (b_c == C_ZERO ? 1'b0 : b_s) ? 3'b000 : 3'b001;
                 else begin : cmpm
                     reg [1:0] ra, rb; reg gt, eq;
@@ -346,7 +346,7 @@ module fpu_alu(
                         else if (a_m != b_m) begin gt = (a_m > b_m); eq = 0; end
                         else begin gt = 0; eq = 1; end
                     end else begin gt = 0; eq = 1; end
-                    // gt refere-se aos modulos; com sinal negativo inverte
+                    // gt refers to the magnitudes; with a negative sign it inverts
                     if (eq) cc <= 3'b100;
                     else if ((a_c == C_ZERO ? 1'b0 : a_s)) cc <= gt ? 3'b001 : 3'b000;
                     else cc <= gt ? 3'b000 : 3'b001;
@@ -354,14 +354,14 @@ module fpu_alu(
             end
             res <= 0; st <= S_FIN;
         end
-        // ---- para inteiro (FIST / RNDINT)
+        // ---- to integer (FIST / RNDINT)
         S_TI1: st <= S_TI1W;
         S_TI1W: begin : ti1
             reg signed [18:0] sh;
             sh = 19'sd63 - a_E;
             if (op_r == OP_RND && a_E >= 18'sd63) begin res <= A_r; st <= S_FIN; end
             else if (op_r == OP_FIST && a_E >= 18'sd63) begin
-                // so -2^63 exato e valido
+                // only exactly -2^63 is valid
                 if (a_s && a_E == 18'sd63 && a_m == 64'h8000000000000000) begin res <= 80'h8000000000000000; st <= S_FIN; end
                 else begin res <= 80'h8000000000000000; f_ie <= 1; st <= S_FIN; end
             end else begin
@@ -430,11 +430,11 @@ module fpu_alu(
         S_CV4: begin lf_amt <= lz_nb[6:0] - 7'd4; cv_lz <= lz_nb[6:0] - 7'd4; st <= S_CV5; end
         S_CV5: st <= S_CV3;
         S_CV3: begin
-            // mantissa normalizada e expoente (63 - lz + bias); exato (g=s=0), precisao 64
+            // normalized mantissa and exponent (63 - lz + bias); exact (g=s=0), precision 64
             load_round(cv_s, 18'sd63 - $signed({11'd0, cv_lz}) + cv_bias, lf_r[63:0], 1'b0, 1'b0, 7'd64, EMIN80, EMAX80, 2'd0);
             st <= S_R1;
         end
-        // ---- ST32 / ST64: arredondar mantissa normalizada para o formato IEEE
+        // ---- ST32 / ST64: round the normalized mantissa to the IEEE format
         S_STL: begin
             if (op_r == OP_ST32) load_round(a_s, a_E, a_m, 1'b0, 1'b0, 7'd24, -18'sd126, 18'sd127, 2'd1);
             else load_round(a_s, a_E, a_m, 1'b0, 1'b0, 7'd53, -18'sd1022, 18'sd1023, 2'd2);

@@ -7,7 +7,7 @@ module pnr_gov_top(input wire clk, input wire din, output wire dout);
         .d_req(d_req), .d_we(d_we), .d_addr(d_addr), .d_size(d_size), .d_wdata(d_wdata), .d_be(dbe), .d_ack(l[5] & d_req), .d_rdata(l[127:64]),
         .io_we(l[130]), .io_re(l[131]), .io_a(l[139:132]), .io_wd(l[147:140]), .io_rd(iord), .io_oe(ioo), .port_c(l[155:148]), .cio_we(cw), .cio_re(cr), .cio_a(ca), .cio_wd(cwd), .cio_rd(l[7:0]), .a8(l[7:0]), .map_we(l[100]), .map_idx(l[104:101]), .map_val(l[106:105]),
         .native64(nat), .clk_sel(cs), .is_z80(z8), .is_rom(ro), .mode_busy(mb), .dbg_pc(dbg_pc), .dbg_f(dbg_f), .dbg_sig(dbg_sig), .gov_cv(gcv));
-    // observacao em 2 estagios registrados (sem arvore de XOR longa como caminho critico artificial)
+    // observation in 2 registered stages (no long XOR tree as an artificial critical path)
     reg [13:0] pp; reg p;
     always @(posedge clk) begin
         pp <= {^{c0,c1,c2,c3,c4,c5,c6,c9,c8}, ^c7[63:32], ^c7[31:0], ^{i_req, d_req, d_we, d_size, gcv, nat, cs, z8, ro, mb, ioo, cw, cr, dbg_sig}, ^i_addr[63:32], ^i_addr[31:0], ^d_addr[63:32], ^d_addr[31:0], ^d_wdata[63:32], ^d_wdata[31:0],

@@ -1,4 +1,4 @@
-# Modelo de referencia (Z80 classico) das instrucoes de pagina principal implementadas no nucleo (REV47)
+# Reference model (classic Z80) of the main-page instructions implemented in the core (REV47)
 PAR=[bin(i).count('1')%2==0 for i in range(256)]
 class Z:
     def __init__(s,mem): s.m=bytearray(mem); s.r=dict(a=0,b=0,c=0,d=0,e=0,h=0,l=0,f=0); s.sp=0xF00; s.pc=0; s.n=0; s.x=dict(ix=0,iy=0); s.cbarg=None; s.sh=dict(b=0,c=0,d=0,e=0,h=0,l=0)

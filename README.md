@@ -1,125 +1,125 @@
-# R8064 - CPU de 64 bits derivada do Z80, em FPGA (Tang Nano 20K, GW2AR-18)
+# R8064 - 64-bit CPU derived from the Z80, on FPGA (Tang Nano 20K, GW2AR-18)
 
-CPU de 64 bits derivada do Z80 (com modos de tempo Z80/R800 e modo nativo), construida modulo a modulo para um slot de MSX.
-Alvo de clock: 57,28 MHz (3,58 MHz x 16).
+64-bit CPU derived from the Z80 (with Z80/R800 timing modes and a native mode), built module by module for an MSX slot.
+Clock target: 57.28 MHz (3.58 MHz x 16).
 
-## Estado atual (leia antes de usar)
-- O nucleo do SoC (`09_core_min`) executa o **Z80 completo**: pagina principal, CB, DD/FD (IX/IY, IXH/IXL), DDCB/FDCB e a pagina ED do Z80.
-  Conferido instrucao a instrucao contra o modelo `12_z80/ref/z80ref.c` (`09_core_min/sim_z80`: mais de 1,1 milhao de instrucoes, flags X/Y incluidas,
-  e o inicio do ZEXDOC). Desde a REV36 essa e a ROM padrao (`uop.mem`) do SoC e de todos os testes; a antiga codificacao de teste da pagina principal acabou.
-- Instrucoes proprias do R8064 (pagina ED) com microcodigo: as inteiras de 16/32/64 bits (ALU, INC/DEC, deslocamentos, bits, LDx, pilha, desvios, chamadas e
-  retornos), multiplicacao e divisao (blocos do modulo 03 ligados ao nucleo, com flags e erro de divisao), LDCR/STCR, PGINV, XCHG, CAS e as de sistema
+## Current status (read before using)
+- The SoC core (`09_core_min`) runs the **complete Z80**: main page, CB, DD/FD (IX/IY, IXH/IXL), DDCB/FDCB and the Z80 ED page.
+  Checked instruction by instruction against the model `12_z80/ref/z80ref.c` (`09_core_min/sim_z80`: over 1.1 million instructions, X/Y flags included,
+  and the start of ZEXDOC). Since REV36 this is the default ROM (`uop.mem`) of the SoC and of all tests; the old test encoding of the main page is gone.
+- R8064's own instructions (ED page) with microcode: the 16/32/64-bit integer ones (ALU, INC/DEC, shifts, bits, LDx, stack, branches, calls and
+  returns), multiply and divide (module 03 blocks wired to the core, with flags and divide error), LDCR/STCR, PGINV, XCHG, CAS and the system ones
   (JP USER, SYSRT, SCALL, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX). Semantica INFERIDA (`09_core_min/PREMISSAS_R8064.txt`),
-  conferida contra um modelo em Python escrito a partir dessas premissas (`09_core_min/sim_r64`: programas aleatorios, sem divergencias).
-- Modelo de privilegio e de excecao (REV40, `09_core_min/MODELO_PRIVILEGIO.txt`): modos supervisor / usuario (CR18), entrada unica de excecao pelo vetor CR9
-  com causa / auxiliar / EPC em CR11 / CR12 / CR13, retorno por SYSRT. E uma DEFINICAO feita nesta revisao, nao algo que ja existia no projeto: revise.
-  O software MSX roda sempre em supervisor e nao e afetado.
-- FPU (REV41/42, `09_core_min/MODELO_FPU.txt`): pilha ST0-ST7 de 80 bits e as 45 instrucoes de FPU da tabela no nucleo, com um nucleo aritmetico
-  sequencial (`08_fpu/rtl/fpu_seq.v`) e um executor de programas para transcendentais e restos (`fpu_unit.v`). As transcendentais tem erro de 1 a 2
-  unidades na ultima casa (FLN ate 9) e FREM nao e o resto exato do x87. A unidade custa cerca de 4.400 LUT: conferir a ocupacao da placa
-  (ha uma chave para sintetizar sem ela). Falta so a E/S de 16/32/64 bits.
-- Diferencas conhecidas para um Z80 real: R nao conta buscas; HALT e um salto para si mesmo; X/Y nao documentados de BIT n,(HL) e dos blocos; um opcode ED
-  que nao e do Z80 e instrucao do R8064 (so os sem instrucao viram NOP de 2 bytes); codigo que se modifica e executa em seguida, sem desvio no meio, ve o byte antigo (fila de busca).
-- PnR do topo de placa com o Z80 completo (REV37): 52 % das LUTs, 36 de 46 BSRAM; 3 de 4 sementes fecham a 57,28 MHz (59 a 74 MHz), com folga menor que antes.
-- O SoC (`13_soc`) reune nucleo + governador + memoria MSX + MMU + caches + SDRAM. Nao instancia `msx_if` (04), FPU (08/11) nem o Z80 classico (12).
-- O Z80 classico (`12_z80`) passa no ZEXDOC, mas a ultima Fmax medida (44-52 MHz) esta abaixo do clock de 57,28 MHz.
-- Nada foi verificado em hardware. O topo de placa ainda nao liga o barramento do MSX.
-- Pendencias e historico: `modulos/13_soc/resultado_soc.txt` (a REV33 lista o que esta aberto).
+  checked against a Python model written from those assumptions (`09_core_min/sim_r64`: random programs, no divergences).
+- Privilege and exception model (REV40, `09_core_min/MODELO_PRIVILEGIO.txt`): supervisor / user modes (CR18), single exception entry through the CR9 vector
+  with cause / auxiliary / EPC in CR11 / CR12 / CR13, return through SYSRT. It is a DEFINITION made in this revision, not something that already existed in the project: review it.
+  MSX software always runs in supervisor mode and is not affected.
+- FPU (REV41/42, `09_core_min/MODELO_FPU.txt`): 80-bit ST0-ST7 stack and the 45 FPU instructions of the table in the core, with a sequential arithmetic core
+  (`08_fpu/rtl/fpu_seq.v`) and a program executor for transcendentals and remainders (`fpu_unit.v`). The transcendentals have an error of 1 to 2
+  units in the last place (FLN up to 9) and FREM is not the exact x87 remainder. The unit costs about 4,400 LUTs: check the board occupancy
+  (there is a switch to synthesize without it). Only the 16/32/64-bit I/O is missing.
+- Known differences from a real Z80: R does not count fetches; HALT is a jump to itself; undocumented X/Y of BIT n,(HL) and of the block instructions; an ED opcode
+  that is not a Z80 one is an R8064 instruction (only those with no instruction become a 2-byte NOP); code that modifies itself and then executes, with no branch in between, sees the old byte (fetch queue).
+- Board-top PnR with the full Z80 (REV37): 52 % of the LUTs, 36 of 46 BSRAM; 3 of 4 seeds close at 57.28 MHz (59 to 74 MHz), with less slack than before.
+- The SoC (`13_soc`) gathers core + governor + MSX memory + MMU + caches + SDRAM. It does not instantiate `msx_if` (04), the FPU (08/11) or the classic Z80 (12).
+- The classic Z80 (`12_z80`) passes ZEXDOC, but the last measured Fmax (44-52 MHz) is below the 57.28 MHz clock.
+- Nothing has been verified on hardware. The board top does not yet connect the MSX bus.
+- Pending items and history: `modulos/13_soc/resultado_soc.txt` (REV33 lists what is still open).
 
-## Modulos (`modulos/`)
-| Pasta | Conteudo | Usado no SoC |
+## Modules (`modulos/`)
+| Folder | Contents | Used in the SoC |
 |---|---|---|
-| `01_alu_regfile` | ALU de 64 bits e banco de registradores | sim (via 09) |
-| `02_pipeline` | modelo de temporizacao do pipeline (estudo, nao sintetizavel) | nao |
+| `01_alu_regfile` | 64-bit ALU and register file | yes (via 09) |
+| `02_pipeline` | pipeline timing model (study, not synthesizable) | no |
 | `03_muldiv` | multiplicador e divisor | sim (desde a REV39) |
-| `04_msx_if` | interface MSX + FIFO (primeira versao) | nao |
-| `05_sdram` | controlador de SDRAM e modelo de simulacao | sim |
-| `05b_cache` | estudo de dimensionamento das caches (Python) | - |
-| `06_cache` | `cache8k` (2 vias, estudo) e `cache_dm` (mapeamento direto, a usada) | `cache_dm` |
+| `04_msx_if` | MSX interface + FIFO (first version) | no |
+| `05_sdram` | SDRAM controller and simulation model | yes |
+| `05b_cache` | cache sizing study (Python) | - |
+| `06_cache` | `cache8k` (2 ways, study) and `cache_dm` (direct mapped, the one used) | `cache_dm` |
 | `07_mmu` | MMU Sv39 | sim |
 | `08_fpu` | FPU: `fpu_unit.v` + `fpu_seq.v` (compacta) | sim (desde a REV41) |
-| `08_fpu/rtl/fpu_alu.v`, `11_fpu_stk` | FPU grande antiga e pilha avulsa (substituidas) | nao |
-| `09_core_min` | nucleo minimo (decodificador por ROM de uops) e geradores de ROM | sim |
-| `10_mode_gov` | governador de tempo + modos (Z80 ROM, R800 DRAM, nativo) + sistema MSX | sim |
-| `10_msx_mem` | mapper de memoria MSX + MegaRAM | sim |
-| `12_z80` | Z80 classico independente (referencia) | nao |
+| `08_fpu/rtl/fpu_alu.v`, `11_fpu_stk` | old large FPU and standalone stack (superseded) | no |
+| `09_core_min` | minimal core (uop-ROM decoder) and ROM generators | yes |
+| `10_mode_gov` | timing governor + modes (Z80 ROM, R800 DRAM, native) + MSX system | yes |
+| `10_msx_mem` | MSX memory mapper + MegaRAM | yes |
+| `12_z80` | independent classic Z80 (reference) | no |
 | `13_soc` | SoC: core + MMU + caches + SDRAM; top de placa e fluxo de PnR | - |
-| `14_vec3d` | unidade 3D (arquivada; fora do core) | nao |
+| `14_vec3d` | 3D unit (archived; outside the core) | no |
 
-## Como rodar
+## How to run
 No terminal do OSS CAD Suite:
 - Regressao do core/governador/sistema: `modulos\10_mode_gov\rodar_tudo.bat`
-- SoC (excecoes, SoC basico, gerador de clock): `modulos\13_soc\rodar_exc.bat`
-- Nucleo em modo Z80 contra o modelo de referencia: `modulos\09_core_min\sim_z80\rodar_z80core.bat`
-- Instrucoes R8064 de 16/32/64 bits, sistema e FPU contra o modelo: `modulos\09_core_min\sim_r64\rodar_r64.bat`
-- Nucleo aritmetico da FPU contra 39.000 vetores: `modulos\08_fpu\rodar_seq.bat`
-- Place-and-route do top da placa (4 sementes): `modulos\13_soc\pnr\rodar_pnr_board.bat`
-- Bitstream: `modulos\13_soc\pnr\gerar_bitstream_board.bat 0 <semente>`
+- SoC (exceptions, basic SoC, clock generator): `modulos\13_soc\rodar_exc.bat`
+- Core in Z80 mode against the reference model: `modulos\09_core_min\sim_z80\rodar_z80core.bat`
+- R8064 16/32/64-bit instructions, system and FPU against the model: `modulos\09_core_min\sim_r64\rodar_r64.bat`
+- FPU arithmetic core against 39,000 vectors: `modulos\08_fpu\rodar_seq.bat`
+- Place-and-route of the board top (4 seeds): `modulos\13_soc\pnr\rodar_pnr_board.bat`
+- Bitstream: `modulos\13_soc\pnr\gerar_bitstream_board.bat 0 <seed>`
 
-## Arquivos `.mem` (sao FONTE do projeto)
-Mantenha iguais as copias de `sim/` e `pnr/` dos modulos 09, 10 e 13.
-| Arquivo | De onde vem |
+## `.mem` files (they are the project's SOURCE)
+Keep the copies of `sim/` and `pnr/` in modules 09, 10 and 13 identical.
+| File | Where it comes from |
 |---|---|
-| `uop.mem`, `mainctrl.mem`, `prog*.mem` | `09_core_min/sim/gen_roms.py` (usa `gen_z80_rom.py`, o microcodigo do Z80) |
+| `uop.mem`, `mainctrl.mem`, `prog*.mem` | `09_core_min/sim/gen_roms.py` (uses `gen_z80_rom.py`, the Z80 microcode) |
 | `ctrl_b.mem` | `09_core_min/sim/gen_bank.py instr_ids.csv ctrl.mem` |
 | `r8064_decode_rom.v` | `09_core_min/sim/gen_decode_rom.py` (a partir de `rom_ed_a.mem` e `amb_idx.mem`) |
 | `gov_rom.mem` | `10_mode_gov/sim/gen_gov_rom.py ref/z80_classico_tstates.csv` |
-| `ctrl.mem`, `rom_ed_a.mem`, `rom_ed_b.mem`, `amb_idx.mem` | **sem gerador no repositorio**: vieram da planilha de instrucoes e foram editados a mao depois (ids 291-295) |
+| `ctrl.mem`, `rom_ed_a.mem`, `rom_ed_b.mem`, `amb_idx.mem` | **no generator in the repository**: they came from the instruction spreadsheet and were edited by hand afterwards (ids 291-295) |
 
-O RTL do nucleo existe em duas copias (`09_core_min/rtl` para simulacao, `10_mode_gov/rtl` para sintese): mantenha-as iguais (`rodar_tudo.bat` avisa se divergirem).
+The core RTL exists in two copies (`09_core_min/rtl` for simulation, `10_mode_gov/rtl` for synthesis): keep them identical (`rodar_tudo.bat` warns if they diverge).
 
-Nao versionados (`.gitignore`): pastas `bak/` e logs de PnR (`*.log`) citados nos textos de resultado, e as planilhas de instrucoes.
+Not versioned (`.gitignore`): `bak/` folders and PnR logs (`*.log`) cited in the result texts, and the instruction spreadsheets.
 
 ---
 
-# Pacote historico (pastas `rom/`, `rtl/`, `sim/`, `ref/`, `pnr/`, `gowin_mi/` da raiz): ROM de decodificação, testbench e ciclos esperados
+# Historical package (`rom/`, `rtl/`, `sim/`, `ref/`, `pnr/`, `gowin_mi/` folders at the root): decode ROM, testbench and expected cycles
 
-> Este e o primeiro pacote do projeto (decodificador ED isolado, planilha rev5, 290 instrucoes, meta de 100 MHz na epoca).
-> As ROMs e o `r8064_decode.v` daqui sao **anteriores** aos dos modulos 09/10/13 (que tem os ids 291-295 e a familia ED 26 recodificada): nao misture.
-> O texto abaixo descreve o estado daquela epoca; o testbench daqui continua passando com as ROMs daqui.
+> This is the first package of the project (isolated ED decoder, spreadsheet rev5, 290 instructions, 100 MHz target at the time).
+> The ROMs and `r8064_decode.v` here are **older** than those of modules 09/10/13 (which have ids 291-295 and the recoded ED family 26): do not mix them.
+> The text below describes the state of that time; the testbench here still passes with the ROMs here.
 
-Gerado a partir de `Planilha_instrucoes_R8064_rev5.xlsx`. Cobre SOMENTE a página do prefixo ED:
-as 210 instruções do R8064 (todas começam em ED) e as 80 instruções ED do Z80 (modo Z80 do R8064).
-As páginas do Z80 sem ED (principal, CB, DD, FD, DDCB, FDCB) não têm ROM aqui; seus T-states estão em `ref/z80_classico_tstates.csv`.
+Generated from `Planilha_instrucoes_R8064_rev5.xlsx`. Covers ONLY the ED prefix page:
+the 210 R8064 instructions (all start with ED) and the 80 Z80 ED instructions (R8064 Z80 mode).
+The Z80 pages without ED (main, CB, DD, FD, DDCB, FDCB) have no ROM here; their T-states are in `ref/z80_classico_tstates.csv`.
 
-## O que foi e o que NÃO foi verificado
-- VERIFICADO (Python, `ref/verify_roms.py`): as ROMs reproduzem as 65.536 combinações (b2, b3) esperadas, e as palavras de controle reproduzem Ciclos/Clock, Ciclos/Wait e Penalidade da planilha para as 290 instruções (0 divergências).
-- VERIFICADO (simulação RTL): o testbench passa (PASS) no Icarus Verilog e no Verilator: 65.536 vetores, 0 erros de id, 0 erros de ciclos. Detalhes em `ref/resultados_simulacao.txt`.
-- VERIFICADO (síntese Yosys, `synth_gowin`): o módulo sintetiza; 6 blocos de BSRAM (SPX9) e ~164 LUT4 mais 71 MUX2.
-- VERIFICADO (netlist): simulação em nível de portas da síntese sem BSRAM: PASS. Com BSRAM não dá para simular com os modelos do Yosys (BSRAM sem modelo de comportamento).
-- VERIFICADO (place-and-route): GW2AR-LV18QN88C8/I7, 111 MHz de Fmax (meta 100 MHz) para o decodificador isolado, em um invólucro de teste (`pnr/`). 36 avisos de hold do nextpnr não analisados.
-- NÃO CONCLUÍDO: timing do projeto completo (ALU, FPU, MMU, SDRAM) e os pinos reais do slot MSX.
-- NÃO VERIFICADO: o formato dos `.mi` (Gowin) segue o que eu lembro do IP Core Generator; importe um e confira.
+## What was and was NOT verified
+- VERIFIED (Python, `ref/verify_roms.py`): the ROMs reproduce the 65,536 expected (b2, b3) combinations, and the control words reproduce Clocks, Waits and Penalty of the spreadsheet for the 290 instructions (0 divergences).
+- VERIFIED (RTL simulation): the testbench passes (PASS) in Icarus Verilog and Verilator: 65,536 vectors, 0 id errors, 0 cycle errors. Details in `ref/resultados_simulacao.txt`.
+- VERIFIED (Yosys synthesis, `synth_gowin`): the module synthesizes; 6 BSRAM blocks (SPX9) and ~164 LUT4 plus 71 MUX2.
+- VERIFIED (netlist): gate-level simulation of the synthesis without BSRAM: PASS. With BSRAM it cannot be simulated with the Yosys models (BSRAM has no behavioral model).
+- VERIFIED (place-and-route): GW2AR-LV18QN88C8/I7, 111 MHz Fmax (target 100 MHz) for the isolated decoder, in a test wrapper (`pnr/`). 36 nextpnr hold warnings not analyzed.
+- NOT COMPLETED: timing of the full design (ALU, FPU, MMU, SDRAM) and the real MSX slot pins.
+- NOT VERIFIED: the format of the `.mi` files (Gowin) follows what I remember of the IP Core Generator; import one and check it.
 
 ## Arquivos
-| Arquivo | Conteúdo |
+| File | Contents |
 |---|---|
-| `rom/rom_ed_a.mem` | 256 × 12 bits, indexada por b2. Bit 10 = "página ambígua" (consulta ROM_B); bits 9:0 = id da instrução (acesso direto) |
-| `rom/amb_idx.mem` | 256 × 8 bits: número da página de ROM_B para cada b2 (só vale se o bit 10 de ROM_A = 1). Vira lógica combinacional (LUT) |
-| `rom/rom_ed_b.mem` | 33 páginas × 256 × 10 bits, indexada por {página, b3}: id da instrução (0 = ilegal) |
-| `rom/ctrl.mem` | 512 × 32 bits, indexada pelo id (palavra de controle abaixo) |
-| `gowin_mi/*.mi` | As mesmas ROMs no formato de inicialização do IP de memória da Gowin (a conferir) |
-| `rtl/r8064_decode.v` | Decodificador: ROM_A e ROM_B em paralelo (+1 clock), ROM de controle em série (+2 clocks) |
-| `rtl/tb_r8064_decode.v` | Testbench exaustivo (65.536 vetores) + conferência de ciclos |
-| `ref/expected_id.mem` | id esperado para cada (b2, b3), gerado direto dos padrões de bits (independente das ROMs) |
-| `ref/expected_clock.mem`, `expected_wait.mem`, `expected_pen.mem` | Ciclos/Clock, Ciclos/Wait (típico) e penalidade de desvio por id |
-| `ref/expected_cycles.csv` | Tudo da planilha por instrução (ponto e vírgula, UTF-8) |
-| `ref/instr_ids.csv` | id ↔ mnemônico ↔ hex |
-| `ref/z80_classico_tstates.csv` | T-states do Z80 clássico, 1.270 opcodes |
-| `ref/verify_roms.py` | Conferência em Python, sem simulador |
+| `rom/rom_ed_a.mem` | 256 × 12 bits, indexed by b2. Bit 10 = "ambiguous page" (look up ROM_B); bits 9:0 = instruction id (direct access) |
+| `rom/amb_idx.mem` | 256 × 8 bits: ROM_B page number for each b2 (only valid if bit 10 of ROM_A = 1). Becomes combinational logic (LUT) |
+| `rom/rom_ed_b.mem` | 33 pages × 256 × 10 bits, indexed by {page, b3}: instruction id (0 = illegal) |
+| `rom/ctrl.mem` | 512 × 32 bits, indexed by id (control word below) |
+| `gowin_mi/*.mi` | The same ROMs in the initialization format of Gowin's memory IP (to be checked) |
+| `rtl/r8064_decode.v` | Decoder: ROM_A and ROM_B in parallel (+1 clock), control ROM in series (+2 clocks) |
+| `rtl/tb_r8064_decode.v` | Exhaustive testbench (65,536 vectors) + cycle check |
+| `ref/expected_id.mem` | expected id for each (b2, b3), generated directly from the bit patterns (independent of the ROMs) |
+| `ref/expected_clock.mem`, `expected_wait.mem`, `expected_pen.mem` | Clocks, Waits (typical) and branch penalty per id |
+| `ref/expected_cycles.csv` | Everything from the spreadsheet per instruction (semicolon, UTF-8) |
+| `ref/instr_ids.csv` | id ↔ mnemonic ↔ hex |
+| `ref/z80_classico_tstates.csv` | Classic Z80 T-states, 1,270 opcodes |
+| `ref/verify_roms.py` | Python check, no simulator |
 
-## Palavra de controle (32 bits)
-`[3:0]` bytes da instrução · `[8:4]` leituras (NR) · `[13:9]` escritas (NW) · `[15:14]` acessos de E/S (NIO) · `[23:16]` ocupação do estágio X (EX) · `[25:24]` penalidade: 0 nenhuma, 1 BR_D, 2 BR_X, 3 BR_M · `[26]` existe variante "condição falsa" · `[27]` instrução ED do Z80 · `[31:28]` reservado.
-Fórmulas (iguais às da planilha, com HIT_I = HIT_D = 0): acessos de busca = ⌈bytes/8⌉; Ciclos/Clock = MAX(1, busca+NR+NW, NIO, EX); Ciclos/Wait = (busca+NR)·W_RD_HIT + NW·W_WR_HIT + NIO·W_IO; total = clock + wait + penalidade.
+## Control word (32 bits)
+`[3:0]` instruction bytes · `[8:4]` reads (NR) · `[13:9]` writes (NW) · `[15:14]` I/O accesses (NIO) · `[23:16]` X-stage occupancy (EX) · `[25:24]` penalty: 0 none, 1 BR_D, 2 BR_X, 3 BR_M · `[26]` a "false condition" variant exists · `[27]` Z80 ED instruction · `[31:28]` reserved.
+Formulas (same as the spreadsheet, with HIT_I = HIT_D = 0): fetch accesses = ⌈bytes/8⌉; Clocks = MAX(1, fetch+NR+NW, NIO, EX); Waits = (fetch+NR)·W_RD_HIT + NW·W_WR_HIT + NIO·W_IO; total = clock + wait + penalty.
 
-## Como rodar
-- Icarus Verilog (a partir de uma pasta de trabalho): `cp rom/*.mem ref/*.mem rtl/*.v . && iverilog -g2012 -o sim tb_r8064_decode.v r8064_decode.v && vvp sim` → deve imprimir `PASS`.
-- Sem simulador: `python3 ref/verify_roms.py`.
-- Tudo de uma vez (simulação, síntese, place-and-route): `bash scripts/simular_e_sintetizar.sh`.
-- Gowin EDA: adicione `r8064_decode.v` e os `.mem` ao projeto. Confirme que a síntese infere BSRAM a partir de `$readmemh`; se não, gere as ROMs pelo IP Core Generator com os `.mi`.
+## How to run
+- Icarus Verilog (from a working folder): `cp rom/*.mem ref/*.mem rtl/*.v . && iverilog -g2012 -o sim tb_r8064_decode.v r8064_decode.v && vvp sim` → must print `PASS`.
+- Without a simulator: `python3 ref/verify_roms.py`.
+- Everything at once (simulation, synthesis, place-and-route): `bash scripts/simular_e_sintetizar.sh`.
+- Gowin EDA: add `r8064_decode.v` and the `.mem` files to the project. Confirm that synthesis infers BSRAM from `$readmemh`; if not, generate the ROMs with the IP Core Generator using the `.mi` files.
 
-## Pontos de atenção
-1. As duas leituras em série (decodificação + controle) podem não caber no estágio D de 1 clock do pipeline. Decisões possíveis: dividir D em 2 clocks (o modelo de ciclos precisa de +1 de latência e de penalidade de desvio) ou ler a ROM de controle no estágio R.
-2. Tamanho medido: ROM_A 3 Kbit, ROM_B ≈ 84 Kbit, controle 16 Kbit. A síntese do Yosys mapeou o módulo em 6 blocos de BSRAM (SPX9) e cerca de 164 LUT4; a planilha previa 3 blocos. A aba Ocupação foi corrigida com esses números.
-3. Bytes ED ilegais: `id = 0`. No Z80 clássico independente executam como NOP de 8 T-states; no R8064, devem gerar exceção (decisão sua).
-4. A coluna "cond. falsa" da planilha NÃO está na ROM (só o bit `has_cond`).
+## Points of attention
+1. The two serial reads (decode + control) may not fit in the 1-clock D stage of the pipeline. Possible decisions: split D into 2 clocks (the cycle model needs +1 latency and +1 branch penalty) or read the control ROM in the R stage.
+2. Measured size: ROM_A 3 Kbit, ROM_B ≈ 84 Kbit, control 16 Kbit. Yosys synthesis mapped the module to 6 BSRAM blocks (SPX9) and about 164 LUT4; the spreadsheet predicted 3 blocks. The Occupancy tab was corrected with these numbers.
+3. Illegal ED bytes: `id = 0`. On the independent classic Z80 they execute as an 8 T-state NOP; on the R8064 they should raise an exception (your decision).
+4. The "false cond." column of the spreadsheet is NOT in the ROM (only the `has_cond` bit).

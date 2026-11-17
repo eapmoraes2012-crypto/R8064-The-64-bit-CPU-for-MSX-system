@@ -1,16 +1,16 @@
 --- turbo 0 
 WARNING: tb_z80_msx.v:30: $readmemh(t_msx.hex): Not enough words in the file for the requested range [0:65535].
-PASS: integracao Z80+MSX+SDRAM (turbo=0) tempo=7053995000 violacoes SDRAM=0
+PASS: Z80+MSX+SDRAM integration (turbo=0) time=7053995000 SDRAM violations=0
 tb_z80_msx.v:36: $finish called at 7053995000 (1ps)
 --- turbo 1 
 WARNING: tb_z80_msx.v:30: $readmemh(t_msx.hex): Not enough words in the file for the requested range [0:65535].
-PASS: integracao Z80+MSX+SDRAM (turbo=1) tempo=3531765000 violacoes SDRAM=0
+PASS: Z80+MSX+SDRAM integration (turbo=1) time=3531765000 SDRAM violations=0
 tb_z80_msx.v:36: $finish called at 3531765000 (1ps)
 --- turbo 2 
 WARNING: tb_z80_msx.v:30: $readmemh(t_msx.hex): Not enough words in the file for the requested range [0:65535].
-PASS: integracao Z80+MSX+SDRAM (turbo=2) tempo=1806685000 violacoes SDRAM=0
+PASS: Z80+MSX+SDRAM integration (turbo=2) time=1806685000 SDRAM violations=0
 tb_z80_msx.v:36: $finish called at 1806685000 (1ps)
 --- turbo 3 
 WARNING: tb_z80_msx.v:30: $readmemh(t_msx.hex): Not enough words in the file for the requested range [0:65535].
-PASS: integracao Z80+MSX+SDRAM (turbo=3) tempo=962515000 violacoes SDRAM=0
+PASS: Z80+MSX+SDRAM integration (turbo=3) time=962515000 SDRAM violations=0
 tb_z80_msx.v:36: $finish called at 962515000 (1ps)

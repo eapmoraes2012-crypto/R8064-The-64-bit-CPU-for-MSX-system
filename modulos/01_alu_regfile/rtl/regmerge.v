@@ -1,5 +1,5 @@
-// regmerge.v - escrita parcial: mescla "novo" no valor antigo do registrador (o upper e preservado).
-// wsz: 0 = byte baixo [7:0], 1 = byte alto [15:8], 2 = 16 bits, 3 = 32 bits, 4 = 64 bits.
+// regmerge.v - partial write: merges "new" into the register's old value (the upper part is preserved).
+// wsz: 0 = low byte [7:0], 1 = high byte [15:8], 2 = 16 bits, 3 = 32 bits, 4 = 64 bits.
 module regmerge(
     input  wire [63:0] old,
     input  wire [63:0] newv,

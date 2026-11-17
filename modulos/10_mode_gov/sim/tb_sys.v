@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// sistema MSX: programa de teste no mapper (slot 3, segmento 1 -> fisico 4000h), modo e A8/FC configurados por E/S. Memoria so responde a enderecos FISICOS.
+// MSX system: test program in the mapper (slot 3, segment 1 -> physical 4000h), mode and A8/FC configured by I/O. Memory only answers PHYSICAL addresses.
 module tb_sys;
     reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we, i_hit, d_hit, d_wr_ok; wire [63:0] i_paddr, d_paddr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f, d_be; wire dbg_sig;
@@ -11,7 +11,7 @@ module tb_sys;
         .io_we(io_we), .io_re(io_re), .io_a(io_a), .io_wd(io_wd), .io_rd(io_rd), .io_oe(io_oe), .io_x_we(iox_we), .io_x_re(iox_re), .io_x_a(iox_a), .io_x_wd(iox_wd), .io_x_rd(8'h5A), .port_c(8'd0), .fm_we(1'b0), .fm_re(1'b0), .fm_a(2'd0), .fm_wd(8'd0), .fm_rd(), .fifo_irq(), .fifo_rst(),
         .native64(nat), .clk_sel(csel), .is_z80(z80), .is_rom(rom), .mode_busy(mbusy), .dbg_pc(dbg_pc), .dbg_f(dbg_f), .dbg_sig(dbg_sig), .gov_cv(cv));
     integer ic = 0, errs = 0, bad_i = 0, bad_d = 0, n_iss = 0, tfin = 0, now = 0;
-    initial $readmemh("prog.mem", mem, 2048, 2559);                     // programa em 4000h..4FFFh (palavra 2048 = 4000h/8)
+    initial $readmemh("prog.mem", mem, 2048, 2559);                     // program at 4000h..4FFFh (word 2048 = 4000h/8)
     always @(posedge clk) begin
         i_ack <= 0; d_ack <= 0; now <= now + 1;
         if (go_mem) begin
@@ -26,22 +26,22 @@ module tb_sys;
     task wio(input [7:0] ad, input [7:0] d); begin @(posedge clk); #1 io_a = ad; io_wd = d; io_we = 1; @(posedge clk); #1 io_we = 0; end endtask
     task rio(input [7:0] ad, output [7:0] d); begin @(posedge clk); #1 io_a = ad; io_re = 1; #1 d = io_rd; @(posedge clk); #1 io_re = 0; end endtask
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     reg [7:0] v;
     initial begin
         repeat (4) @(posedge clk); rst = 0;
         rio(8'h3D, v); chk("ID 3DH", v, 8'h64);
         rio(8'h77, v); chk("porta externa", v, 8'h5A);
-        wio(8'hA8, 8'hFF); wio(8'hFC, 8'h01); rio(8'hFC, v); chk("FCH lido de volta (mapper de 8 bits: todos validos)", v, 8'h01); rio(8'hA8, v); chk("A8H lido de volta", v, 8'hFF);
+        wio(8'hA8, 8'hFF); wio(8'hFC, 8'h01); rio(8'hFC, v); chk("FCH read back (8-bit mapper: all valid)", v, 8'h01); rio(8'hA8, v); chk("A8H read back", v, 8'hFF);
         if ($test$plusargs("r800")) begin wio(8'hE4, 8'h06); wio(8'hE5, 8'h00); end
         go_mem = 1;
         repeat (60000) @(posedge clk);
         chk("AX", dut.u_cpu.u_core.u_rf1.mem_a[0], 64'd15); chk("DE", dut.u_cpu.u_core.u_rf1.mem_a[2], 64'd15); chk("HL", dut.u_cpu.u_core.u_rf1.mem_a[3], 64'h68);
         chk("m40 (fisico 4040h)", mem[(16'h4040)/8 & 4095], 5); chk("m60 (fisico 4060h)", mem[(16'h4060)/8 & 4095], 15);
-        chk("buscas fora do fisico 4xxx", bad_i, 0); chk("dados fora do fisico 4xxx", bad_d, 0);
-        $display("modo z80=%0d rom=%0d | instrucoes=%0d | laco final em %0d clocks | dbg_pc=%h", z80, rom, n_iss, tfin, dbg_pc);
-        if (errs == 0) $display("RESULTADO: SISTEMA MSX OK"); else $display("RESULTADO: %0d ERROS", errs);
+        chk("fetches outside physical 4xxx", bad_i, 0); chk("data outside physical 4xxx", bad_d, 0);
+        $display("mode z80=%0d rom=%0d | instructions=%0d | final loop at %0d clocks | dbg_pc=%h", z80, rom, n_iss, tfin, dbg_pc);
+        if (errs == 0) $display("RESULT: MSX SYSTEM OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

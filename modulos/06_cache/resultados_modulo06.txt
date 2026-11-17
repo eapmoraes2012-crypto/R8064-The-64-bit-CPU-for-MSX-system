@@ -1,19 +1,19 @@
 MODULO 06 - CACHE 8 KB I + 8 KB D (cache8k.v, mem_arb.v)
-Projeto: 2 vias, linha de 32 B (4 palavras de 64 b), BSRAM, escrita direta (write-through) + buffer de escrita de 4 entradas, sem alocar na escrita, LRU por conjunto.
-Etiquetas+valido em LUTRAM (2 copias), dados em 4 BSRAM (SDPX9B) por cache. Invalidacao (entrada inv): varredura de 128 clocks (cache indisponivel nesse tempo); tambem apos o reset.
-SIMULACAO (Icarus; tb_cache.v): D e I simultaneos -> cache8k x2 -> mem_arb -> sdram_ctrl -> sdram_model, memoria sombra confere cada leitura e, apos drenar, toda a SDRAM.
-  Latencia de acerto: 1 clock; vazao de acertos: 1 acesso/clock (256 leituras em 258 clocks); escrita ocupa 2 clocks (1 bolha).
-  Latencia de falha de leitura (aceite->dado): 31 clocks (D) / 33 clocks (I, esperando o arbitro) - maior que a estimativa de 20-25 do 05b (4 leituras de 64 b em serie no controlador de 1 pedido).
-  Testes: T1 latencias, T2 vazao, T3 byte-enable/escrita sem alocar, T4/T4b conflito+LRU exato, T5 coerencia com inv, T6-T8 aleatorios (60k/80k/40k clocks) com 0 erros, 0 violacoes de temporizacao SDRAM.
-  Mutantes: 8 de 9 mortos (lru, drenagem antes do preenchimento, byte-enable, via 1 nao escrita, buffer cheio, inv ignorado, bit valido, ...). Sobrevivente: remover s1_ok<=0 no fim da varredura (caso limite: leitura pendente no conjunto 127 durante a varredura) - mantido por seguranca, nao exercitado.
-SINTESE/P&R (Yosys synth_gowin + nextpnr, GW2AR-LV18QN88C8/I7, 100 MHz, wrapper com LFSR): cache D = 2543 LUT4, 1158 FF, 6 BSRAM (4 dados + 2 buffers); Fmax 110.7 MHz (semente 1), 108.1 (semente 2). Caminho critico do wrapper termina em BSRAM->rdata->paridade (artefato do wrapper); na CPU rdata entra no estagio seguinte.
-Evolucao: v1 (vetores de valido 128 b + mux dependente de ready->accept) 86 MHz; v2 (leitura dupla A/B) 71 MHz porque o yosys refundia as leituras; v3 final: valido dentro da etiqueta, 2 copias A/B, comparacao antes do registrador, uma unica porta de escrita (senao as etiquetas viram flip-flops: 8240 LUT).
-RESSALVAS: coerencia com Z80/MSX/MMU so via inv (varredura); I-cache nao ve as escritas do D (precisa inv); enderecos de 19 bits (4 MB) fixos; leitura de falha serializa 4 acessos de 64 b (burst no controlador reduziria para ~20 clocks).
+Design: 2 ways, 32 B line (4 64-bit words), BSRAM, write-through + 4-entry write buffer, no write allocate, LRU per set.
+Tags+valid in LUTRAM (2 copies), data in 4 BSRAM (SDPX9B) per cache. Invalidation (inv input): 128-clock sweep (cache unavailable during that time); also after reset.
+SIMULATION (Icarus; tb_cache.v): D and I simultaneously -> cache8k x2 -> mem_arb -> sdram_ctrl -> sdram_model, shadow memory checks every read and, after draining, the whole SDRAM.
+  Hit latency: 1 clock; hit throughput: 1 access/clock (256 reads in 258 clocks); a write takes 2 clocks (1 bubble).
+  Read miss latency (accept->data): 31 clocks (D) / 33 clocks (I, waiting for the arbiter) - higher than the 20-25 estimate of 05b (4 64-bit reads in series in the 1-request controller).
+  Tests: T1 latencies, T2 throughput, T3 byte-enable/write without allocate, T4/T4b conflict+exact LRU, T5 coherence with inv, T6-T8 random (60k/80k/40k clocks) with 0 errors, 0 SDRAM timing violations.
+  Mutants: 8 of 9 killed (lru, drain before fill, byte-enable, way 1 not written, full buffer, inv ignored, valid bit, ...). Survivor: removing s1_ok<=0 at the end of the sweep (corner case: pending read in set 127 during the sweep) - kept for safety, not exercised.
+SYNTHESIS/P&R (Yosys synth_gowin + nextpnr, GW2AR-LV18QN88C8/I7, 100 MHz, LFSR wrapper): D cache = 2543 LUT4, 1158 FF, 6 BSRAM (4 data + 2 buffers); Fmax 110.7 MHz (seed 1), 108.1 (seed 2). The wrapper's critical path ends at BSRAM->rdata->parity (wrapper artifact); in the CPU rdata goes into the next stage.
+Evolution: v1 (128-bit valid vectors + mux dependent on ready->accept) 86 MHz; v2 (dual A/B read) 71 MHz because yosys merged the reads again; v3 final: valid inside the tag, 2 A/B copies, comparison before the register, a single write port (otherwise the tags become flip-flops: 8240 LUT).
+CAVEATS: coherence with Z80/MSX/MMU only through inv (sweep); the I-cache does not see the D writes (needs inv); fixed 19-bit (4 MB) addresses; a read miss serializes 4 64-bit accesses (a burst in the controller would reduce it to ~20 clocks).
 
-CACHE DE INSTRUCOES 4 KB (cache_dm WR=0 IDX=7 STATS=0) - medido pelo usuario 04/11/2026 (Yosys 0.70 + nextpnr, GW2AR-LV18QN88C8/I7):
+4 KB INSTRUCTION CACHE (cache_dm WR=0 IDX=7 STATS=0) - measured by the user 04/11/2026 (Yosys 0.70 + nextpnr, GW2AR-LV18QN88C8/I7):
   LUT1 69 + LUT2 53 + LUT3 75 + LUT4 196 = 393; ALU 11; RAM16SDP4 24 (~96 LUT4 eq.); FF 341; BSRAM 3 (1 DPX9B + 2 SDPX9B). Total ~500 LUT4 eq. (inclui ~50-100 do involucro LFSR).
-  Fmax 115,6 MHz (PASS a 100). Obs.: o involucro antigo sumia na sintese porque m_wdata/m_be ficam sem driver com WR=0 e entravam na paridade de saida.
+  Fmax 115.6 MHz (PASS at 100). Note: the old wrapper vanished in synthesis because m_wdata/m_be are left undriven with WR=0 and fed the output parity.
 
-ATUALIZACAO 14/11/2026 - cache_dm (a cache usada no SoC): sim/tb_cache_dm.v terminava com 2 FALHAS porque o T4b ainda era o teste de LRU da cache8k de 2 vias.
-  T4b reescrito para o mapeamento direto (A e C na mesma linha: 4 falhas; B preservada; C expulsa). Resultado: TODOS OS TESTES PASSARAM, 0 violacoes de SDRAM
-  (B2B=1 e B2B=0). rtl/cache_dm.v e sim/cache_dm.v agora sao a mesma versao de 13_soc/rtl (com o parametro B2B). Saida: sim/saida_sim_dm.txt.
+UPDATE 14/11/2026 - cache_dm (the cache used in the SoC): sim/tb_cache_dm.v ended with 2 FAILURES because T4b was still the LRU test of the 2-way cache8k.
+  T4b rewritten for the direct mapping (A and C on the same line: 4 misses; B preserved; C evicts). Result: ALL TESTS PASSED, 0 SDRAM violations
+  (B2B=1 and B2B=0). rtl/cache_dm.v and sim/cache_dm.v are now the same version as 13_soc/rtl (with the B2B parameter). Output: sim/saida_sim_dm.txt.

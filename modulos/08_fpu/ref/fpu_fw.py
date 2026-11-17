@@ -1,26 +1,26 @@
-# fpu_fw.py - FPU x87 de 80 bits em FIRMWARE (medida A): so primitivas inteiras de 64 bits (mul 64x64->128, div 128/64, clz, shifts, add/sub/cmp com vai-um).
-# Verificado bit a bit contra os mesmos vetores da FPU em hardware (sim/vetores.txt). Casos especiais (NaN, inf, zero, nao suportado) caem na tabela
-# de decisao (fpref.alu, so ramificacoes, custo fixo SPC clocks). Custo = clocks do pipeline contados por primitiva (modelo abaixo).
+# fpu_fw.py - 80-bit x87 FPU in FIRMWARE (measure A): only 64-bit integer primitives (mul 64x64->128, div 128/64, clz, shifts, add/sub/cmp with carry).
+# Verified bit by bit against the same vectors as the hardware FPU (sim/vetores.txt). Special cases (NaN, inf, zero, unsupported) fall into the table
+# decision (fpref.alu, branches only, fixed cost SPC clocks). Cost = pipeline clocks counted per primitive (model below).
 import sys
 from math import isqrt
 import fpref as R
 M64 = R.M64; BIAS = R.BIAS; EMIN = R.EMIN; EMAX = R.EMAX
-# modelo de custo (clocks do pipeline a 100 MHz, 1 instrucao/clock em ALU dependente; valores de modulo03 e core_min)
+# cost model (pipeline clocks at 100 MHz, 1 instruction/clock in dependent ALU; values from module03 and core_min)
 C_ALU, C_MUL, C_DIV, C_BR, SPC = 1, 8, 66, 2, 40
 cnt = 0
 def c(n): 
     global cnt; cnt += n
 def clz64(x): c(2); return 64 - x.bit_length()
 def unpack(x):
-    """(s,e,m) com m normalizado (bit63=1), e = expoente nao enviesado do bit lider; retorna tambem denormal?"""
+    """(s,e,m) with m normalized (bit63=1), e = unbiased exponent of the leading bit; also returns denormal?"""
     s = x >> 79; ex = (x >> 64) & 0x7FFF; m = x & M64; c(5)
     if ex == 0:
         lz = clz64(m); c(3); return s, EMIN - lz, (m << lz) & M64, True
     return s, ex - BIAS, m, False
 
 def rpack(s, E, M, stk, rc, p, emin, emax, fmt):
-    """M: 128 bits normalizado (bit127=1) valor = M*2^(E-127). Retorna (packed, flags, up)."""
-    c(30)  # keep/drop, mascaras, comparacoes meia-escala (~30 ops de 64 bits, 128 bits = 2x)
+    """M: 128 bits normalized (bit127=1) value = M*2^(E-127). Returns (packed, flags, up)."""
+    c(30)  # keep/drop, masks, half-scale comparisons (~30 64-bit ops, 128 bits = 2x)
     keep = p if E >= emin else p - (emin - E)
     d = 128 - keep
     k = M >> d if d < 128 else 0
@@ -94,7 +94,7 @@ def k_div(sa, ea, ma, sb, eb, mb):
 def k_sqrt(ea, ma):
     t = ea - 63; sh = 130 + (t & 1); N = ma << sh
     r = isqrt(N); stk = r * r != N
-    c(97 * 6 + 20)  # digito-a-digito: ~97 bits x (shift, comp, sub, or, 128 bits) ~ 6 ops
+    c(97 * 6 + 20)  # digit-by-digit: ~97 bits x (shift, compare, sub, or, 128 bits) ~ 6 ops
     bl = r.bit_length(); M = r << (128 - bl); E = (t - sh) // 2 + bl - 1
     return 0, E, M, stk
 
@@ -193,8 +193,8 @@ if __name__ == '__main__':
         (res, f, u, k), cy = fw_alu(op, A, B, rc, pc); n += 1
         if (res, f, int(bool(u)), k) != (Rr, fl, up, cc):
             bad += 1
-            if bad <= 8: print('ERRO', ln.strip(), '->', hex(res), hex(f), int(bool(u)), k)
+            if bad <= 8: print('ERROR', ln.strip(), '->', hex(res), hex(f), int(bool(u)), k)
         nm = R.OPS[op]; tot.setdefault(nm, []).append(cy)
-    print('vetores', n, 'erros', bad)
+    print('vectors', n, 'errors', bad)
     for nm, l in tot.items():
-        l.sort(); print('%-7s n=%5d mediana=%4d max=%4d' % (nm, len(l), l[len(l)//2], l[-1]))
+        l.sort(); print('%-7s n=%5d median=%4d max=%4d' % (nm, len(l), l[len(l)//2], l[-1]))

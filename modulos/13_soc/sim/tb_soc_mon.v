@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
-// Monitor real (fw/monitor_l0..7.hex) no SoC completo, com o lado MSX simulado por tarefas (FIFO/portas 0..3 e janela).
-// Testa: PING, HELLO, OP desconhecida, WIN_PUT (CRC), WIN_GET, POKE/PEEK nao alinhados, CRC, EXEC (+EVT 01), desalinhamento.
+// Real monitor (fw/monitor_l0..7.hex) in the full SoC, with the MSX side simulated by tasks (FIFO/ports 0..3 and window).
+// Tests: PING, HELLO, unknown OP, WIN_PUT (CRC), WIN_GET, unaligned POKE/PEEK, CRC, EXEC (+EVT 01), misalignment.
 module tb_soc_mon;
     reg clk = 0, rst = 1; always #5 clk = ~clk;
     wire io_oe, iox_we, iox_re; wire [7:0] io_rd, iox_a, iox_wd;
@@ -21,7 +21,7 @@ module tb_soc_mon;
     sdram_model mdl(.clk(clk), .cke(s_cke), .cs_n(s_cs_n), .ras_n(s_ras_n), .cas_n(s_cas_n), .we_n(s_we_n), .dqm(s_dqm), .ba(s_ba), .a(s_a), .dq_i(s_dq_o), .dq_oe(s_dq_oe), .dq_o(mdq));
     integer errs = 0, k, n, psz;
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     // ---- lado MSX ----
     task fmw(input [1:0] a, input [7:0] d); begin @(posedge clk); #1 fm_a = a; fm_wd = d; fm_we = 1; @(posedge clk); #1 fm_we = 0; end endtask
@@ -37,11 +37,11 @@ module tb_soc_mon;
     task waitdone(input integer maxclk); integer c, i; reg [7:0] s, lo, hi; begin
         s = 0; c = 0;
         while (!s[3] && c < maxclk) begin fmr(2'd1, s); c = c + 1; repeat (20) @(posedge clk); end
-        if (!s[3]) begin errs = errs + 1; $display("ERRO: timeout esperando CONCLUIDO"); rlen = 0; end
+        if (!s[3]) begin errs = errs + 1; $display("ERROR: timeout waiting for DONE"); rlen = 0; end
         else begin
             fmr(2'd2, lo); fmr(2'd3, hi); rlen = {hi, lo};
             for (i = 0; i < rlen; i = i + 1) fmr(2'd0, rsp[i]);
-            fmw(2'd1, 8'h80);                   // limpa CONCLUIDO
+            fmw(2'd1, 8'h80);                   // clears DONE
         end
     end endtask
     function [15:0] crcb(input [15:0] c, input [7:0] b); integer j; reg [15:0] x; begin
@@ -67,28 +67,28 @@ module tb_soc_mon;
         // 2. HELLO
         req(8'h01, 8'h06); msg[2] = 8'h01; send(3); waitdone(4000);
         chk("HELLO len", rlen, 14); chk("HELLO op", rsp[0], 8'h81); chk("HELLO 'R'", rsp[3], 8'h52); chk("HELLO '4'", rsp[7], 8'h34); chk("HELLO ver", rsp[8], 1);
-        chk("HELLO msgmax", {rsp[10], rsp[9]}, 16'h0800); chk("HELLO bloco", {rsp[12], rsp[11]}, 16'h4000); chk("HELLO rec", rsp[13], 8'h07);
+        chk("HELLO msgmax", {rsp[10], rsp[9]}, 16'h0800); chk("HELLO block", {rsp[12], rsp[11]}, 16'h4000); chk("HELLO rec", rsp[13], 8'h07);
         $display("HELLO ok");
         // 3. OP desconhecida
         req(8'h55, 8'h07); send(2); waitdone(4000);
         chk("op desc st", rsp[2], 8'h01); chk("op desc seq", rsp[1], 8'h07);
-        // 4. WIN_PUT -> 10000h (psz = 4096 por padrao; +big = bloco completo de 16 KB)
+        // 4. WIN_PUT -> 10000h (psz = 4096 by default; +big = full 16 KB block)
         psz = 4096; if ($test$plusargs("big")) psz = 16384;
         for (k = 0; k < 16384; k = k + 1) sbw(k[13:0], pat(k));
         req(8'h10, 8'h08); put32(2, 32'h0001_0000); msg[6] = psz[7:0]; msg[7] = psz[15:8]; if (psz == 16384) begin msg[6] = 0; msg[7] = 0; end send(8); waitdone(60000);
         c = 16'hFFFF; for (k = 0; k < psz; k = k + 1) c = crcb(c, pat(k));
         chk("PUT len", rlen, 5); chk("PUT op", rsp[0], 8'h90); chk("PUT st", rsp[2], 0); chk("PUT crc", {rsp[4], rsp[3]}, c);
         n = 0; for (k = 0; k < psz; k = k + 1) if (sdb(32'h10000 + k) !== pat(k)) n = n + 1;
-        chk("PUT dados na SDRAM (bytes errados)", n, 0);
+        chk("PUT data in SDRAM (wrong bytes)", n, 0);
         $display("WIN_PUT ok crc=%h (t=%0t)", c, $time);
-        // 5. WIN_GET: SDRAM[10000h .. +4096] -> janela; MSX le a janela
+        // 5. WIN_GET: SDRAM[10000h .. +4096] -> window; the MSX reads the window
         req(8'h11, 8'h09); put32(2, 32'h0001_0400); msg[6] = 8'h00; msg[7] = 8'h04; send(8); waitdone(60000);
         c = 16'hFFFF; for (k = 0; k < 1024; k = k + 1) c = crcb(c, pat(1024 + k));
         chk("GET len", rlen, 5); chk("GET st", rsp[2], 0); chk("GET crc", {rsp[4], rsp[3]}, c);
         n = 0; for (k = 0; k < 1024; k = k + 1) begin sbr(k[13:0], t8); if (t8 !== pat(1024 + k)) n = n + 1; end
-        chk("GET janela (bytes errados)", n, 0);
+        chk("GET window (wrong bytes)", n, 0);
         $display("WIN_GET ok");
-        // 6. POKE nao alinhado em 20003h (5 bytes) + PEEK de 20000h (16 bytes)
+        // 6. unaligned POKE at 20003h (5 bytes) + PEEK of 20000h (16 bytes)
         req(8'h12, 8'h0A); put32(2, 32'h0002_0003); for (k = 0; k < 5; k = k + 1) msg[6 + k] = 8'hA0 + k; send(11); waitdone(60000);
         chk("POKE st", rsp[2], 0); chk("POKE len", rlen, 3);
         req(8'h13, 8'h0B); put32(2, 32'h0002_0000); msg[6] = 16; msg[7] = 0; send(8); waitdone(60000);
@@ -99,12 +99,12 @@ module tb_soc_mon;
         // 7. CRC de 100 bytes em 10008h
         req(8'h30, 8'h0C); put32(2, 32'h0001_0008); put32(6, 32'd100); send(10); waitdone(60000);
         c = 16'hFFFF; for (k = 0; k < 100; k = k + 1) c = crcb(c, pat(8 + k));
-        chk("CRC st", rsp[2], 0); chk("CRC valor", {rsp[4], rsp[3]}, c);
+        chk("CRC st", rsp[2], 0); chk("CRC value", {rsp[4], rsp[3]}, c);
         $display("CRC ok");
-        // 8. erros: WIN_PUT desalinhado, EXEC modo 1
+        // 8. errors: misaligned WIN_PUT, EXEC mode 1
         req(8'h10, 8'h0D); put32(2, 32'h0001_0004); msg[6] = 0; msg[7] = 0; send(8); waitdone(60000);
         chk("desalinhado st", rsp[2], 8'h03);
-        // 9. EXEC: programa em 4000h (via WIN_PUT): LD A,77h; LD (5000h),A; LD HL,0ABCDh; RET
+        // 9. EXEC: program at 4000h (via WIN_PUT): LD A,77h; LD (5000h),A; LD HL,0ABCDh; RET
         msg[0] = 8'h3E; msg[1] = 8'h77; msg[2] = 8'h32; msg[3] = 8'h00; msg[4] = 8'h50; msg[5] = 8'h21; msg[6] = 8'hCD; msg[7] = 8'hAB; msg[8] = 8'hC9;
         for (k = 0; k < 16; k = k + 1) sbw(k[13:0], k < 9 ? msg[k] : 8'h00);
         req(8'h10, 8'h0E); put32(2, 32'h0000_4000); msg[6] = 16; msg[7] = 0; send(8); waitdone(60000);
@@ -113,12 +113,12 @@ module tb_soc_mon;
         chk("EXEC resp op", rsp[0], 8'hA0); chk("EXEC resp st", rsp[2], 0);
         waitdone(60000);
         chk("EVT len", rlen, 7); chk("EVT op", rsp[0], 8'hF0); chk("EVT seq", rsp[1], 0); chk("EVT cod", rsp[2], 8'h01);
-        chk("EVT saida", {rsp[4], rsp[3]}, 16'hABCD);
-        chk("programa gravou 5000h", sdb(32'h5000), 8'h77);
+        chk("EVT output", {rsp[4], rsp[3]}, 16'hABCD);
+        chk("program wrote 5000h", sdb(32'h5000), 8'h77);
         $display("EXEC ok");
         $display("pc=%h", dbg_pc);
-        if (errs == 0) $display("RESULTADO: MONITOR OK"); else $display("RESULTADO: %0d ERROS", errs);
+        if (errs == 0) $display("RESULT: MONITOR OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
-    initial begin #400000000; $display("RESULTADO: TIMEOUT GLOBAL (pc=%h)", dbg_pc); $finish; end
+    initial begin #400000000; $display("RESULT: TIMEOUT GLOBAL (pc=%h)", dbg_pc); $finish; end
 endmodule

@@ -1,8 +1,8 @@
-// r8064_mdu.v - unidade iterativa de multiplicacao e divisao (MLTUx/MLTSx/DIVUx/DIVSx), 1 bit por clock, somador unico de 66 bits compartilhado.
-// Largura W = 8 << d_w (do ultimo ld_b). Multiplicacao: A (d_a) * B (b_q) -> produto de 2W bits.
-// Divisao: dividendo de 2W bits = {h_q, d_a} (so W = 16 e 64 usam h_q; W = 8: d_a[15:0]; W = 32: d_a[63:0]) / B -> quociente W bits em r[W-1:0], resto em r[2W-1:W].
-// inv = divisao por zero ou quociente fora da faixa (operandos devem ficar inalterados; o nucleo devolve o valor antigo do destino).
-// fl = {S,Z,Y,H,X,PV,N,C}; cada operacao dura aproximadamente W + 8 clocks.
+// r8064_mdu.v - iterative multiplication and division unit (MLTUx/MLTSx/DIVUx/DIVSx), 1 bit per clock, single shared 66-bit adder.
+// Width W = 8 << d_w (from the last ld_b). Multiplication: A (d_a) * B (b_q) -> 2W-bit product.
+// Division: 2W-bit dividend = {h_q, d_a} (only W = 16 and 64 use h_q; W = 8: d_a[15:0]; W = 32: d_a[63:0]) / B -> W-bit quotient in r[W-1:0], remainder in r[2W-1:W].
+// inv = division by zero or out-of-range quotient (operands must stay unchanged; the core returns the old value of the destination).
+// fl = {S,Z,Y,H,X,PV,N,C}; each operation lasts approximately W + 8 clocks.
 module r8064_mdu(
     input  wire clk, rst,
     input  wire ld_b, ld_h, input wire [63:0] d_ld, input wire [1:0] d_w,
@@ -16,7 +16,7 @@ module r8064_mdu(
         if (ld_b) begin b_q <= d_ld; w_q <= d_w; end
         if (ld_h) h_q <= d_ld;
     end
-    // tudo que depende da largura W (8/16/32/64) e tabelado por w_q (sem deslocadores de 128 bits)
+    // everything that depends on the width W (8/16/32/64) is tabulated by w_q (no 128-bit shifters)
     wire [6:0]  W  = 7'd8 << w_q;
     wire [63:0] mW = (w_q == 2'd0) ? 64'hFF : (w_q == 2'd1) ? 64'hFFFF : (w_q == 2'd2) ? 64'hFFFF_FFFF : 64'hFFFF_FFFF_FFFF_FFFF;
     wire [127:0] m2 = (w_q == 2'd0) ? 128'hFFFF : (w_q == 2'd1) ? 128'hFFFF_FFFF : (w_q == 2'd2) ? 128'hFFFF_FFFF_FFFF_FFFF : {128{1'b1}};   // mascara de 2W bits
@@ -41,11 +41,11 @@ module r8064_mdu(
             default: ;
         endcase
     end
-    // sinal e extensao
+    // sign and extension
     function [63:0] sx(input [63:0] x, input [1:0] w); sx = bitw(x, w) ? (x | ~mW) : (x & mW); endfunction
     // dividendo de 2W bits: W=8: d_a[15:0] | W=16: {h_q[15:0], d_a[15:0]} | W=32: d_a | W=64: {h_q, d_a}
     wire [127:0] Dr = (w_q == 2'd0) ? {112'd0, d_a[15:0]} : (w_q == 2'd1) ? {96'd0, h_q[15:0], d_a[15:0]} : (w_q == 2'd2) ? {64'd0, d_a} : {h_q, d_a};
-    wire dsg = (w_q == 2'd0) ? Dr[15] : (w_q == 2'd1) ? Dr[31] : (w_q == 2'd2) ? Dr[63] : Dr[127];      // sinal do dividendo (bit 2W-1)
+    wire dsg = (w_q == 2'd0) ? Dr[15] : (w_q == 2'd1) ? Dr[31] : (w_q == 2'd2) ? Dr[63] : Dr[127];      // sign of the dividend (bit 2W-1)
     wire [127:0] Ds = (op[0] && dsg) ? (Dr | ~m2) : Dr;
     wire sa_m = bitw(d_a, w_q), sb = bitw(b_q, w_q);
     wire [63:0] rem0 = (w_q == 2'd0) ? {56'd0, rA[15:8]} : (w_q == 2'd1) ? {48'd0, rA[31:16]} : (w_q == 2'd2) ? {32'd0, rA[63:32]} : rH;   // ({rH,rA} >> W) & mW

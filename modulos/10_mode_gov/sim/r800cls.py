@@ -1,6 +1,6 @@
 import re
 R='[ABCDEHL]'
-# (regex, R800 base, R800 total com RAM interna [Grauw 'R800+wait'], observacao)
+# (regex, R800 base, R800 total with internal RAM [Grauw 'R800+wait'], note)
 RULES=[
  (r'^NOP$','1','1'),
  (rf'^LD {R},{R}$','1','1'),

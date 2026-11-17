@@ -1,13 +1,13 @@
-# gen_z80_prog.py - programa aleatorio de 64 KB para o teste do nucleo em modo Z80.
-# Uso: python3 gen_z80_prog.py <semente> <saida.bin> [paginas]    paginas: soma de 1 = CB, 2 = DD/FD, 4 = ED (prefixos permitidos; padrao 0 = so a pagina principal)
-# Toda a memoria recebe bytes aleatorios tirados dos opcodes permitidos (um desvio para qualquer endereco cai em codigo valido). Ficam de fora: HALT (76),
-# OUT/IN (D3/DB: o modelo de referencia so tem stub) e os prefixos nao pedidos. O inicio carrega todos os registradores com valores aleatorios.
+# gen_z80_prog.py - 64 KB random program for the core test in Z80 mode.
+# Usage: python3 gen_z80_prog.py <seed> <output.bin> [pages]    pages: sum of 1 = CB, 2 = DD/FD, 4 = ED (allowed prefixes; default 0 = main page only)
+# All memory receives random bytes drawn from the allowed opcodes (a jump to any address lands on valid code). Left out: HALT (76),
+# OUT/IN (D3/DB: the reference model only has a stub) and the prefixes not requested. The start loads all registers with random values.
 import random,sys
 seed=int(sys.argv[1]); out=sys.argv[2]; pages=int(sys.argv[3]) if len(sys.argv)>3 else 0
 r=random.Random(seed)
-bad={0x76,0xD3,0xDB,0xCB,0xDD,0xFD,0xED}     # os prefixos so entram junto com um segundo byte valido
+bad={0x76,0xD3,0xDB,0xCB,0xDD,0xFD,0xED}     # the prefixes only enter together with a valid second byte
 ok=[b for b in range(256) if b not in bad]
-ED=[b for b in range(0x40,0x80) if b!=0x5F]+[0xA0,0xA1,0xA8,0xA9,0xB0,0xB1,0xB8,0xB9]      # ED do Z80 aceitos pelo teste
+ED=[b for b in range(0x40,0x80) if b!=0x5F]+[0xA0,0xA1,0xA8,0xA9,0xB0,0xB1,0xB8,0xB9]      # Z80 ED ones accepted by the test
 m=bytearray()
 while len(m)<65536:
     k=r.random()

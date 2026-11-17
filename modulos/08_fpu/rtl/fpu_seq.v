@@ -1,12 +1,12 @@
-// fpu_seq.v - nucleo aritmetico da FPU de 80 bits (x87 estendido) do R8064, feito para ocupar pouco. Mesma interface e mesmos resultados do fpu_alu.v
-// (bit a bit, vetores do fpref.py). Caminho de dados: registrador de trabalho X (68 bits) que so recebe 8 coisas (MA, MB, a soma, X deslocado de 4 ou 1 para
-// cada lado, o quociente/raiz), UM somador (X ou MA) +/- (X, MA ou a tentativa da raiz), e dois registradores de 66 bits (MA, MB). Multiplicacao, divisao e
-// raiz sao bit a bit nesse somador (2 a 3 clocks por bit).
+// fpu_seq.v - arithmetic core of the R8064 80-bit FPU (extended x87), made to take little area. Same interface and same results as fpu_alu.v
+// (bit by bit, fpref.py vectors). Datapath: working register X (68 bits) that only receives 8 things (MA, MB, the sum, X shifted by 4 or 1 to
+// each side, the quotient/root), ONE adder (X or MA) +/- (X, MA or the root trial), and two 66-bit registers (MA, MB). Multiplication, division and
+// square root are bit by bit in this adder (2 to 3 clocks per bit).
 // Operacoes (op): 0 ADD, 1 SUB, 2 MUL, 3 DIV, 4 SQRT, 5 CMP, 6 FILD(int64), 7 FIST(int64), 8 RNDINT, 9 LD32, 10 LD64, 11 ST32, 12 ST64.
-// a = ST0 (ou dado de memoria), b = segundo operando; a, b, op, rc e pc devem ficar ESTAVEIS de 'start' ate o proximo 'start'.
-// rc: 0 mais proximo/par, 1 -inf, 2 +inf, 3 zero. pc: 0 = 24, 2 = 53, outros = 64 bits (so ADD/SUB/MUL/DIV/SQRT).
-// Saidas (validas de 'done' ate o proximo 'start'): res, flags {PE,UE,OE,ZE,DE,IE}, up (arredondou para cima = C1), cc {c3,c2,c0} (so CMP).
-// X: [67] vai-um, [66:3] significando (bit 66 = bit inteiro), [2] guarda, [1] arredondamento, [0] "sticky".
+// a = ST0 (or memory data), b = second operand; a, b, op, rc and pc must stay STABLE from 'start' until the next 'start'.
+// rc: 0 nearest/even, 1 -inf, 2 +inf, 3 zero. pc: 0 = 24, 2 = 53, others = 64 bits (ADD/SUB/MUL/DIV/SQRT only).
+// Outputs (valid from 'done' until the next 'start'): res, flags {PE,UE,OE,ZE,DE,IE}, up (rounded up = C1), cc {c3,c2,c0} (CMP only).
+// X: [67] carry, [66:3] significand (bit 66 = integer bit), [2] guard, [1] rounding, [0] "sticky".
 module fpu_seq(
     input  wire        clk, rst, start,
     input  wire [3:0]  op,
@@ -26,9 +26,9 @@ module fpu_seq(
     localparam [67:0] XIND = {1'b0, 64'hC000_0000_0000_0000, 3'd0}, XINF = {1'b0, 64'h8000_0000_0000_0000, 3'd0};
     reg [5:0] st, ret;
     reg [67:0] X; reg [65:0] MA, MB; reg signed [17:0] EA, EB; reg [6:0] cn;
-    reg sr, nb, subr, tiny, mlt, meq, odd, sk; reg [1:0] emode;      // emode: 0 expoente = EA (ou 0 se denormal/zero), 1 expoente todo 1, 2 inteiro cru
+    reg sr, nb, subr, tiny, mlt, meq, odd, sk; reg [1:0] emode;      // emode: 0 exponent = EA (or 0 if denormal/zero), 1 all-ones exponent, 2 raw integer
     assign busy = (st != S_IDLE);
-    // ---- classificacao (combinacional sobre as entradas estaveis) ----
+    // ---- classification (combinational over the stable inputs) ----
     wire sa = a[79], sb = b[79]; wire [14:0] xa = a[78:64], xb = b[78:64]; wire [63:0] ma = a[63:0], mb = b[63:0];
     wire xa0 = (xa == 0), xb0 = (xb == 0), xa1 = (xa == 15'h7FFF), xb1 = (xb == 15'h7FFF), fa0 = (ma[62:0] == 0), fb0 = (mb[62:0] == 0);
     wire za = xa0 && !ma[63] && fa0, zb = xb0 && !mb[63] && fb0;
@@ -45,12 +45,12 @@ module fpu_seq(
     wire u_any = ua || (two && ub), n_any = na || (two && nbn);
     wire ls = l64 ? a[63] : a[31]; wire [10:0] le = l64 ? a[62:52] : {3'd0, a[30:23]}; wire [51:0] lf = l64 ? a[51:0] : {a[22:0], 29'd0};
     wire le_max = l64 ? (le == 11'h7FF) : (le[7:0] == 8'hFF), le_z = (le == 0), lf_z = (lf == 0);
-    wire nq = (ari && n_any) || ((st32 || st64) && na) || (isld && le_max);      // liga o bit "quieto" ao copiar / comparar um NaN
+    wire nq = (ari && n_any) || ((st32 || st64) && na) || (isld && le_max);      // links the "quiet" bit when copying / comparing a NaN
     wire pick_b = two && nbn && (!na || mlt);
     wire nan_ie = (na && !ma[62]) || (two && nbn && !mb[62]);
     wire xlt = xa < xb, xeq = (xa == xb);
     wire mag_gt = xeq ? (!mlt && !meq) : !xlt, mag_eq = xeq && meq;
-    // ---- parametros do arredondamento ----
+    // ---- rounding parameters ----
     wire [1:0] psel = st32 ? 2'd0 : st64 ? 2'd1 : (op == OP_FIST || op == OP_RND) ? 2'd2 : (pc == 2'd0) ? 2'd0 : (pc == 2'd2) ? 2'd1 : 2'd2;
     wire signed [17:0] emin = st32 ? -18'sd126 : st64 ? -18'sd1022 : -18'sd16382;
     wire signed [17:0] emax = st32 ? 18'sd127 : st64 ? 18'sd1023 : 18'sd16383;
@@ -72,7 +72,7 @@ module fpu_seq(
     wire [67:0] shr4 = {4'd0, X[67:5], |X[4:0]}, shr1 = {1'b0, X[67:2], |X[1:0]};
     wire [67:0] shl4 = {X[63:0], 4'd0}, shl1 = {X[66:0], (st == S_SQA || st == S_SQB) && MB[65]};
     wire [67:0] qf = {1'b0, MB[65:0], sk};
-    // ---- o somador unico: SUM = L +/- R (na subtracao SUM[68] = 1 quando L >= R) ----
+    // ---- the single adder: SUM = L +/- R (in subtraction SUM[68] = 1 when L >= R) ----
     reg [67:0] L, R; reg sub; reg [67:0] smk;
     always @* begin
         L = X; R = xma; sub = 1'b1; smk = {68{1'b1}};
@@ -88,11 +88,11 @@ module fpu_seq(
     wire [68:0] SUM = {1'b0, L} + {1'b0, sub ? ~R : R} + {68'd0, sub};
     wire ge = SUM[68]; wire sz = (SUM[67:0] == 68'd0); wire [67:0] sumk = SUM[67:0] & smk;
     wire xz = (X == 68'd0);
-    // ---- resultado: montado dos registradores (X, EA, sr, emode) ----
+    // ---- result: assembled from the registers (X, EA, sr, emode) ----
     wire [17:0] eb80 = EA + 18'd16383, eb64 = EA + 18'd1023, eb32 = EA + 18'd127;
     wire [14:0] ef = (emode == 2'd1) ? 15'h7FFF : X[66] ? (st32 ? {7'd0, eb32[7:0]} : st64 ? {4'd0, eb64[10:0]} : eb80[14:0]) : 15'd0;
     assign res = (emode == 2'd2) ? {16'd0, X[66:3]} : st32 ? {48'd0, sr, ef[7:0], X[65:43]} : st64 ? {16'd0, sr, ef[10:0], X[65:14]} : {sr, ef, X[66:3]};
-    // decisao dos casos especiais (S_DEC): 0 segue o caminho geral, 1 zero, 2 infinito, 3 indefinido (+IE), 4 NaN escolhido, 5 copia MA (NaN/LD), 6 inteiro 8000..
+    // special-case decision (S_DEC): 0 follows the general path, 1 zero, 2 infinity, 3 indefinite (+IE), 4 chosen NaN, 5 copy MA (NaN/LD), 6 integer 8000..
     always @(posedge clk) begin
         done <= 1'b0;
         if (rst) begin st <= S_IDLE; flags <= 0; up <= 0; cc <= 0; emode <= 0; X <= 0; sr <= 0; EA <= 0; end
@@ -100,7 +100,7 @@ module fpu_seq(
             S_IDLE: if (start) begin st <= S_LD; up <= 1'b0; cc <= 3'd0; flags <= 6'd0; tiny <= 1'b0; nb <= 1'b0; emode <= 2'd0; sk <= 1'b0; end
             S_LD: begin MA <= isld ? {2'b00, !le_z, lf, 11'd0} : {2'b00, ma}; MB <= {2'b00, mb}; EA <= {3'd0, xa}; EB <= {3'd0, xb}; ret <= S_DEC; st <= S_C0; end
             S_C0: begin X <= xmb; st <= S_C; end
-            S_C: begin mlt <= ge && !sz; meq <= sz; st <= ret; end                // X = MB contra MA
+            S_C: begin mlt <= ge && !sz; meq <= sz; st <= ret; end                // X = MB against MA
             S_DEC: begin
                 flags <= {4'd0, fde, 1'b0}; sr <= sa; st <= S_UA; X <= 68'd0;
                 if (ari && u_any) begin sr <= 1'b1; X <= XIND; emode <= 2'd1; flags <= {4'd0, fde, 1'b1}; st <= S_FIN; end
@@ -199,7 +199,7 @@ module fpu_seq(
                     default: begin X <= xma; st <= S_RP0; end
                 endcase
             end
-            // ---- rotinas: X >> cn (com sticky) e normalizacao a esquerda ----
+            // ---- routines: X >> cn (with sticky) and left normalization ----
             S_SHR: begin
                 if (cn >= 7'd4) begin X <= shr4; cn <= cn - 7'd4; end
                 else if (cn != 7'd0) begin X <= shr1; cn <= cn - 7'd1; end
@@ -210,7 +210,7 @@ module fpu_seq(
                 else if (X[66:63] == 4'd0) begin X <= shl4; if (nb) EB <= EB - 18'sd4; else EA <= EA - 18'sd4; end
                 else begin X <= shl1; if (nb) EB <= EB - 18'sd1; else EA <= EA - 18'sd1; end
             end
-            // ---- soma / subtracao: o maior fica em MA, o menor vai para X e e alinhado ----
+            // ---- add / subtract: the larger goes in MA, the smaller goes to X and is aligned ----
             S_AD0: begin
                 subr <= (sa != sbe); sr <= bbig ? sbe : sa; cn <= (dabs > 18'd68) ? 7'd68 : dabs[6:0];
                 if (bbig) begin MA <= MB; MB <= MA; EA <= EB; end
@@ -222,7 +222,7 @@ module fpu_seq(
                 if (subr && xz) begin sr <= (rc == 2'd1); st <= S_FIN; end
                 else begin ret <= S_RP1; st <= X[67] ? S_RP0 : S_NRM; end
             end
-            // ---- multiplicacao: soma (se o bit do multiplicador = 1) e desloca; 2 clocks por bit ----
+            // ---- multiplication: add (if the multiplier bit = 1) and shift; 2 clocks per bit ----
             S_ML1: begin if (MB[0]) X <= sumk; st <= S_ML2; end
             S_ML2: begin
                 X <= shr1; MB <= {1'b0, MB[65:1]}; cn <= cn - 7'd1;
@@ -236,7 +236,7 @@ module fpu_seq(
                 if (cn == 7'd1) begin sk <= !xz; st <= S_DV3; end else begin X <= shl1; st <= S_DV1; end
             end
             S_DV3: begin X <= qf; ret <= S_RP1; st <= S_NRM; end
-            // ---- raiz: X = resto, MA = raiz, MB = radicando (sai 1 bit por clock pelo topo); 3 clocks por bit ----
+            // ---- root: X = remainder, MA = root, MB = radicand (1 bit per clock comes out at the top); 3 clocks per bit ----
             S_SQ0: begin MB <= {MB[64:0], 1'b0}; st <= odd ? S_SQ0B : S_SQA; end
             S_SQ0B: begin MB <= {MB[64:0], 1'b0}; st <= S_SQA; end
             S_SQA: begin X <= shl1; MB <= {MB[64:0], 1'b0}; st <= S_SQB; end
@@ -247,7 +247,7 @@ module fpu_seq(
             end
             S_SQD: begin MB <= MA; sk <= !xz; st <= S_SQE; end
             S_SQE: begin X <= qf; st <= S_RP1; end
-            // ---- FIST / RNDINT: arredonda para inteiro ----
+            // ---- FIST / RNDINT: rounds to integer ----
             S_RI: begin X <= sumk; if (inex) flags <= flags | 6'b100000; up <= inc && inex; st <= S_RI2; end
             S_RI2: begin
                 st <= S_FIN;
@@ -257,7 +257,7 @@ module fpu_seq(
                     else if (sa) st <= S_NEG;
                 end else if (X[66:3] != 64'd0) begin EA <= 18'sd63; ret <= S_FIN; st <= S_NRM; end
             end
-            S_NEG: begin X <= sumk; st <= (op == OP_FILD) ? S_NRM : S_FIN; end                                 // X := -X (64 bits); usado por FIST e FILD
+            S_NEG: begin X <= sumk; st <= (op == OP_FILD) ? S_NRM : S_FIN; end                                 // X := -X (64 bits); used by FIST and FILD
             // ---- arredonda e empacota ----
             S_RP0: begin if (X[67]) begin X <= shr1; EA <= EA + 18'sd1; end st <= S_RP1; end
             S_RP1: begin

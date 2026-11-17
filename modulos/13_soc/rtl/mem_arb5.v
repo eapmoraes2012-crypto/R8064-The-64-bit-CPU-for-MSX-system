@@ -1,6 +1,6 @@
-// mem_arb5.v - arbitro de 5 mestres com o pedido REGISTRADO antes do controlador de SDRAM (extensao do mem_arb4 com o DMA como m4).
-// Prioridade: m0 (cache D) > m1 (caminhador MMU-D) > m2 (cache I) > m3 (caminhador MMU-I) > m4 (DMA). Cada mestre mantem req ate acc; depois espera done (rvalid ou wdone).
-// Latencia: aceite 1 clock apos o req (captura no registrador de pedido); o controlador recebe req registrado e aceita quando ready.
+// mem_arb5.v - 5-master arbiter with the request REGISTERED before the SDRAM controller (extension of mem_arb4 with the DMA as m4).
+// Priority: m0 (D cache) > m1 (MMU-D walker) > m2 (I cache) > m3 (MMU-I walker) > m4 (DMA). Each master holds req until acc; then waits for done (rvalid or wdone).
+// Latency: accept 1 clock after req (captured in the request register); the controller receives the registered req and accepts when ready.
 module mem_arb5(
     input  wire clk, rst,
     input  wire [4:0] req, we, input wire [5*20-1:0] addr, input wire [5*64-1:0] wdata, input wire [5*8-1:0] be,

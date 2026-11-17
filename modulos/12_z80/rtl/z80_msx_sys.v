@@ -1,7 +1,7 @@
-// z80_msx_sys.v - Z80 classico independente + memoria mapeada MSX (mapper FC-FF, MegaRAM ASCII8, slot A8h) + ponte para memoria fisica por bytes.
-// Memoria que cai no mapper/MegaRAM (hit) vai para a porta fisica mp_* (SDRAM); o resto (ROM da BIOS, outros slots, perifericos) sai pelas portas
-// externas xm_* (memoria) e xio_* (E/S), com x_wait_n. WAIT e dados sao REGISTRADOS (1 clock) para nao alongar o caminho critico do nucleo;
-// isto exige que os pulsos ce do Z80 fiquem separados por >= 3 clocks (vale para z80_ce nos 4 modos de turbo; com use_ext, ce_ext idem).
+// z80_msx_sys.v - independent classic Z80 + MSX mapped memory (FC-FF mapper, ASCII8 MegaRAM, slot A8h) + bridge to byte physical memory.
+// Memory that falls in the mapper/MegaRAM (hit) goes to the physical port mp_* (SDRAM); the rest (BIOS ROM, other slots, peripherals) goes out through the
+// external ports xm_* (memory) and xio_* (I/O), with x_wait_n. WAIT and data are REGISTERED (1 clock) so as not to lengthen the core's critical path;
+// this requires the Z80 ce pulses to be separated by >= 3 clocks (holds for z80_ce in the 4 turbo modes; with use_ext, ce_ext likewise).
 module z80_msx_sys #(
     parameter [31:0] STEP_BASE = 32'd268435456,
     parameter MAP_BITS = 6, MEGA_BITS = 7,
@@ -11,19 +11,19 @@ module z80_msx_sys #(
     input  wire        clk, rst_n,
     input  wire [1:0]  turbo,
     input  wire        use_ext, ce_ext, msx_w,
-    // memoria fisica (bytes)
+    // physical memory (bytes)
     output reg         mp_req,
     output reg         mp_we,
     output reg  [23:0] mp_addr,
     output reg  [7:0]  mp_wdata,
     input  wire [7:0]  mp_rdata,
     input  wire        mp_ack,
-    // memoria e E/S externas (nao mapeadas)
+    // external (unmapped) memory and I/O
     output wire        xm_rd, xm_wr,
     output wire [15:0] xm_addr,
     output wire [7:0]  xm_wdata,
     input  wire [7:0]  xm_rdata,
-    output wire        xio_rd, xio_wr, xio_ack,       // xio_ack = ciclo de reconhecimento de interrupcao (M1+IORQ): xio_rdata deve trazer o vetor
+    output wire        xio_rd, xio_wr, xio_ack,       // xio_ack = interrupt acknowledge cycle (M1+IORQ): xio_rdata must carry the vector
     output wire [7:0]  xio_addr,
     output wire [7:0]  xio_wdata,
     input  wire [7:0]  xio_rdata,
@@ -48,7 +48,7 @@ module z80_msx_sys #(
         .clk(clk), .rst(~rst_n), .en(1'b1), .io_wr(iowr), .io_rd(iord), .io_addr(a[7:0]), .io_wdata(dout), .io_rdata(io_rdata), .io_hit(io_hit),
         .mem_rd(mrd), .mem_wr(mwr), .mem_addr(a), .mem_wdata(dout), .hit(hit), .phys_addr(phys), .wr_ok(wr_ok));
 
-    // acesso fisico: leitura em bloco mapeado, ou escrita permitida
+    // physical access: read in mapped block, or allowed write
     wire need_phys = hit & (mrd | (mwr & wr_ok));
     reg  pend, done; reg [7:0] rbuf;
     always @(posedge clk) begin
@@ -73,7 +73,7 @@ module z80_msx_sys #(
     end
     assign wait_n = ~(wq | wxq);
 
-    // dados para a CPU (registrados)
+    // data to the CPU (registered)
     reg [7:0] dsel;
     always @* begin
         if (~iorq_n)      dsel = io_hit ? io_rdata : xio_rdata;

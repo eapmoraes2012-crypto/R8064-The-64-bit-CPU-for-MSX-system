@@ -1,369 +1,369 @@
-SUBSISTEMA DE MEMORIA (MMU I/D + caches + arbitro + SDRAM), nextpnr pos-roteamento, --parallel-refine:
-  semente 1: 105,74 MHz (PASS a 100)   semente 3: 102,91 MHz (PASS)   | LUT4 3.819, ALU 238, DFF 2.690, RAM16SDP4 23, BSRAM 10 (STATS=0 nas caches e MMUs)
-  Antes de trocar a cascata de 3 arbitros combinacionais por mem_arb4 (pedido registrado): 80,6 MHz (caminho cache D -> arbitros -> FSM da SDRAM).
-SoC completo (Yosys, sem roteamento): LUT1-4 10.293 + ALU 899 (inclui ~260 FF do wrapper), BSRAM 36 de 46. Roteamento completo nao termina em 180 s nesta VM.
-Funcional: tb_soc OK (MMU em bypass e com MMU ligada, 6+3 leituras de tabela), 0 violacoes de protocolo na SDRAM.
+MEMORY SUBSYSTEM (I/D MMU + caches + arbiter + SDRAM), nextpnr post-routing, --parallel-refine:
+  seed 1: 105.74 MHz (PASS at 100)   seed 3: 102.91 MHz (PASS)   | LUT4 3,819, ALU 238, DFF 2,690, RAM16SDP4 23, BSRAM 10 (STATS=0 in the caches and MMUs)
+  Before replacing the cascade of 3 combinational arbiters by mem_arb4 (registered request): 80.6 MHz (path D cache -> arbiters -> SDRAM FSM).
+Full SoC (Yosys, no routing): LUT1-4 10,293 + ALU 899 (includes ~260 wrapper FFs), BSRAM 36 of 46. Full routing does not finish in 180 s on this VM.
+Functional: tb_soc OK (MMU in bypass and with MMU on, 6+3 table reads), 0 protocol violations on the SDRAM.
 
-REV20 - EXCECOES DE MMU NO NUCLEO (08/11/2026)
-Funcional: tb_soc OK; tb_soc_exc +sc=1/2/3 OK (CR43=09h/19h/01h, CR44=2000h/1FFEh/2000h, CR45=0013h/0013h/2000h; reinicio do POP termina com BC=1234h, SP=2002h); 0 violacoes de SDRAM.
-Regressoes do nucleo (tb_core, seq, blk, xing, bank, io, irq/irq2/irq3, ldai, exini, cpu_gov x4 modos, sys, sys_seq, sys_ldir, sys_irq, sys_fifo): todas OK.
-Area do nucleo (pnr_gov_top, nextpnr): LUT4 7.191 -> 7.519 (+328), ALU 748 -> 772, DFF 3.729 -> 3.908. Fmax pos-roteamento NAO medida (roteamento passa de 180 s nesta VM; a versao anterior tambem nao fecha em 150 s hoje).
-Estimativa pos-posicionamento: 80,5 MHz (nova) vs 82,5 MHz (anterior, que mediu 102-105 MHz roteada) => esperar ~100 MHz; confirmar em maquina sem limite de tempo.
+REV20 - MMU EXCEPTIONS IN THE CORE (08/11/2026)
+Functional: tb_soc OK; tb_soc_exc +sc=1/2/3 OK (CR43=09h/19h/01h, CR44=2000h/1FFEh/2000h, CR45=0013h/0013h/2000h; POP restart ends with BC=1234h, SP=2002h); 0 SDRAM violations.
+Core regressions (tb_core, seq, blk, xing, bank, io, irq/irq2/irq3, ldai, exini, cpu_gov x4 modes, sys, sys_seq, sys_ldir, sys_irq, sys_fifo): all OK.
+Core area (pnr_gov_top, nextpnr): LUT4 7,191 -> 7,519 (+328), ALU 748 -> 772, DFF 3,729 -> 3,908. Post-routing Fmax NOT measured (routing takes over 180 s on this VM; the previous version does not close in 150 s today either).
+Post-placement estimate: 80.5 MHz (new) vs 82.5 MHz (previous, which measured 102-105 MHz routed) => expect ~100 MHz; confirm on a machine with no time limit.
 
-REV21 (08/11/2026): alvo de clock definitivo = 86 MHz (era 100). Medido no nucleo+governador+modo: 82,3 / 93,0 / 97,7 MHz (3 sementes); ver 10_mode_gov/pnr/resultado_core80.txt. REF_INT padrao = 600 (refresh a cada 6,98 us). Fmax do SoC completo ainda nao medido.
+REV21 (08/11/2026): final clock target = 86 MHz (was 100). Measured on core+governor+mode: 82.3 / 93.0 / 97.7 MHz (3 seeds); see 10_mode_gov/pnr/resultado_core80.txt. Default REF_INT = 600 (refresh every 6.98 us). Full SoC Fmax not yet measured.
 
-REV22b (08/11/2026): fluxo de PnR do SoC completo recriado (13_soc/pnr/rodar_pnr_soc.bat). ys_soc_top.ys tinha caminhos antigos; pnr_soc_top.v ligava saidas do SoC (mmu_en/mmu_user) a sinais de entrada. Ambos corrigidos.
-Yosys do SoC completo: OK (sem erros), ~5.410 LUT4 + 23 RAM16SDP4 apos mapeamento, ~6.300 DFF. Avisos "sem driver": m_wdata/m_be da cache de instrucoes (WR=0, nunca escreve) - inofensivo.
-Fmax pos-roteamento do SoC completo: AGUARDANDO execucao no PC do usuario.
+REV22b (08/11/2026): full SoC PnR flow recreated (13_soc/pnr/rodar_pnr_soc.bat). ys_soc_top.ys had old paths; pnr_soc_top.v connected SoC outputs (mmu_en/mmu_user) to input signals. Both fixed.
+Full SoC Yosys: OK (no errors), ~5,410 LUT4 + 23 RAM16SDP4 after mapping, ~6,300 DFF. "No driver" warnings: m_wdata/m_be of the instruction cache (WR=0, never writes) - harmless.
+Final-routing Fmax of the full SoC: AWAITING a run on the user's PC.
 
-Rodada PnR do SoC completo (--freq 86, pos-roteamento), sementes 1-4: 59,83 / 75,15 / 66,68 / 74,70 MHz (todas FALHAM). LUT4 11.832 (57%), DFF 6.539, BSRAM 36/46.
-Caminhos criticos: (s1, s3) interno do nucleo, uopm(BSRAM) -> f_pos -> sw_main -> iD_q -> iA_q, com redes de 2-6 ns; (s2, s4) c_d_ack combinacional (acerto da cache D) -> stall/flush do nucleo e -> fifo busy.
-REV22c: ack, dados e falta de dados do lado D agora registrados em r8064_memsys (+1 clock por acesso de dados; dv_req tambem espera o ack registrado). Testes: tb_soc (bypass e +mmu) OK, tb_soc_exc sc1-8 OK. Lado I NAO alterado (a resposta em voo depende de c_i_req). Fmax: aguardando nova rodada.
+PnR run of the full SoC (--freq 86, post-routing), seeds 1-4: 59.83 / 75.15 / 66.68 / 74.70 MHz (all FAIL). LUT4 11,832 (57%), DFF 6,539, BSRAM 36/46.
+Critical paths: (s1, s3) inside the core, uopm(BSRAM) -> f_pos -> sw_main -> iD_q -> iA_q, with 2-6 ns nets; (s2, s4) combinational c_d_ack (D cache hit) -> core stall/flush and -> fifo busy.
+REV22c: ack, data and data-fault on the D side are now registered in r8064_memsys (+1 clock per data access; dv_req also waits for the registered ack). Tests: tb_soc (bypass and +mmu) OK, tb_soc_exc sc1-8 OK. I side NOT changed (the in-flight response depends on c_i_req). Fmax: awaiting a new run.
 
-REV22d - 2a rodada PnR do SoC (apos ack D registrado) e limpeza do wrapper
-  Rodada 2 (--freq 86, seeds 1-4): 71.42 / 78.40 / 74.26 / 76.10 MHz -> todas FALHAM (melhor 78.40).
+REV22d - 2nd PnR run of the SoC (after the registered D ack) and wrapper cleanup
+  Run 2 (--freq 86, seeds 1-4): 71.42 / 78.40 / 74.26 / 76.10 MHz -> all FAIL (best 78.40).
   Recursos: LUT4 ~11419, DFF ~6608.
   Caminhos criticos restantes: (1) uopm(BSRAM) -> f_pos -> sw_main -> iD_q -> iA_q (issue/sequenciamento);
   (2) core addr8_m -> daddr -> u_mmd mapper (CE do breg); (3) u_mode/is_rom -> u_fifo -> saidas (parte artefato do wrapper).
-  Wrapper (pnr/pnr_soc_top.v, backup .bak): reset registrado (rstw) e saidas capturadas em registradores
-  crus (ca..cf) antes da reducao XOR em 2 estagios. Yosys OK (rc=0, 5056 LUT4 no top de teste).
-  Proximo: rerodar pnr/rodar_pnr_soc.bat e enviar pnr_soc_s*.log.
+  Wrapper (pnr/pnr_soc_top.v, backup .bak): registered reset (rstw) and outputs captured in raw registers
+  (ca..cf) before the 2-stage XOR reduction. Yosys OK (rc=0, 5056 LUT4 in the test top).
+  Next: rerun pnr/rodar_pnr_soc.bat and send pnr_soc_s*.log.
 
-REV23 (08/11/2026): NOVO ALVO DE CLOCK = 57,28 MHz (3,58 MHz x 16, sincronismo com o clock MSX). Substitui 86 MHz.
-  --freq 57.28 nos .bat de PnR (06_cache, 10_mode_gov, 11_fpu_stk, 13_soc). SDRAM REF_INT 600 -> 400 clocks
-  (6,98 us < 7,8 us) em 05_sdram, 06_cache/sim e 13_soc/rtl. Medicoes anteriores (core 100,34 MHz; SoC 78,40 MHz)
-  ja superam 57,28 com folga: o SoC passa a ter margem (~37%) mesmo sem as otimizacoes pendentes.
-  z80_msx_top REF_INT default 700 -> 400 (idem).
+REV23 (08/11/2026): NEW CLOCK TARGET = 57.28 MHz (3.58 MHz x 16, synchronized with the MSX clock). Replaces 86 MHz.
+  --freq 57.28 in the PnR .bat files (06_cache, 10_mode_gov, 11_fpu_stk, 13_soc). SDRAM REF_INT 600 -> 400 clocks
+  (6.98 us < 7.8 us) in 05_sdram, 06_cache/sim and 13_soc/rtl. Previous measurements (core 100.34 MHz; SoC 78.40 MHz)
+  already exceed 57.28 with room to spare: the SoC now has margin (~37%) even without the pending optimizations.
+  z80_msx_top REF_INT default 700 -> 400 (same).
 
-REV23b - PnR do SoC completo a 57,28 MHz (--freq 57.28, pos-roteamento, wrapper registrado), sementes 1-4:
+REV23b - PnR of the full SoC at 57.28 MHz (--freq 57.28, post-routing, registered wrapper), seeds 1-4:
   81,66 / 81,63 / 82,41 / 77,45 MHz -> 4/4 PASSAM (folga 35-44%; melhor = seed 3, 82,41 MHz).
-  Recursos: LUT4 11483 (55%), DFF 6780 (43%), BSRAM 36/46 (78%), ALU 1066. Roteamento convergiu em todas.
-  Hold: 68 violacoes (-0,12 ns) nos pinos ADB do BSRAM u_dec.ctrl (mesmo padrao anterior; modelo/roteamento, nao confirmado em hardware).
-  Caminhos criticos: ainda atravessam c_d_ack -> logica de io_oe/fifo (wrapper) e core d_m/sw_b; nenhum exige acao a 57,28.
+  Resources: LUT4 11483 (55%), DFF 6780 (43%), BSRAM 36/46 (78%), ALU 1066. Routing converged on all.
+  Hold: 68 violations (-0.12 ns) on the ADB pins of the BSRAM u_dec.ctrl (same pattern as before; model/routing, not confirmed in hardware).
+  Critical paths: still cross c_d_ack -> io_oe/fifo logic (wrapper) and core d_m/sw_b; none requires action at 57.28.
 
-REV24 (09/11/2026): gerador de clock r8064_clkgen (rtl/r8064_clkgen.v, sim/tb_clkgen.v, pnr/pnr_soc_pll_top.v, pnr/rodar_pnr_soc_pll.bat [SRC]).
+REV24 (09/11/2026): clock generator r8064_clkgen (rtl/r8064_clkgen.v, sim/tb_clkgen.v, pnr/pnr_soc_pll_top.v, pnr/rodar_pnr_soc_pll.bat [SRC]).
   SRC=0: cristal 27 MHz da placa -> rPLL IDIV 8 / FBDIV 17 / ODIV 16 (VCO 918 MHz) = 57,375 MHz (+0,18 %; a razao exata 70/33 daria PFD 0,82 MHz < 3 MHz).
-  SRC=1: 3,579545 MHz externo (oscilador/cristal com oscilador, ou CLOCK do slot MSX) -> rPLL x16 (VCO 916,4 MHz) = 57,2727 MHz exato.
-  SRC=2: oscilador ativo de 57,27 MHz direto, sem PLL. Reset sincrono liberado 16 ciclos apos o lock; rst_in assincrono opcional.
-  Verificado: tb_clkgen (modelo SIM mede/gera MUL/DIV) -> 57,35 / 57,30 / 57,25 MHz (resolucao 0,05), travou, rst liberado: OK.
-  Yosys: SoC + clkgen (SRC 0 e 1) sintetizam com 1 rPLL, 5056 LUT4 no topo de teste, sem ERROR.
-  NAO verificado: PnR com o PLL (nextpnr no PC), pino de entrada do cristal (pins_pll_src1/2.cst usam o pino 87 so como exemplo),
-  e CLKIN do rPLL vindo de pino nao dedicado de clock.
-  z80_ce a 57,2727 MHz: STEP_BASE = 268435456 (2^28) da exatamente 3,579545 MHz; turbo 3 (28,6 MHz) = 1 pulso a cada 2 clocks, viola a
-  exigencia ">= 3 clocks entre ce" do z80_msx_sys -> limitar o turbo a 14,3 MHz (turbo<=2) ou revisar o WAIT/dados registrados.
+  SRC=1: external 3.579545 MHz (oscillator/crystal with oscillator, or the MSX slot CLOCK) -> rPLL x16 (VCO 916.4 MHz) = exactly 57.2727 MHz.
+  SRC=2: 57.27 MHz active oscillator directly, no PLL. Synchronous reset released 16 cycles after lock; optional asynchronous rst_in.
+  Verified: tb_clkgen (SIM model measures/generates MUL/DIV) -> 57.35 / 57.30 / 57.25 MHz (resolution 0.05), locked, rst released: OK.
+  Yosys: SoC + clkgen (SRC 0 and 1) synthesize with 1 rPLL, 5056 LUT4 in the test top, no ERROR.
+  NOT verified: PnR with the PLL (nextpnr on the PC), the crystal input pin (pins_pll_src1/2.cst use pin 87 only as an example),
+  and the rPLL CLKIN coming from a non-dedicated clock pin.
+  z80_ce at 57.2727 MHz: STEP_BASE = 268435456 (2^28) gives exactly 3.579545 MHz; turbo 3 (28.6 MHz) = 1 pulse every 2 clocks, which violates the
+  requirement ">= 3 clocks between ce" of z80_msx_sys -> limit turbo to 14.3 MHz (turbo<=2) or revise the WAIT/registered data.
 
 REV25 (09/11/2026): Z80 a 57,2727 MHz. z80_ce/z80_top/z80_msx_sys/z80_msx_top: STEP_BASE padrao 153740287 -> 268435456 (2^28, 3,579545 MHz exato).
-  z80_ce agora limita o passo a 2^32/3 (>= 3 clocks entre ce): turbo 3 (28,6 MHz) cai para 14,3 MHz a 57,27 MHz; a 100 MHz nada muda.
-  tb_z80_msx (REF_INT 700 -> 400): turbo 0/1/2/3 PASS, violacoes SDRAM = 0; turbo 3 identico ao 2 (tempo igual) = clamp funcionando.
-  Backup: 12_z80/bak_clk57/. Nao rodado: sim/rodar_z80.bat (nucleo Z80 isolado, nao usa z80_ce).
+  z80_ce now limits the step to 2^32/3 (>= 3 clocks between ce): turbo 3 (28.6 MHz) drops to 14.3 MHz at 57.27 MHz; at 100 MHz nothing changes.
+  tb_z80_msx (REF_INT 700 -> 400): turbo 0/1/2/3 PASS, SDRAM violations = 0; turbo 3 identical to 2 (same time) = clamp working.
+  Backup: 12_z80/bak_clk57/. Not run: sim/rodar_z80.bat (isolated Z80 core, does not use z80_ce).
 
 REV26 (09/11/2026): topo de placa Tang Nano 20K (rtl/r8064_board_top.v, pnr/ys_board.ys, pnr/tangnano20k_src{0..3}.cst, pnr/rodar_pnr_board.bat [SRC]).
-  Fonte dos pinos: relatorio de pinos (HTML) de um cartucho VDP Tang Nano 20K (GW2AR-LV18QN88C8). Usados: clk27=4 (LPLL1_T_in), btn_rst=88, saidas de observacao 84/83/82/81.
+  Pin source: pin report (HTML) of a Tang Nano 20K VDP cartridge (GW2AR-LV18QN88C8). Used: clk27=4 (LPLL1_T_in), btn_rst=88, observation outputs 84/83/82/81.
   SDRAM embutida: 32 bits (dq[31:0], dqm[3:0], ba[1:0], a[10:0], cke/cs_n/ras_n/cas_n/wen_n, clk) = exatamente a interface do sdram_ctrl; nomes fixos O_sdram_*/IO_sdram_dq,
-  o nextpnr as posiciona sem IO_LOC (verificado em teste com nextpnr). dq via IOBUF (32), clk da SDRAM = CLKOUTP do rPLL (SDR_PSDA=4 -> 90 graus, ajustar no hardware).
-  Entradas de clock externo: SRC1 = pino 13 (LPLL2_T_in, livre, entrada dedicada de PLL); SRC2 = pino 10 (GCLKT_6); SRC3 = pino 80 (clk14m, GCLKT_0), 14,31818 MHz x4.
-  clkgen: +SRC=3, +saida clk_sdram; tb_clkgen: 57,35/57,30/57,25/57,30 MHz, fase clk_sdram 4,37 ns (~1/4 periodo): OK.
-  Yosys: topo de placa SRC 0/1/3 sem ERROR (1 rPLL, 32 IOBUF, ~4667 LUT4 sem o wrapper de teste). Teste nextpnr (design pequeno) com PLL em pino 13: PLL posicionado e SDRAM sem erros.
-  NAO verificado: PnR do topo de placa completo (rodar no PC), fase real do clk_sdram na SDRAM, barramento MSX externo (nao ligado), e se clk14m = 14,31818 MHz.
-  O relatorio e de um projeto de cartucho VDP: nao tem pino do CLOCK 3,58 MHz do slot, MREQ nem SLTSL.
+  nextpnr places them without IO_LOC (verified in a nextpnr test). dq via IOBUF (32), SDRAM clk = rPLL CLKOUTP (SDR_PSDA=4 -> 90 degrees, adjust in hardware).
+  External clock inputs: SRC1 = pin 13 (LPLL2_T_in, free, dedicated PLL input); SRC2 = pin 10 (GCLKT_6); SRC3 = pin 80 (clk14m, GCLKT_0), 14.31818 MHz x4.
+  clkgen: +SRC=3, +clk_sdram output; tb_clkgen: 57.35/57.30/57.25/57.30 MHz, clk_sdram phase 4.37 ns (~1/4 period): OK.
+  Yosys: board top SRC 0/1/3 without ERROR (1 rPLL, 32 IOBUF, ~4667 LUT4 without the test wrapper). nextpnr test (small design) with the PLL on pin 13: PLL placed and SDRAM without errors.
+  NOT verified: PnR of the full board top (run on the PC), the real phase of clk_sdram at the SDRAM, the external MSX bus (not connected), and whether clk14m = 14.31818 MHz.
+  The report is from a VDP cartridge project: it has no pin for the slot's 3.58 MHz CLOCK, MREQ or SLTSL.
 
-REV26b - PnR do topo de placa (SRC=0: 27 MHz da placa -> rPLL 57,375 MHz; --freq 57.28; pos-roteamento), sementes 1-4:
-  67,14 / 74,05 / 81,32 / 60,56 MHz -> 4/4 PASSAM. Pior caso (seed 4) 60,56 MHz = +5,6 % sobre 57,375 (clock real do PLL); melhor (seed 3) 81,32.
+REV26b - PnR of the board top (SRC=0: board's 27 MHz -> rPLL 57.375 MHz; --freq 57.28; post-routing), seeds 1-4:
+  67.14 / 74.05 / 81.32 / 60.56 MHz -> 4/4 PASS. Worst case (seed 4) 60.56 MHz = +5.6 % over 57.375 (real PLL clock); best (seed 3) 81.32.
   Recursos: LUT4 10982 (52 %), DFF 6317 (40 %), BSRAM 35/46 (76 %), IOB 30, rPLL 1/2, BUFG 1. clk e clk_sd roteados em recurso global.
-  Hold: 16 / 0 / 4 / (s4: nao listado) violacoes, sempre BSRAM u_dec.ctrl ADB (antes 68). Roteamento convergiu em todas.
-  Caminho critico da seed 4: um unico net c_d_rd (arbD_rdata -> MMU-D restart) com 10,3 ns de roteamento: variabilidade de colocacao, nao logica.
-  Observacao: a folga do pior caso e pequena; usar seed 3 (ou 2) para o bitstream. Nao verificado em hardware.
+  Hold: 16 / 0 / 4 / (s4: not listed) violations, always BSRAM u_dec.ctrl ADB (before 68). Routing converged on all.
+  Critical path of seed 4: a single net c_d_rd (arbD_rdata -> MMU-D restart) with 10.3 ns of routing: placement variability, not logic.
+  Note: the worst-case slack is small; use seed 3 (or 2) for the bitstream. Not verified in hardware.
 
-REV27 (09/11/2026): geracao de bitstream: pnr/gerar_bitstream_board.bat [SRC] [SEMENTE] [gravar] (yosys -> nextpnr --write -> gowin_pack -> openFPGALoader -b tangnano20k) e LEIA-ME_bringup.txt.
-  Verificado na VM: nextpnr + gowin_pack geram .fs para um design pequeno com rPLL (pino 13) e SDRAM embutida; topo completo so no PC. Nao verificado em hardware.
+REV27 (09/11/2026): bitstream generation: pnr/gerar_bitstream_board.bat [SRC] [SEED] [gravar] (yosys -> nextpnr --write -> gowin_pack -> openFPGALoader -b tangnano20k) and LEIA-ME_bringup.txt.
+  Verified on the VM: nextpnr + gowin_pack generate a .fs for a small design with rPLL (pin 13) and embedded SDRAM; full top only on the PC. Not verified in hardware.
 
-REV28 (09/11/2026): estudo de viabilidade de instrucoes 3D: modulo 14_vec3d (vec3d_unit: lanes 4xint16, VMUL/VDOT4/VDOT3/VCROSS3/VADD/VSUB/VMIN/VMAX/VSHUF/VNEG/VABS).
-  Simulado (30.000 vetores, 0 erros); Yosys 863 LUT4 + 452 ALU, 6 DSP (versao minima 762+309); nextpnr isolado 89-101 MHz. Ver 14_vec3d/resultados_modulo14.txt.
-  Nao integrado ao nucleo.
+REV28 (09/11/2026): feasibility study of 3D instructions: module 14_vec3d (vec3d_unit: 4xint16 lanes, VMUL/VDOT4/VDOT3/VCROSS3/VADD/VSUB/VMIN/VMAX/VSHUF/VNEG/VABS).
+  Simulated (30,000 vectors, 0 errors); Yosys 863 LUT4 + 452 ALU, 6 DSP (minimal version 762+309); isolated nextpnr 89-101 MHz. See 14_vec3d/resultados_modulo14.txt.
+  Not integrated into the core.
 
-REV29 (10/11/2026): instrucoes 3D INTEGRADAS ao nucleo (ED F8 VOP / ED FA VSHUF / ED FB VOP1; ver 14_vec3d/ISA_3D.txt) com a vec3d_unit v6 (completa, otimizada).
-  CORRECAO da REV28: a medida de area da unidade contava so LUT4; o correto (LUT1-4 + MUX2 + ALU, como o nextpnr) e ~2.335 LUT4-eq isolada (v5 era ~2.830), ~+1.860 no SoC (Yosys), +10 DSP.
-  Orcamento rev20 16.330 -> ~18.200-18.700 (87,7-90 %), acima da meta de 85 %. Regressao: 21 testes antigos identicos, tb_vec OK, tb_soc OK, tb_soc_exc OK.
-  Mudancas: uop de 81 bits (uop[80]=vec), hold += (vec_m && !vo_valid), ldval += vo, gen_roms.py/rom_ed_a/ctrl/instr_ids (ids 294-296), arquivos .ys/.bat com vec3d_unit.v.
-  PENDENTE: PnR do board top na maquina do usuario (Fmax a 57,28 MHz com o novo termo no hold); tempo das instrucoes 3D nos modos Z80/R800.
+REV29 (10/11/2026): 3D instructions INTEGRATED into the core (ED F8 VOP / ED FA VSHUF / ED FB VOP1; see 14_vec3d/ISA_3D.txt) with vec3d_unit v6 (complete, optimized).
+  CORRECTION of REV28: the unit's area measurement counted only LUT4; the correct figure (LUT1-4 + MUX2 + ALU, as nextpnr counts) is ~2,335 LUT4-eq isolated (v5 was ~2,830), ~+1,860 in the SoC (Yosys), +10 DSP.
+  Rev20 budget 16,330 -> ~18,200-18,700 (87.7-90 %), above the 85 % target. Regression: 21 old tests identical, tb_vec OK, tb_soc OK, tb_soc_exc OK.
+  Changes: 81-bit uop (uop[80]=vec), hold += (vec_m && !vo_valid), ldval += vo, gen_roms.py/rom_ed_a/ctrl/instr_ids (ids 294-296), .ys/.bat files with vec3d_unit.v.
+  PENDING: PnR of the board top on the user's machine (Fmax at 57.28 MHz with the new term in hold); timing of the 3D instructions in Z80/R800 modes.
 
-REV30 (10/11/2026): UNIDADE 3D REMOVIDA do nucleo (pedido do usuario): ED F8/FA/FB voltam a ser instrucoes inexistentes. uop volta a 80 bits (uop[80] livre), ids 294-296 retirados
-  (instr_ids.csv, ctrl*.mem, rom_ed_a.mem, r8064_decode_rom.v restaurados da copia pre-3D), vec3d_unit.v fora de todos os .ys/.bat e movido para 09_core_min/bak/vec3d_rtl/ (o modulo
-  completo continua em 14_vec3d/rtl). Mantidos: EXINI desfaz EXX e EX AF,AF' (REV de 10/11), m_mem registrado (mm_q) no nucleo, B2B=0 nas caches da memsys.
-  Estado anterior guardado em 09_core_min/bak/com_vec3d/. Area esperada = board top sem 3D (11.205 LUT4 + 1.064 ALU, 54 %+), DSP 0. NAO simulado nem sintetizado nesta rodada (sem iverilog/yosys na nuvem): rodar
+REV30 (10/11/2026): 3D UNIT REMOVED from the core (user request): ED F8/FA/FB go back to being nonexistent instructions. uop goes back to 80 bits (uop[80] free), ids 294-296 withdrawn
+  (instr_ids.csv, ctrl*.mem, rom_ed_a.mem, r8064_decode_rom.v restored from the pre-3D copy), vec3d_unit.v removed from all .ys/.bat and moved to 09_core_min/bak/vec3d_rtl/ (the
+  complete module remains in 14_vec3d/rtl). Kept: EXINI undoes EXX and EX AF,AF' (REV of 10/11), registered m_mem (mm_q) in the core, B2B=0 in the memsys caches.
+  Previous state saved in 09_core_min/bak/com_vec3d/. Expected area = board top without 3D (11,205 LUT4 + 1,064 ALU, 54 %+), DSP 0. NOT simulated or synthesized in this run (no iverilog/yosys in the cloud): run
   10_mode_gov\rodar_tudo.bat, 13_soc\rodar_exc.bat e rodar_pnr_board.bat.
 
-REV31 (10/11/2026): VALIDACAO da REV30 (rodada do usuario).
-  Simulacao: 10_mode_gov\rodar_tudo = tudo OK (EXINI OK, TEMPO IRQ OK, FIFO, SISTEMA+FIFO, modo, classificador, governador, cpu_gov, MSX, sequencias, LDIR, cruzamento).
-             Causa do erro tempo_irq: gen_gov_rom.py antigo de 10_mode_gov/sim gerava 1792 palavras (sem pagina 7 = IRQ) e sobrescrevia gov_rom.mem;
-             restaurado gov_rom.mem de 2048 palavras e a chamada do gerador ficou desativada (rem) em rodar_tudo.bat.
+REV31 (10/11/2026): VALIDATION of REV30 (user run).
+  Simulation: 10_mode_gov\rodar_tudo = all OK (EXINI OK, IRQ TIME OK, FIFO, SYSTEM+FIFO, mode, classifier, governor, cpu_gov, MSX, sequences, LDIR, crossing).
+             Cause of the tempo_irq error: the old gen_gov_rom.py in 10_mode_gov/sim generated 1792 words (without page 7 = IRQ) and overwrote gov_rom.mem;
+             restored the 2048-word gov_rom.mem and the generator call was disabled (rem) in rodar_tudo.bat.
              13_soc\rodar_exc = 8 cenarios EXCECOES SOC OK, 0 violacoes de SDRAM.
-  Board top (57,28 MHz, sem 3D, B2B=0, mm_q): LUT4 10.995 (53 %), MUX2 1.953, ALU 1.064, DFF 6.316 (40 %), BSRAM 35/46, DSP 0 => ~14.000 LUT4-eq (67 %).
+  Board top (57.28 MHz, no 3D, B2B=0, mm_q): LUT4 10.995 (53 %), MUX2 1.953, ALU 1.064, DFF 6.316 (40 %), BSRAM 35/46, DSP 0 => ~14.000 LUT4-eq (67 %).
              Fmax: s1 72,4 | s2 67,5 | s3 76,9 (8 hold -0,12 ns no BSRAM u_dec.ctrl, artefato conhecido) | s4 43,4 FALHA (roteamento: net cio_a[2] 10,3 ns).
-             Use a semente 3 para o bitstream: gerar_bitstream_board.bat 0 3 [gravar].
+             Use seed 3 for the bitstream: gerar_bitstream_board.bat 0 3 [gravar].
 
-REV32 (10/11/2026): CPLB/NEGB adicionados; familia ED 26 recodificada (3o byte: tamanho[7:6] 00=B 01=W 10=L 11=Q; CPL x = tam,001,x ; NEG x = tam,x,001).
-  ids novos: CPLB 294, NEGB 295 (ctrl: len 3, 1 clock; sem prefixo de banco). W/L/Q (ids 169-174) agora tem uops. NEGB s: A <- 0 - s (destino fixo AX, fonte s).
-  CPLB/NEGB nao aceitam o registrador A (codigo 111): o Z80 ja tem CPL e NEG. Registradores validos: BC,DE,HL (B/W/L/Q); W/L/Q tambem aceitam AX. 001 e 110 nao sao registradores (resolve a colisao CPL x / NEG x).
-  Operam no byte baixo do registrador (sz=0). NAO simulado (sem iverilog na nuvem): rodar 10_mode_gov\rodar_tudo.bat (novo tb_cplneg), 13_soc\rodar_exc.bat e rodar_pnr_board.bat.
+REV32 (10/11/2026): CPLB/NEGB adicionados; familia ED 26 recodificada (3rd byte: size[7:6] 00=B 01=W 10=L 11=Q; CPL x = size,001,x ; NEG x = size,x,001).
+  new ids: CPLB 294, NEGB 295 (ctrl: len 3, 1 clock; no bank prefix). W/L/Q (ids 169-174) now have uops. NEGB s: A <- 0 - s (fixed destination AX, source s).
+  CPLB/NEGB do not accept register A (code 111): the Z80 already has CPL and NEG. Valid registers: BC,DE,HL (B/W/L/Q); W/L/Q also accept AX. 001 and 110 are not registers (resolves the CPL x / NEG x collision).
+  They operate on the low byte of the register (sz=0). NOT simulated (no iverilog in the cloud): run 10_mode_gov\rodar_tudo.bat (new tb_cplneg), 13_soc\rodar_exc.bat and rodar_pnr_board.bat.
 
-REV33 (14/11/2026): REVISAO DE CONSISTENCIA (simulado com Icarus Verilog 12; SEM Yosys/nextpnr nesta rodada: Fmax nao remedida).
-  1) GOVERNADOR A 57,27 MHz: timing_gov ainda usava 32/24 clocks por T-state (114,56 / 85,92 MHz); a 57,28 MHz o modo Z80 rodava a 1,79 MHz. Agora parametro CPT = 16
-     (Z80: 16 clocks/T; R800: 8 clocks/ciclo; pausa do VDP 458 clocks; refresh 1680/200 clocks; fase a cada 8). clk_sel (bits CLK da porta 3EH) ficou reservado.
+REV33 (14/11/2026): CONSISTENCY REVIEW (simulated with Icarus Verilog 12; WITHOUT Yosys/nextpnr in this run: Fmax not re-measured).
+  1) GOVERNOR AT 57.27 MHz: timing_gov still used 32/24 clocks per T-state (114.56 / 85.92 MHz); at 57.28 MHz the Z80 mode ran at 1.79 MHz. Now parameter CPT = 16
+     (Z80: 16 clocks/T; R800: 8 clocks/cycle; VDP pause 458 clocks; refresh 1680/200 clocks; phase every 8). clk_sel (CLK bits of port 3EH) remained reserved.
      Testbenches atualizados: tb_gov (27 conferencias), tb_sys_ldir (1760 / 280 clocks), tb_sys_irq (224 / 48 clocks).
-     LIMITACAO MEDIDA: no modo R800 o nucleo governado nao emite a cada 8 clocks; o menor espaco entre emissoes e 10 clocks (tb_cpu_gov +r800), entao instrucoes de
-     1 ciclo seguidas saem 25 % lentas (programa de teste: 990 clocks contra 964 ideais, +2,7 %). No modo Z80 o menor espaco e 80 clocks = 5 T, exato. PENDENTE.
-     Caminho novo na sintese: multiplicacao por constante (x16 / x8 = deslocamento); rodar rodar_pnr_board.bat para confirmar a Fmax.
-  2) Modulo 01: tb_alu_regfile esperava leitura read-first, mas o regfile64 repassa a escrita desde 08/11 (597 erros). Testbench corrigido: PASS.
-  3) Modulo 06: tb_cache_dm (cache do SoC) tinha o teste de LRU da cache8k (2 FALHAS). T4b reescrito para mapeamento direto: passa. cache_dm.v unificado com o do SoC.
-  4) Scripts: ys_mem_top.ys apontava para ../soc (inexistente) -> ../rtl. gen_gov_rom.py gera as 2048 palavras (pagina 7 embutida) e reproduz o gov_rom.mem versionado;
-     chamada reativada em rodar_tudo.bat, que agora tambem roda tb_blk/io/irq/irq2(+im2)/irq3/ldai/seq e avisa se o RTL de 09_core_min/rtl e 10_mode_gov/rtl divergir.
-     rodar_exc.bat tambem roda tb_soc (bypass e +mmu) e tb_clkgen. medir_z80*.bat medem a 57,28 MHz. instr_ids.csv (09) ganhou os ids 291-295
+     MEASURED LIMITATION: in R800 mode the governed core does not issue every 8 clocks; the smallest gap between issues is 10 clocks (tb_cpu_gov +r800), so consecutive
+     1-cycle instructions come out 25 % slow (test program: 990 clocks against 964 ideal, +2.7 %). In Z80 mode the smallest gap is 80 clocks = 5 T, exact. PENDING.
+     New path in synthesis: multiplication by a constant (x16 / x8 = shift); run rodar_pnr_board.bat to confirm Fmax.
+  2) Module 01: tb_alu_regfile expected read-first, but regfile64 forwards the write since 08/11 (597 errors). Testbench fixed: PASS.
+  3) Module 06: tb_cache_dm (SoC cache) had the LRU test of cache8k (2 FAILS). T4b rewritten for direct mapping: passes. cache_dm.v unified with the SoC one.
+  4) Scripts: ys_mem_top.ys pointed to ../soc (nonexistent) -> ../rtl. gen_gov_rom.py generates the 2048 words (page 7 embedded) and reproduces the versioned gov_rom.mem;
+     call re-enabled in rodar_tudo.bat, which now also runs tb_blk/io/irq/irq2(+im2)/irq3/ldai/seq and warns if the RTL in 09_core_min/rtl and 10_mode_gov/rtl diverges.
+     rodar_exc.bat also runs tb_soc (bypass and +mmu) and tb_clkgen. medir_z80*.bat measure at 57.28 MHz. instr_ids.csv (09) gained ids 291-295
      (EXINI, MFCR, MTCR, CPLB, NEGB); ctrl_b.mem regenerado = identico.
-  5) REV32 (CPLB/NEGB) estava "nao simulado": tb_cplneg OK. Regressao completa: 10_mode_gov (todos), tb_soc_exc sc1-8, tb_soc, tb_soc +mmu, tb_clkgen: OK.
-  PENDENTE (decisao do usuario / PnR no PC): (a) ED 08-0F: instr_ids.csv e a ROM A definem JP USER,(uu) (id 175, sem uop) em "ED 08~0F"; a ROM A hoje so o decodifica em ED 08 e ED 0F (antes tambem em 0A e 0C), e o nucleo usa
-     ED 0B/0D/0E como prefixos de banco, ED 09 EXINI, ED 0A MFCR, ED 0C MTCR; (b) Z80 classico: Fmax 44-52 MHz (40-42 com MSX+SDRAM) < 57,28 MHz.
+  5) REV32 (CPLB/NEGB) was "not simulated": tb_cplneg OK. Full regression: 10_mode_gov (all), tb_soc_exc sc1-8, tb_soc, tb_soc +mmu, tb_clkgen: OK.
+  PENDING (user decision / PnR on the PC): (a) ED 08-0F: instr_ids.csv and ROM A define JP USER,(uu) (id 175, no uop) at "ED 08~0F"; ROM A now only decodes it at ED 08 and ED 0F (before also at 0A and 0C), and the core uses
+     ED 0B/0D/0E as bank prefixes, ED 09 EXINI, ED 0A MFCR, ED 0C MTCR; (b) Classic Z80: Fmax 44-52 MHz (40-42 with MSX+SDRAM) < 57.28 MHz.
 
-REV34 (14/11/2026): JP USER,(uu) MOVIDA para opcodes livres (decisao do usuario): ED 08~0F -> ED B4~B7 (id 175 inalterado).
-  Correspondencia com as 4 codificacoes da ROM original: ED 08 -> ED B4, ED 0A -> ED B5, ED 0C -> ED B6, ED 0F -> ED B7 (variante = b2[1:0]).
-  ED 08 e ED 0F passam a id 0 (ilegais / livres). A faixa ED 08-0F fica: 08 livre, 09 EXINI, 0A MFCR, 0B prefixo de sombra, 0C MTCR, 0D/0E prefixos de banco, 0F livre.
-  Alterados: rom_ed_a.mem (09, 10 e 13, sim e pnr), r8064_decode_rom.v (09 e 10, regenerado por gen_decode_rom.py), instr_ids.csv (09). ctrl.mem/ctrl_b.mem iguais.
-  Resolve a pendencia (a) da REV33. JP USER continua SEM microcodigo (id 175 sem uop: executa como NOP); nos modos Z80/R800 o governador conta ED B4-B7 como NOP de 8 T.
-  NAO alterado: o pacote historico da raiz (rom/, ref/expected_*.mem, ref/expected_cycles.csv, ref/instr_ids.csv) e 02_pipeline/sim, que continuam com a codificacao da planilha rev5.
-  Verificado: decodificador (ED B4-B7 -> id 175; ED 08/0F -> ilegal), regressao 10_mode_gov, tb_soc_exc sc1-8, tb_soc e tb_soc +mmu: OK (Icarus 12).
+REV34 (14/11/2026): JP USER,(uu) MOVED to free opcodes (user decision): ED 08~0F -> ED B4~B7 (id 175 unchanged).
+  Correspondence with the 4 encodings of the original ROM: ED 08 -> ED B4, ED 0A -> ED B5, ED 0C -> ED B6, ED 0F -> ED B7 (variant = b2[1:0]).
+  ED 08 and ED 0F become id 0 (illegal / free). The ED 08-0F range is: 08 free, 09 EXINI, 0A MFCR, 0B shadow prefix, 0C MTCR, 0D/0E bank prefixes, 0F free.
+  Changed: rom_ed_a.mem (09, 10 and 13, sim and pnr), r8064_decode_rom.v (09 and 10, regenerated by gen_decode_rom.py), instr_ids.csv (09). ctrl.mem/ctrl_b.mem equal.
+  Resolves pending item (a) of REV33. JP USER remains WITHOUT microcode (id 175 without uop: executes as NOP); in Z80/R800 modes the governor counts ED B4-B7 as an 8 T NOP.
+  NOT changed: the historical root package (rom/, ref/expected_*.mem, ref/expected_cycles.csv, ref/instr_ids.csv) and 02_pipeline/sim, which keep the rev5 spreadsheet encoding.
+  Verified: decoder (ED B4-B7 -> id 175; ED 08/0F -> illegal), 10_mode_gov regression, tb_soc_exc sc1-8, tb_soc and tb_soc +mmu: OK (Icarus 12).
 
-REV35 (14/11/2026): Z80 COMPLETO NO NUCLEO (microcodigo novo + mudancas no RTL). Simulado com Icarus 12; NAO sintetizado (area e Fmax a medir no PC).
-  ACHADO: a pagina principal de uop.mem e uma codificacao de TESTE (LDI, ADD 3 operandos, LD, ST, ADDI, JR, JRNZ), nao a do Z80; so 16 opcodes reais estavam por cima dela.
-  NOVO: 09_core_min/sim/gen_z80_rom.py gera uop_z80.mem / mainctrl_z80.mem com o Z80 real: pagina principal (252 opcodes + prefixos), CB (256), DD/FD (IX, IY, IXH/IXL,
-        (IX+d)), DDCB/FDCB (256, com copia para registrador) e os ED do Z80 que faltavam (ADC/SBC HL, LD (nn),rr / LD rr,(nn), NEG, RRD, RLD, LD R,A, LD A,R).
-        1114 das 2048 entradas da ROM de uops (caudas de cadeia iguais sao compartilhadas). A pagina ED que ja existia e as cadeias de interrupcao foram mantidas.
-  RTL (r8064_core_min, alu_prep, alu_core_s; copias de 09 e 10 iguais):
-    - uop de 80 -> 96 bits (ROM de uops: 9 -> 11 BSRAM). uop.mem de 80 bits continua valido (bits novos = 0).
-    - indices EXPLICITOS da uop (AX/BC/DE/HL) agora obedecem a EXX e EX AF,AF' (antes so os campos rr; LDIR depois de EXX usava o grupo errado).
-    - F' (EX AF,AF' troca as flags; EXINI volta ao F principal).
-    - ALU: RL, RR, SLL, DAA, SHL4/SHR4 (RLD/RRD), meio-vai-um do bit 11 (ADD/ADC/SBC HL) e X/Y do operando (BIT).
-    - flags: regras do Z80 para rotacoes de A, ADD HL, ADC/SBC HL, SCF, CCF, POP AF, BIT; condicao P; flag interna tz (DJNZ nao toca em F).
-    - operando B = byte alto do registrador ou F (PUSH AF); imediato derivado do opcode (vetor de RST, mascara de bit).
+REV35 (14/11/2026): COMPLETE Z80 IN THE CORE (new microcode + RTL changes). Simulated with Icarus 12; NOT synthesized (area and Fmax to be measured on the PC).
+  FINDING: the main page of uop.mem is a TEST encoding (LDI, 3-operand ADD, LD, ST, ADDI, JR, JRNZ), not the Z80 one; only 16 real opcodes were on top of it.
+  NEW: 09_core_min/sim/gen_z80_rom.py generates uop_z80.mem / mainctrl_z80.mem with the real Z80: main page (252 opcodes + prefixes), CB (256), DD/FD (IX, IY, IXH/IXL,
+        (IX+d)), DDCB/FDCB (256, with copy to register) and the Z80 ED instructions that were missing (ADC/SBC HL, LD (nn),rr / LD rr,(nn), NEG, RRD, RLD, LD R,A, LD A,R).
+        1114 of the 2048 entries of the uop ROM (equal chain tails are shared). The ED page that already existed and the interrupt chains were kept.
+  RTL (r8064_core_min, alu_prep, alu_core_s; identical copies in 09 and 10):
+    - uop from 80 -> 96 bits (uop ROM: 9 -> 11 BSRAM). The 80-bit uop.mem remains valid (new bits = 0).
+    - EXPLICIT uop indices (AX/BC/DE/HL) now obey EXX and EX AF,AF' (before only the rr fields; LDIR after EXX used the wrong group).
+    - F' (EX AF,AF' swaps the flags; EXINI returns to the main F).
+    - ALU: RL, RR, SLL, DAA, SHL4/SHR4 (RLD/RRD), half-carry of bit 11 (ADD/ADC/SBC HL) and X/Y of the operand (BIT).
+    - flags: Z80 rules for rotates of A, ADD HL, ADC/SBC HL, SCF, CCF, POP AF, BIT; condition P; internal flag tz (DJNZ does not touch F).
+    - operand B = high byte of the register or F (PUSH AF); immediate derived from the opcode (RST vector, bit mask).
     - prefixo CB (regiao 768+), prefixo DD/FD removido na captura (HL -> IX/IY, deslocamento d, +1/+2 bytes), DD CB d op (regiao 1792+).
-    - CALL cc / RET cc: um desvio de 'pulo' com a condicao contraria salta o resto da cadeia; gov_alt_ev tem a polaridade certa para esses desvios (u[94]).
-  VERIFICACAO (09_core_min/sim_z80, nucleo x modelo z80ref.c, uma instrucao por vez, F inteiro incl. X/Y, memoria final):
-    pagina principal 220.691 instrucoes | +CB 41.094 | +CB+ED 100.222 | +DD/FD 75.397 | todas as paginas 303.165 | ZEXDOC: primeiras 400.000 instrucoes. 0 divergencias.
-    Regressao antiga (uop.mem): 10_mode_gov (28 execucoes), tb_soc_exc sc1-8, tb_soc, tb_soc +mmu, tb_core, tb_bank, alu_core_s 148.128 vetores: OK.
+    - CALL cc / RET cc: a 'jump' branch with the opposite condition skips the rest of the chain; gov_alt_ev has the right polarity for these branches (u[94]).
+  VERIFICATION (09_core_min/sim_z80, core x z80ref.c model, one instruction at a time, whole F incl. X/Y, final memory):
+    main page 220,691 instructions | +CB 41,094 | +CB+ED 100,222 | +DD/FD 75,397 | all pages 303,165 | ZEXDOC: first 400,000 instructions. 0 divergences.
+    Old regression (uop.mem): 10_mode_gov (28 runs), tb_soc_exc sc1-8, tb_soc, tb_soc +mmu, tb_core, tb_bank, alu_core_s 148,128 vectors: OK.
   LIMITES / PENDENTE:
-    a) O SoC e os testes antigos ainda usam uop.mem (pagina de teste). Para o SoC rodar Z80: apontar UOP_FILE/MAINC_FILE para a ROM nova e reescrever os programas
-       de teste (prog*.mem usam os opcodes de teste) e os tempos esperados do governador.
-    b) Sintese: +2 BSRAM, muxes novos no caminho de decodificacao (xsw com IX/IY, imediato com deslocamento). Fmax NAO medida.
-    c) Modos governados (Z80/R800) com a ROM nova NAO foram simulados; interrupcoes com a ROM nova tambem nao (as cadeias 600/601 sao as antigas).
-    d) R nao conta buscas (LD A,R devolve o ultimo valor escrito). HALT = desvio para si mesma. IN/OUT nao comparados (o modelo so tem stub).
-    e) X/Y nao documentados de BIT n,(HL)/(IX+d) (dependem de WZ) e de LDI/CPI e repetidos nao sao reproduzidos (o teste os mascara).
-    f) ED que nao e do Z80: no nucleo e instrucao R8064 ou ilegal (com comprimento 0!), nao o NOP de 2 bytes do Z80. DD/FD seguidos de outro prefixo: NOP de 1 byte.
-    g) Codigo automodificavel: um byte escrito e executado logo em seguida sem desvio tomado no meio ja esta na fila de busca (o ZEXDOC, que escreve e depois chama, passa).
-    h) Instrucoes R8064 de 16/32/64 bits (etapa seguinte): ainda so as 13 que ja existiam.
+    a) The SoC and the old tests still use uop.mem (test page). For the SoC to run Z80: point UOP_FILE/MAINC_FILE to the new ROM and rewrite the test programs
+       (prog*.mem use the test opcodes) and the governor's expected times.
+    b) Synthesis: +2 BSRAM, new muxes in the decode path (xsw with IX/IY, immediate with displacement). Fmax NOT measured.
+    c) Governed modes (Z80/R800) with the new ROM were NOT simulated; interrupts with the new ROM were not either (chains 600/601 are the old ones).
+    d) R does not count fetches (LD A,R returns the last value written). HALT = branch to itself. IN/OUT not compared (the model only has a stub).
+    e) Undocumented X/Y of BIT n,(HL)/(IX+d) (depend on WZ) and of LDI/CPI and repeats are not reproduced (the test masks them).
+    f) A non-Z80 ED: in the core it is an R8064 instruction or illegal (with length 0!), not the Z80's 2-byte NOP. DD/FD followed by another prefix: 1-byte NOP.
+    g) Self-modifying code: a byte written and executed right after without a taken branch in between is already in the fetch queue (ZEXDOC, which writes and then calls, passes).
+    h) R8064 16/32/64-bit instructions (next stage): still only the 13 that already existed.
 
-REV36 (14/11/2026): SoC E TESTES ANTIGOS PASSADOS PARA A ROM DO Z80. uop.mem / mainctrl.mem agora SAO o microcodigo do Z80 (96 bits); uop_z80.mem deixou de existir.
-  gen_roms.py: a pagina principal de teste foi removida; importa gen_z80_rom.py (modulo) e grava uop.mem. A pagina ED do R8064, blocos, E/S e interrupcoes continuam nele.
-  Programas reescritos em Z80 real: prog.mem (LD rr,nn / EX DE,HL / ADD HL,BC / LD (HL),E / ADD A,n / DEC C / JR NZ / LD A,(nn): mesmos resultados, laco final em 17h);
-    nos demais, as cargas de teste (00/02/04/07 n) viraram LD C/E/L/A,n, de mesmo comprimento (enderecos e PCs iguais).
-  Testbenches: tb_core, tb_cpu_gov e tb_sys gravam a memoria por byte (d_be), porque o Z80 escreve bytes; PC do laco final 13h -> 17h.
-  RESULTADO (Icarus 12, tudo com a ROM do Z80): regressao 10_mode_gov completa (28 execucoes: modos nativo, Z80 e R800, tempos de LDIR e de interrupcao, IM1/IM2,
-    atraso do EI, LD A,I, blocos, E/S, cruzamento de palavra, EXINI, CPL/NEG, FIFO), tb_core, tb_bank, tb_soc (bypass e +mmu), tb_soc_exc sc1-8, sim_z80: OK.
-  Tempo no modo Z80 conferido a mao em tb_cpu_gov: 5752 clocks ate o laco final = 358 T-states (programa + 1 espera de M1 por instrucao) + latencia do pipeline;
-    menor espaco entre emissoes = 80 clocks (5 T). Modo R800: menor espaco continua 10 clocks (limitacao da REV33).
-  Resolve os itens (a) e (c) da REV35. Continuam abertos: (b) sintese/Fmax, (d)-(g) diferencas para o Z80 real, (h) instrucoes R8064 de 16/32/64 bits.
+REV36 (14/11/2026): SoC AND OLD TESTS MOVED TO THE Z80 ROM. uop.mem / mainctrl.mem now ARE the Z80 microcode (96 bits); uop_z80.mem no longer exists.
+  gen_roms.py: the test main page was removed; it imports gen_z80_rom.py (module) and writes uop.mem. The R8064 ED page, blocks, I/O and interrupts remain in it.
+  Programs rewritten in real Z80: prog.mem (LD rr,nn / EX DE,HL / ADD HL,BC / LD (HL),E / ADD A,n / DEC C / JR NZ / LD A,(nn): same results, final loop at 17h);
+    in the others, the test loads (00/02/04/07 n) became LD C/E/L/A,n, of the same length (addresses and PCs equal).
+  Testbenches: tb_core, tb_cpu_gov and tb_sys write memory per byte (d_be), because the Z80 writes bytes; final-loop PC 13h -> 17h.
+  RESULT (Icarus 12, all with the Z80 ROM): full 10_mode_gov regression (28 runs: native, Z80 and R800 modes, LDIR and interrupt timings, IM1/IM2,
+    EI delay, LD A,I, blocks, I/O, word crossing, EXINI, CPL/NEG, FIFO), tb_core, tb_bank, tb_soc (bypass and +mmu), tb_soc_exc sc1-8, sim_z80: OK.
+  Z80-mode time checked by hand in tb_cpu_gov: 5752 clocks to the final loop = 358 T-states (program + 1 M1 wait per instruction) + pipeline latency;
+    smallest spacing between issues = 80 clocks (5 T). R800 mode: smallest spacing stays 10 clocks (REV33 limitation).
+  Resolves items (a) and (c) of REV35. Still open: (b) synthesis/Fmax, (d)-(g) differences from the real Z80, (h) R8064 16/32/64-bit instructions.
 
-REV37 (14/11/2026): (1) PnR DO USUARIO com o nucleo da REV35/36 (uop de 96 bits, Z80 completo). (2) INSTRUCOES INTEIRAS DO R8064 DE 16/32/64 BITS (em andamento).
-  (1) rodar_pnr_board.bat, 57,28 MHz: LUT4 10889/20736 (52 %), DFF 6326 (40 %), BSRAM 36/46 (era 35: o Yosys corta as colunas da ROM de uops que sao sempre 0).
-      Fmax apos roteamento: semente 1 = 48,61 MHz (FALHA) | 2 = 60,96 | 3 = 59,19 | 4 = 74,44. Rodada anterior registrada (sem 3D, B2B=0): 72,4 / 67,5 / 76,9 / 43,4 (falha).
-      Passam 3 de 4 como antes, mas a folga caiu: duas sementes ficam a 2-4 MHz do alvo (antes a pior que passava tinha 67,5). Caminhos criticos novos: ALU estagio A (ctl_x2 -> lr_b, semente 3) e o
-      somador de endereco/alvo (imediato -> addr_x2/tgt_x2, semente 2), onde entraram o DAA / deslocamento com carry e o mux do deslocamento (IX+d).
-      Semente 1: caminho de roteamento do 'hold' (SDRAM -> hold -> flush -> CE), 18,6 ns de fio: nao e logica nova.
-      Hold: 4 a 20 violacoes por semente, pior -0,12 ns, sempre nos enderecos ADB da BSRAM u_dec.ctrl: as MESMAS ja registradas em 10_mode_gov/pnr/resultado_core80.txt.
-      Para bitstream: semente 4.
-  (2) sim/gen_r64_rom.py: microcodigo de ~110 instrucoes da pagina ED (ALU W/L/Q, INC/DEC, deslocamentos, BIT/RES/SET, LDx em todas as formas, pilha L/Q, JRW/JPL/JPQ,
-      DJNZW, CALLL/CALLQ, RETL/RETQ e as formas condicionais). Semantica INFERIDA: 09_core_min/PREMISSAS_R8064.txt. ROM de uops: 1243 de 2048 entradas.
-      RTL: uop de 99 bits (continua 11 BSRAM no pior caso); condicao vinda do campo cc de b3 (u[96], u[97] = contraria); campo de registrador de 8 bits (u[95]);
-      mascara de bit de 4/5 bits (BITW/BITL). Nao sintetizado.
-      VERIFICADO: so o teste de fumaca sim_r64 (21 instrucoes, valores calculados a mao): OK. Regressao 10_mode_gov (28) e sim_z80: OK com a ROM nova.
-      PENDENTE: teste amplo com programas aleatorios contra um modelo; E/S de 16/32/64 bits; mul/div; FPU; sistema.
+REV37 (14/11/2026): (1) USER PnR with the REV35/36 core (96-bit uop, complete Z80). (2) R8064 16/32/64-BIT INTEGER INSTRUCTIONS (in progress).
+  (1) rodar_pnr_board.bat, 57.28 MHz: LUT4 10889/20736 (52 %), DFF 6326 (40 %), BSRAM 36/46 (was 35: Yosys cuts the uop ROM columns that are always 0).
+      Fmax after routing: seed 1 = 48.61 MHz (FAIL) | 2 = 60.96 | 3 = 59.19 | 4 = 74.44. Previous run recorded (no 3D, B2B=0): 72.4 / 67.5 / 76.9 / 43.4 (fail).
+      3 of 4 pass as before, but the margin dropped: two seeds are 2-4 MHz from the target (before, the worst that passed had 67.5). New critical paths: ALU stage A (ctl_x2 -> lr_b, seed 3) and the
+      address/target adder (immediate -> addr_x2/tgt_x2, seed 2), where DAA / shift with carry and the shift mux (IX+d) entered.
+      Seed 1: routing path of 'hold' (SDRAM -> hold -> flush -> CE), 18.6 ns of wire: not new logic.
+      Hold: 4 to 20 violations per seed, worst -0.12 ns, always on the ADB addresses of BSRAM u_dec.ctrl: the SAME ones already recorded in 10_mode_gov/pnr/resultado_core80.txt.
+      For the bitstream: seed 4.
+  (2) sim/gen_r64_rom.py: microcode of ~110 instructions of the ED page (ALU W/L/Q, INC/DEC, shifts, BIT/RES/SET, LDx in all forms, L/Q stack, JRW/JPL/JPQ,
+      DJNZW, CALLL/CALLQ, RETL/RETQ and the conditional forms). INFERRED semantics: 09_core_min/PREMISSAS_R8064.txt. uop ROM: 1243 of 2048 entries.
+      RTL: 99-bit uop (still 11 BSRAM in the worst case); condition from the cc field of b3 (u[96], u[97] = opposite); 8-bit register field (u[95]);
+      4/5-bit bit mask (BITW/BITL). Not synthesized.
+      VERIFIED: only the smoke test sim_r64 (21 instructions, hand-computed values): OK. Regression 10_mode_gov (28) and sim_z80: OK with the new ROM.
+      PENDING: broad test with random programs against a model; 16/32/64-bit I/O; mul/div; FPU; system.
 
-REV38 (14/11/2026): TESTE AMPLO DAS INSTRUCOES R8064 DE 16/32/64 BITS + MEDICAO DE TIMING (Yosys/nextpnr rodados na nuvem, pacotes YoWASP, nextpnr 0.11.1).
-  (1) TESTE: 09_core_min/sim_r64/gen_r64_prog.py = MODELO em Python (escrito a partir de PREMISSAS_R8064.txt) + gerador de programas aleatorios; tb_r64core.v compara
-      o nucleo com o modelo uma instrucao por vez (PC, AX, BC, DE, HL, IX, IY, SP de 64 bits, F) e a memoria final.
-      36 programas, 108.023 instrucoes, todos os opcodes da etapa exercitados: 0 divergencias. rodar_r64.bat roda a fumaca e 2 programas prontos (vec/).
-      Mudanca: BIT de 16/32 bits passa a ter PV = Z em qualquer bit (antes PV era a paridade do byte baixo do resultado; no Z80, de 8 bits, da no mesmo).
-      Limite do teste: mostra que o RTL segue as premissas, nao que as premissas sao as da planilha original. Fora dele: prefixos de banco, EXX, faltas, modos governados.
-  (2) TIMING. CORRECAO da REV37: o caminho critico da semente 2 do PnR do usuario (opa_x1 -> somador de 64 bits -> tgt_x2) e o somador de endereco/alvo que JA existia;
-      o mux do deslocamento (IX+d) fica um estagio antes e nao esta nesse caminho. So o caminho da semente 3 (ALU estagio A) passa por logica nova.
-      Medicao A/B do nucleo + governador (pnr_gov_top, 4 sementes, mesma ferramenta), Fmax pos-roteamento:
-        original (commit inicial)        LUT4 7201, BSRAM 25:  130,3 /  83,1 / 111,6 / 105,4 MHz  (media 107,6; pior 83,1)
-        REV37 (Z80 + R8064 16/32/64)     LUT4 8116, BSRAM 27:  119,7 / 110,2 / 106,9 /  95,7 MHz  (media 108,1; pior 95,7)
-        REV38 (ALU estagio A refeito)    LUT4 7819, BSRAM 27:  118,2 / 109,8 / 107,7 / 100,1 MHz  (media 108,9; pior 100,1)
-      => no nucleo isolado a logica nova NAO custou Fmax mensuravel; a variacao entre sementes (83 a 130 no original) e maior que qualquer diferenca.
-      Mudanca aplicada: alu_core_s estagio A - o seletor do resultado logico/deslocamento deixou de ser uma cadeia de prioridade de 12 casos e virou E-OU em
-      paralelo (controles mutuamente exclusivos), deslocamentos com um caminho comum para cada lado e DAA so no byte baixo. -297 LUT4. 148.128 vetores da ALU,
-      Z80 (80.000 instrucoes) e R8064 (24.003) refeitos: OK.
-      Topo de placa com o RTL da REV38 (mesma ferramenta, 57,28 MHz): LUT4 12003 (57 %), DFF 6407 (41 %), BSRAM 38/46; 93,6 / 110,8 / 105,5 / 100,3 MHz, 4/4 passam.
-      ATENCAO: esta ferramenta da numeros bem MAIORES que o OSS CAD Suite do usuario para o mesmo tipo de projeto (la o topo de placa da REV35/36 deu 48,6 a 74,4 MHz).
-      Os valores daqui servem para comparar versoes entre si, NAO como Fmax final: o que vale e rodar_pnr_board.bat no PC.
-      Limitadores vistos nos logs do usuario que ja existiam e nao foram tocados: rede do 'hold' (SDRAM -> hold -> flush -> CE do pipeline, 18,6 ns de fio na
-      semente 1) e o somador de endereco -> alvo do desvio (7 ns de fio na semente 2). Mexer neles muda o controle do pipeline: fica como proposta, nao foi feito.
+REV38 (14/11/2026): BROAD TEST OF THE R8064 16/32/64-BIT INSTRUCTIONS + TIMING MEASUREMENT (Yosys/nextpnr run in the cloud, YoWASP packages, nextpnr 0.11.1).
+  (1) TEST: 09_core_min/sim_r64/gen_r64_prog.py = Python MODEL (written from PREMISSAS_R8064.txt) + random program generator; tb_r64core.v compares
+      the core with the model one instruction at a time (PC, AX, BC, DE, HL, IX, IY, SP 64-bit, F) and the final memory.
+      36 programs, 108,023 instructions, all opcodes of the stage exercised: 0 divergences. rodar_r64.bat runs the smoke test and 2 ready-made programs (vec/).
+      Change: BIT of 16/32 bits now has PV = Z at any bit (before PV was the parity of the low byte of the result; on the Z80, 8-bit, it gives the same).
+      Test limit: it shows the RTL follows the premises, not that the premises are those of the original spreadsheet. Outside it: bank prefixes, EXX, faults, governed modes.
+  (2) TIMING. CORRECTION of REV37: the critical path of seed 2 of the user's PnR (opa_x1 -> 64-bit adder -> tgt_x2) is the address/target adder that ALREADY existed;
+      the shift mux (IX+d) sits one stage earlier and is not on that path. Only the seed 3 path (ALU stage A) goes through new logic.
+      A/B measurement of the core + governor (pnr_gov_top, 4 seeds, same tool), post-routing Fmax:
+        original (initial commit)        LUT4 7201, BSRAM 25:  130.3 /  83.1 / 111.6 / 105.4 MHz  (mean 107.6; worst 83.1)
+        REV37 (Z80 + R8064 16/32/64)     LUT4 8116, BSRAM 27:  119.7 / 110.2 / 106.9 /  95.7 MHz  (mean 108.1; worst 95.7)
+        REV38 (ALU stage A redone)       LUT4 7819, BSRAM 27:  118.2 / 109.8 / 107.7 / 100.1 MHz  (mean 108.9; worst 100.1)
+      => in the isolated core the new logic did NOT cost measurable Fmax; the variation between seeds (83 to 130 in the original) is larger than any difference.
+      Change applied: alu_core_s stage A - the logic/shift result selector stopped being a 12-case priority chain and became AND-OR in
+      parallel (mutually exclusive controls), shifts with a common path for each side and DAA only on the low byte. -297 LUT4. 148,128 ALU vectors,
+      Z80 (80,000 instructions) and R8064 (24,003) redone: OK.
+      Board top with the REV38 RTL (same tool, 57.28 MHz): LUT4 12003 (57 %), DFF 6407 (41 %), BSRAM 38/46; 93.6 / 110.8 / 105.5 / 100.3 MHz, 4/4 pass.
+      WARNING: this tool gives much HIGHER numbers than the user's OSS CAD Suite for the same kind of project (there the REV35/36 board top gave 48.6 to 74.4 MHz).
+      The values here serve to compare versions with each other, NOT as final Fmax: what counts is rodar_pnr_board.bat on the PC.
+      Limiters seen in the user's logs that already existed and were not touched: the 'hold' net (SDRAM -> hold -> flush -> pipeline CE, 18.6 ns of wire on
+      seed 1) and the address -> branch target adder (7 ns of wire on seed 2). Touching them changes the pipeline control: left as a proposal, not done.
 
-REV39 (15/11/2026): MULTIPLICACAO, DIVISAO E MAIS INSTRUCOES DO R8064 NO NUCLEO. Simulado (Icarus 12); sintese so com a ferramenta da nuvem (ver aviso da REV38).
-  NOVO: mul_unit e div_unit (03_muldiv) instanciados em r8064_core_min. Uma uop "dispara" a unidade e espera em M (mesmo 'hold' dos acessos a memoria) ate o
-        resultado; uops seguintes leem as partes do resultado (baixo/alto, quociente/resto). Uop de 102 bits: [98] mdu, [99] r8b, [100] bb2, [101] crk.
+REV39 (15/11/2026): MULTIPLICATION, DIVISION AND MORE R8064 INSTRUCTIONS IN THE CORE. Simulated (Icarus 12); synthesis only with the cloud tool (see the REV38 warning).
+  NEW: mul_unit and div_unit (03_muldiv) instantiated in r8064_core_min. A uop "fires" the unit and waits in M (same 'hold' as memory accesses) until the
+        result; following uops read the result parts (low/high, quotient/remainder). 102-bit uop: [98] mdu, [99] r8b, [100] bb2, [101] crk.
         Microcodigo (gen_r64_rom.py): MLTUB/MLTUW do R800 (ED C1..F9, ED C3, ED F3), MLTS/MLTU B/W/L/Q, DIVS/DIVU B/W/L/Q, LDCR/STCR, PGINV, XCHGL/XCHGQ, CASL/CASQ.
-        FENCE e ISYNC = NOP. Opcode ED sem instrucao = NOP de 2 bytes (antes comprimento 0: travava). ROM de uops: 1302 de 2048 entradas.
-        Premissas (destinos dos produtos, formato quociente/resto, sem flags): 09_core_min/PREMISSAS_R8064.txt, itens 10 a 16.
-  TESTE (sim_r64, nucleo x modelo em Python, instrucao a instrucao): 36 programas, 108.020 instrucoes incluindo ~3.000 multiplicacoes e divisoes de todos os
-        tamanhos, com e sem sinal: 0 divergencias. A divisao so foi testada SEM erro (o gerador evita divisor zero e estouro).
+        FENCE and ISYNC = NOP. ED opcode with no instruction = 2-byte NOP (before length 0: it hung). uop ROM: 1302 of 2048 entries.
+        Premises (product destinations, quotient/remainder format, no flags): 09_core_min/PREMISSAS_R8064.txt, items 10 to 16.
+  TEST (sim_r64, core x Python model, instruction by instruction): 36 programs, 108,020 instructions including ~3,000 multiplications and divisions of all
+        sizes, signed and unsigned: 0 divergences. Division was only tested WITHOUT error (the generator avoids zero divisor and overflow).
         Regressao: 10_mode_gov (28 execucoes), tb_core, tb_bank, tb_soc (bypass e +mmu), tb_soc_exc sc1-8, sim_z80: OK.
   AREA (topo de placa, ferramenta da nuvem): LUT4 12003 -> 14306 (68 %), DFF 6407 -> 8054 (51 %), BSRAM 38/46, 4 multiplicadores 18x18 em DSP.
-        Fmax na mesma ferramenta: 90,8 / 96,2 MHz em 2 sementes (sem mul/div: 93,6 a 110,8). Os numeros dessa ferramenta sao maiores que os do OSS CAD Suite: medir no PC.
-  LISTAS DE ARQUIVOS: todos os .bat/.ys/.sh que compilam o nucleo passaram a incluir 03_muldiv/rtl/mul_unit.v e div_unit.v.
-  PENDENTE: erro de divisao (zero/estouro) sem excecao nem flag; flags do MULUB/MULUW do R800; FPU (45), E/S de 16/32/64 bits, PROT, JP USER, SCALL, SYSRT, RESET,
-        STDBY, WAKE, LDCTX, SVCTX (precisam do modelo de privilegio/excecao); tempos de MLT/DIV nos modos governados nao conferidos.
+        Fmax in the same tool: 90.8 / 96.2 MHz on 2 seeds (without mul/div: 93.6 to 110.8). This tool's numbers are higher than the OSS CAD Suite's: measure on the PC.
+  FILE LISTS: all .bat/.ys/.sh that compile the core now include 03_muldiv/rtl/mul_unit.v and div_unit.v.
+  PENDING: division error (zero/overflow) without exception or flag; R800 MULUB/MULUW flags; FPU (45), 16/32/64-bit I/O, PROT, JP USER, SCALL, SYSRT, RESET,
+        STDBY, WAKE, LDCTX, SVCTX (need the privilege/exception model); MLT/DIV timings in the governed modes not checked.
 
-REV40 (15/11/2026): FLAGS E ERRO DE MLT/DIV, DJNZW COM BC, MODELO DE PRIVILEGIO E DE EXCECAO, INSTRUCOES DE SISTEMA. Simulado (Icarus 12); sintese so na ferramenta da nuvem.
-  DEFINICAO: 09_core_min/MODELO_PRIVILEGIO.txt (modos supervisor/usuario no CR18, entrada unica de excecao, causas 0/5/6/7 alem das faltas da MMU, SYSRT,
-        CR14 bit 2 = TE). E uma escolha feita nesta revisao: o repositorio nao trazia esse modelo. Com os valores de reset o software MSX nao ve diferenca.
-  NOVO NO NUCLEO: flags de MLT e DIV saindo da unidade; erro de divisao (flags + resultado fixo, ou excecao 6 com TE); DJNZW conta em BC (16 bits);
-        armadilhas na fronteira de instrucao (privilegiada em modo usuario, ilegal / sem microcodigo com TE, SCALL); interrupcao em modo usuario entra como excecao;
-        a entrada de excecao grava tambem o CR18 (4 escritas em vez de 3). Uop de 106 bits: [102] priv, [103] unimp, [104] scall, [105] ju.
-        Microcodigo: JP USER, SYSRT, SCALL, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX; MFCR/MTCR/LDCR/STCR/PGINV e, do Z80, DI/EI/IM/LD I,A e a E/S viraram
-        privilegiadas (so tem efeito em modo usuario); FPU e E/S larga marcadas "sem microcodigo". ROM de uops: 1432 de 2048 entradas.
-  ERROS ACHADOS PELOS TESTES E CORRIGIDOS: a ALU sobrescrevia H e N antes das flags de MLT/DIV; a entrada de excecao na fronteira disparava em 2 clocks
-        seguidos com o nucleo solto e perdia o "modo anterior" (o mesmo cuidado foi posto na falta de busca de instrucao, que tinha a mesma forma).
-  TESTE: sim_r64, nucleo x modelo em Python: passo a passo 16 programas / 64.097 instrucoes e, novo, nucleo SOLTO (+livre, estado final) 12 programas / 48.080
-        instrucoes: 0 divergencias. Nesses 28 programas houve 2.591 excecoes (SCALL 775, erro de divisao 292, ilegal 306, sem microcodigo 314, privilegiada 904),
-        em supervisor e em usuario. tb_soc_exc cenarios 9 a 12 (com MMU): usuario + SCALL + SYSRT + privilegiada; interrupcao em modo usuario; PROT 1 + RESET; STDBY.
-        Regressao: 10_mode_gov (28 execucoes), tb_core, tb_bank, tb_soc (bypass e +mmu), tb_soc_exc 1-8, sim_z80 (12.000 instrucoes), fumaca R8064: OK.
-  AREA / FMAX (nucleo + governador, pnr_gov_top, ferramenta da nuvem, 2 sementes; serve so para comparar versoes): LUT4 10696 -> 11293, DFF 5606 -> 5688,
-        BSRAM 27 -> 28; antes 112,5 / 63,0 MHz, depois 103,6 / 94,6 MHz (a diferenca entre sementes e maior que a entre versoes). Topo de placa NAO refeito:
-        rodar rodar_pnr_board.bat no PC (os logs enviados em 15/11 sao do RTL da REV35/36: LUT4 52 %, BSRAM 36).
-  NAO CONFERIDO: excecoes novas nos modos governados (Z80 / R800); LDCTX com falta de pagina no meio; RESET e STDBY so no SoC (cenarios dirigidos).
-  PENDENTE: FPU (45) e E/S de 16/32/64 bits; tempos de MLT/DIV nos modos governados.
+REV40 (15/11/2026): MLT/DIV FLAGS AND ERROR, DJNZW WITH BC, PRIVILEGE AND EXCEPTION MODEL, SYSTEM INSTRUCTIONS. Simulated (Icarus 12); synthesis only in the cloud tool.
+  DEFINITION: 09_core_min/MODELO_PRIVILEGIO.txt (supervisor/user modes in CR18, single exception entry, causes 0/5/6/7 besides the MMU faults, SYSRT,
+        CR14 bit 2 = TE). It is a choice made in this revision: the repository did not carry this model. With the reset values MSX software sees no difference.
+  NEW IN THE CORE: MLT and DIV flags coming out of the unit; division error (flags + fixed result, or exception 6 with TE); DJNZW counts in BC (16 bits);
+        traps at the instruction boundary (privileged in user mode, illegal / no microcode with TE, SCALL); interrupt in user mode enters as an exception;
+        the exception entry also writes CR18 (4 writes instead of 3). 106-bit uop: [102] priv, [103] unimp, [104] scall, [105] ju.
+        Microcode: JP USER, SYSRT, SCALL, PROT, RESET, STDBY, WAKE, SVCTX, LDCTX; MFCR/MTCR/LDCR/STCR/PGINV and, from the Z80, DI/EI/IM/LD I,A and I/O became
+        privileged (only take effect in user mode); FPU and wide I/O marked "no microcode". uop ROM: 1432 of 2048 entries.
+  ERRORS FOUND BY THE TESTS AND FIXED: the ALU overwrote H and N before the MLT/DIV flags; the exception entry at the boundary fired on 2 consecutive clocks
+        with the free-running core and lost the "previous mode" (the same care was put in the instruction fetch fault, which had the same form).
+  TEST: sim_r64, core x Python model: step by step 16 programs / 64,097 instructions and, new, FREE-RUNNING core (+livre, final state) 12 programs / 48,080
+        instructions: 0 divergences. In these 28 programs there were 2,591 exceptions (SCALL 775, division error 292, illegal 306, no microcode 314, privileged 904),
+        in supervisor and in user mode. tb_soc_exc scenarios 9 to 12 (with MMU): user + SCALL + SYSRT + privileged; interrupt in user mode; PROT 1 + RESET; STDBY.
+        Regression: 10_mode_gov (28 runs), tb_core, tb_bank, tb_soc (bypass and +mmu), tb_soc_exc 1-8, sim_z80 (12,000 instructions), R8064 smoke: OK.
+  AREA / FMAX (core + governor, pnr_gov_top, cloud tool, 2 seeds; only for comparing versions): LUT4 10696 -> 11293, DFF 5606 -> 5688,
+        BSRAM 27 -> 28; before 112.5 / 63.0 MHz, after 103.6 / 94.6 MHz (the difference between seeds is larger than between versions). Board top NOT redone:
+        run rodar_pnr_board.bat on the PC (the logs sent on 15/11 are from the REV35/36 RTL: LUT4 52 %, BSRAM 36).
+  NOT CHECKED: new exceptions in the governed modes (Z80 / R800); LDCTX with a page fault in the middle; RESET and STDBY only in the SoC (directed scenarios).
+  PENDING: FPU (45) and 16/32/64-bit I/O; MLT/DIV timings in the governed modes.
 
-REV41 (15/11/2026): FPU NO NUCLEO (pilha ST0-ST7 + 34 instrucoes). Simulado (Icarus 12). NAO COUBE na ferramenta da nuvem: ver AREA.
-  PEDIDO: lista de instrucoes enviada pelo autor + 4 decisoes dele (unidade aritmetica nova no nucleo; transcendentais depois; FSTSW em F; FIST de 64 bits).
-  DOCUMENTO: 09_core_min/MODELO_FPU.txt (formato, pilha, codigos, o que foi escolha minha, o que falta).
-  NOVO: 08_fpu/rtl/fpu_seq.v (aritmetica de 80 bits sequencial, um somador de 68 bits; soma, subtracao, multiplicacao, divisao, raiz, comparacao,
-        FILD/FIST/FRINT, FLD32/64, FST32/64) e fpu_unit.v (pilha, marcas, palavra de estado, comandos). No nucleo: uop de 107 bits ([106] fpu), a uop
-        de FPU espera em M como MLT/DIV. Microcodigo: FLD/FXCH/FSTP STn, FADD/FSUB/FMUL/FDIV, FSQRT, FRINT, FCHS, FABS, FCOM, FCOPP, FSTSW, FINIT,
-        FLD1/FLDZ/FLDPI/FLDL2/FLDLG/FLDLN, FILD, FLD32/64/80, FST32/64/80, FSP32/FSP64/FSTP8, FIST/FISTP e FLUSH (TLB inteira + pipeline, privilegiada).
+REV41 (15/11/2026): FPU IN THE CORE (ST0-ST7 stack + 34 instructions). Simulated (Icarus 12). DID NOT FIT in the cloud tool: see AREA.
+  REQUEST: instruction list sent by the author + 4 decisions of his (new arithmetic unit in the core; transcendentals later; FSTSW into F; 64-bit FIST).
+  DOCUMENT: 09_core_min/MODELO_FPU.txt (format, stack, codes, what was my choice, what is missing).
+  NEW: 08_fpu/rtl/fpu_seq.v (sequential 80-bit arithmetic, one 68-bit adder; add, subtract, multiply, divide, square root, compare,
+        FILD/FIST/FRINT, FLD32/64, FST32/64) and fpu_unit.v (stack, tags, status word, commands). In the core: 107-bit uop ([106] fpu), the FPU uop
+        waits in M like MLT/DIV. Microcode: FLD/FXCH/FSTP STn, FADD/FSUB/FMUL/FDIV, FSQRT, FRINT, FCHS, FABS, FCOM, FCOPP, FSTSW, FINIT,
+        FLD1/FLDZ/FLDPI/FLDL2/FLDLG/FLDLN, FILD, FLD32/64/80, FST32/64/80, FSP32/FSP64/FSTP8, FIST/FISTP and FLUSH (whole TLB + pipeline, privileged).
         ROM de uops: 1461 de 2048 entradas.
-  SEM MICROCODIGO: FCOS FLN FREM FREM1 FSIN FSINC FTAN FYL2P FYL2X (outra etapa), FSAVE/FRSTR, E/S larga.
-  TESTE: fpu_seq x modelo exato fpref.py: 39.000 vetores do repositorio + 78.000 novos, todos os modos de arredondamento/precisao: 0 erros.
-        Nucleo x modelo em Python (a conta da FPU vem do fpref.py; palavra de estado e vazios conferidos a CADA instrucao, registradores de 80 bits e
-        memoria no fim): passo a passo 14 programas / 56.046 instrucoes, nucleo solto 10 programas / 40.023: 0 divergencias (metade desses programas com
-        cerca de metade das instrucoes de FPU). Regressao: 10_mode_gov (28), tb_soc, tb_soc_exc 1-12, sim_z80, fumaca: OK.
-  ERRO ACHADO: so um, no meu gerador de teste (apontava o HL antes de montar o dado). O hardware passou os vetores na primeira execucao.
-  AREA (o problema desta revisao): a FPU sozinha da ~4.900 LUT + 400 ALU. Nucleo + governador na nuvem: 11.293 -> 17.071 LUT4 e 2.114 ALU, e o
-        posicionador NAO achou lugar (GW2AR-18 no limite). Os numeros da nuvem sao mais altos que os do PC do autor (a placa inteira da REV40 deu 12.003
-        LUT4 la), entao pode caber na placa real, mas apertado. Chave para tirar a FPU sem mexer no resto: macro R8064_SEM_FPU (MODELO_FPU.txt, item 7).
-  LOGS DO AUTOR (REV40, placa, 4 sementes): LUT4 12.003 (57 %), BSRAM 38; Fmax 81,59 / 41,16 (falhou) / 73,36 / 71,33 MHz. A semente 2 falhou por
-        posicionamento (22 dos 24 ns do caminho sao roteamento; um fio de 11,5 ns saindo do contador da entrada de excecao). 3 de 4 sementes passam com folga.
-  PENDENTE: reduzir a area da FPU (reorganizar o caminho de dados para poucas fontes: estimativa de cortar perto da metade, com operacoes 2-3x mais
-        lentas); transcendentais e restos; FSAVE/FRSTR; rodar rodar_pnr_board.bat com e sem a FPU.
+  NO MICROCODE: FCOS FLN FREM FREM1 FSIN FSINC FTAN FYL2P FYL2X (another stage), FSAVE/FRSTR, wide I/O.
+  TEST: fpu_seq x exact model fpref.py: 39,000 vectors from the repository + 78,000 new, all rounding/precision modes: 0 errors.
+        Core x Python model (the FPU computation comes from fpref.py; status word and empties checked at EVERY instruction, 80-bit registers and
+        memory at the end): step by step 14 programs / 56,046 instructions, free-running core 10 programs / 40,023: 0 divergences (half of these programs with
+        about half of the instructions being FPU). Regression: 10_mode_gov (28), tb_soc, tb_soc_exc 1-12, sim_z80, smoke: OK.
+  ERROR FOUND: only one, in my test generator (it pointed HL before assembling the data). The hardware passed the vectors on the first run.
+  AREA (the problem of this revision): the FPU alone takes ~4,900 LUT + 400 ALU. Core + governor in the cloud: 11,293 -> 17,071 LUT4 and 2,114 ALU, and the
+        placer did NOT find room (GW2AR-18 at the limit). The cloud numbers are higher than those on the author's PC (the whole REV40 board gave 12,003
+        LUT4 there), so it may fit on the real board, but tight. Switch to remove the FPU without touching the rest: macro R8064_NO_FPU (MODELO_FPU.txt, item 7).
+  AUTHOR'S LOGS (REV40, board, 4 seeds): LUT4 12,003 (57 %), BSRAM 38; Fmax 81.59 / 41.16 (failed) / 73.36 / 71.33 MHz. Seed 2 failed due to
+        placement (22 of the path's 24 ns are routing; an 11.5 ns wire leaving the exception-entry counter). 3 of 4 seeds pass with margin.
+  PENDING: reduce the FPU area (reorganize the datapath to few sources: estimate of cutting close to half, with operations 2-3x
+        slower); transcendentals and remainders; FSAVE/FRSTR; run rodar_pnr_board.bat with and without the FPU.
 
-REV42 (15/11/2026): NUCLEO ARITMETICO DA FPU REORGANIZADO + TRANSCENDENTAIS, RESTOS, FSAVE / FRSTR. Simulado (Icarus 12). A AREA CONTINUA O PROBLEMA.
-  PEDIDO: reorganizar o nucleo aritmetico; depois FSIN, FCOS, FSINC, FTAN, FLN, FYL2X, FYL2P, FREM, FREM1, FSAVE, FRSTR.
-  NUCLEO ARITMETICO (08_fpu/rtl/fpu_seq.v, refeito): registrador de trabalho com 8 fontes, um somador de 68 bits, multiplicacao/divisao/raiz bit a bit
-        (2-3 clocks por bit). Sozinho: ~3.300 -> ~2.570 LUT (22 % a menos, NAO a metade que eu tinha estimado). Mais lento: multiplicacao e divisao
-        ~107 clocks em media, raiz ~160 (antes ~60). Os 117.000 vetores do fpref.py passam (0 erros).
-  TRANSCENDENTAIS E RESTOS: nao cabem no microcodigo do nucleo (ele nao tem lacos), entao a uop so dispara um PROGRAMA dentro do fpu_unit.v: 95 passos
-        de operacoes do fpu_seq + 51 constantes de 80 bits, numa ROM de 512 x 36 bits (1 bloco de RAM). Fonte unica: 08_fpu/ref/gen_fpu_prog.py.
-        Algoritmos, precisao medida (1 a 2 unidades na ultima casa; FLN ate 9) e escolhas: MODELO_FPU.txt, item 5. FREM/FREM1 seguem a formula da lista
-        (nao sao o resto exato do x87). FSAVE/FRSTR: microcodigo (88 bytes: estado + 8 registradores fisicos). ROM de uops: 1571 de 2048 entradas.
-  ERROS ACHADOS E CORRIGIDOS: (1) o laco de Horner dava uma volta a mais e os resultados saiam errados: o hardware e o modelo concordavam (vem da mesma
-        fonte), quem pegou foi a conferencia contra referencias exatas (confere_precisao.py); (2) uma funcao Verilog que lia o topo da pilha por fora
-        dos argumentos (so afetava a simulacao).
-  TESTE: fpu_seq: 39.000 + 78.000 vetores, 0 erros. Nucleo x modelo (estado da FPU conferido a cada instrucao, registradores e memoria no fim): passo a
-        passo 10 programas / 40.028 instrucoes, nucleo solto 8 programas / 32.057: 0 divergencias; incluem, em numeros redondos, 800 transcendentais /
-        restos e 700 FSAVE / FRSTR (contagem da bateria anterior, de mesmo tamanho). Regressao: 10_mode_gov (28), tb_soc, tb_soc_exc 1-12, sim_z80: OK.
-  LIMITE DO TESTE DAS TRANSCENDENTAIS: o modelo executa os mesmos passos que o hardware, entao a comparacao nucleo x modelo prova que o hardware
-        executa o programa certo, nao que o programa calcula a funcao certa; isso so a conferencia de precisao cobre (120 pontos por funcao).
-  AREA: fpu_unit sozinho: 4.400 LUT + 460 ALU + 690 FF + 40 RAM16 + 1 bloco de RAM (antes 4.900 LUT com menos instrucoes). Nucleo + governador na
-        nuvem: 17.213 LUT4, 2.190 ALU, BSRAM 29 (sem a FPU: 11.293 / 28): na REV41 o posicionador nao achou lugar com numeros quase iguais.
-        A placa real precisa ser medida no PC do autor (rodar_pnr_board.bat); chave para tirar a FPU: R8064_SEM_FPU (MODELO_FPU.txt, item 7).
-  PENDENTE: area fora do nucleo aritmetico; palavra de controle programavel; resto exato; E/S de 16/32/64 bits.
-  POSICIONAMENTO NA NUVEM (REV42, nucleo + governador, sementes 1 e 2): nao terminou a tempo de entrar neste registro
+REV42 (15/11/2026): FPU ARITHMETIC CORE REORGANIZED + TRANSCENDENTALS, REMAINDERS, FSAVE / FRSTR. Simulated (Icarus 12). THE AREA REMAINS THE PROBLEM.
+  REQUEST: reorganize the arithmetic core; then FSIN, FCOS, FSINC, FTAN, FLN, FYL2X, FYL2P, FREM, FREM1, FSAVE, FRSTR.
+  ARITHMETIC CORE (08_fpu/rtl/fpu_seq.v, redone): working register with 8 sources, one 68-bit adder, bit-by-bit multiplication/division/square root
+        (2-3 clocks per bit). Alone: ~3,300 -> ~2,570 LUT (22 % less, NOT the half I had estimated). Slower: multiplication and division
+        ~107 clocks on average, square root ~160 (before ~60). The 117,000 vectors of fpref.py pass (0 errors).
+  TRANSCENDENTALS AND REMAINDERS: do not fit in the core microcode (it has no loops), so the uop only fires a PROGRAM inside fpu_unit.v: 95 steps
+        of fpu_seq operations + 51 80-bit constants, in a 512 x 36-bit ROM (1 RAM block). Single source: 08_fpu/ref/gen_fpu_prog.py.
+        Algorithms, measured precision (1 to 2 units in the last place; FLN up to 9) and choices: MODELO_FPU.txt, item 5. FREM/FREM1 follow the formula in the list
+        (they are not the exact x87 remainder). FSAVE/FRSTR: microcode (88 bytes: state + 8 physical registers). uop ROM: 1571 of 2048 entries.
+  ERRORS FOUND AND FIXED: (1) the Horner loop went around one time too many and the results came out wrong: the hardware and the model agreed (they come from the same
+        source), what caught it was the check against exact references (confere_precisao.py); (2) a Verilog function that read the top of the stack from outside
+        of arguments (it only affected the simulation).
+  TEST: fpu_seq: 39,000 + 78,000 vectors, 0 errors. Core x model (FPU state checked at every instruction, registers and memory at the end): step by
+        step 10 programs / 40,028 instructions, free-running core 8 programs / 32,057: 0 divergences; they include, in round numbers, 800 transcendentals /
+        remainders and 700 FSAVE / FRSTR (count from the previous battery, of the same size). Regression: 10_mode_gov (28), tb_soc, tb_soc_exc 1-12, sim_z80: OK.
+  LIMIT OF THE TRANSCENDENTALS TEST: the model executes the same steps as the hardware, so the core x model comparison proves that the hardware
+        executes the right program, not that the program computes the right function; only the precision check covers that (120 points per function).
+  AREA: fpu_unit alone: 4,400 LUT + 460 ALU + 690 FF + 40 RAM16 + 1 RAM block (before 4,900 LUT with fewer instructions). Core + governor in the
+        cloud: 17,213 LUT4, 2,190 ALU, BSRAM 29 (without the FPU: 11,293 / 28): in REV41 the placer found no room with almost equal numbers.
+        The real board must be measured on the author's PC (rodar_pnr_board.bat); switch to remove the FPU: R8064_NO_FPU (MODELO_FPU.txt, item 7).
+  PENDING: area outside the arithmetic core; programmable control word; exact remainder; 16/32/64-bit I/O.
+  PLACEMENT IN THE CLOUD (REV42, core + governor, seeds 1 and 2): did not finish in time to enter this record
 
-REV43 (16/11/2026): LIMPEZA DO NUCLEO, E/S DE 16/32/64 BITS, MNEMONICOS L, NUMERACAO DOS CR
-  (1) INW/INL/INQ rr,(C) e OUTW/OUTL/OUTQ (C),rr (ED 27, 3o byte = tam[7:6] rr[5:3] 001 (IN) / 110 (OUT)): microcodigo em gen_r64_rom.py (ids 163-168). 2/4/8 bytes na
-      mesma porta C, o menos significativo primeiro; a leitura acumula em T2 e grava rr no fim (rr pode ser BC). No nucleo: faixa do byte em ioff (u[41:39]) com immz;
-      io_wd = st_m >> (8*faixa); io_rdata << (8*faixa). Teste novo t_io no gerador de programas, com uma porta modelada no testbench (leitura = C + 37*n + chk).
-  (2) Mnemonicos de 32 bits: sufixo E trocado por L em todo o projeto (LDE -> LDL, CALLE -> CALLL, INE -> INL, OUTE -> OUTL, RETE -> RETL, JPE -> JPL, CPE -> CPL rr,rr',
-      CPLE -> CPLL, XCHGE -> XCHGL, CASE -> CASL, MLTUE -> MLTUL, SETE/RESE/BITE -> SETL/RESL/BITL ...). Os nomes de registrador (EA, QA) NAO mudaram. CPL rr,rr'
-      (ED 02) e o CPL do Z80 (complemento de A, sem operandos) tem o mesmo nome; a diferenca esta nos operandos. Letras internas dos geradores ('E' nas tabelas de tamanho) nao mudaram.
-  (3) Removido do nucleo o que nao era usado: mecanismo "unimp" (uop[103]; nenhuma instrucao fica sem microcodigo; a excecao de causa 7 so vale para ED ilegal e privilegiada),
-      uop[64] (bsrc), uop[85] (4o bit de fop), epc/irq_taken_q/irq_q (so epc fica, lido por tb_irq), old_w, f_x2in, m_fwd, x3_wr, m_wr, w_wr, nx_hold_c, nbytes.
-      Arquivos sem uso saidos de 09_core_min/rtl para 09_core_min/bak/nao_usados: alu64.v, alu_core.v, regmap.v. Scripts de simulacao e PnR atualizados.
-  (4) CR: o modo de privilegio fica no CR18 (indice 50). Os registradores do DMA, que a documentacao dava como CR18-CR29, passam a CR19-CR30 (o RTL nao os implementa como CR).
-      CR00-CR07 sao livres (rascunho). Tabela: planilha rev21, aba "Registradores de controle", e secao 4.3 do datasheet.
-  (5) FPU: confere_precisao.py (referencias exatas): SIN 0,8; COS 1,2; TAN 1,7; LN 8,9 (corrigido na REV43b: 1,9); YL2X 1,9; YL2P 2,1 unidades da ultima casa. FREM/FREM1 seguem a formula da lista.
-  (6) TESTES: sim_r64 (14 programas de 600 a 1.500 instrucoes), sim_z80, tb_soc_exc 1-12, tb_soc, 10_mode_gov (cpu_gov x4, cruzamento, exini, cplneg, sys x2, seq x2, ldir x2, irq x2,
-      blk, io, irq, irq3, ldai, seq, irq2, irq2 IM2, sys_fifo): OK. Gerador de programas: o opcode ED 27 01 deixou de ser "nao implementada" e a causa 7 / aux 1 saiu.
-      Scripts rt13_regressao.sh/rt13_lf.sh corrigidos (faltavam mul/div/fpu e mem_arb4). NAO passam (ja estavam velhos: portas sb_* e sinais internos que nao existem mais):
-      tb_soc_dma, tb_soc_dma3, tb_soc_hi, tb_soc_nat, tb_dma, tb_dma_win, tb_mmu64. Ficam para atualizar.
-  (7) AREA (yosys synth_gowin, nucleo + governador + modo, 10_mode_gov/pnr/yosys_rev43.log): 14.266 LUT1-4, 1.992 ALU, 6.499 flip-flops, 2.248 MUX2_LUT5-8, 40 RAM16SDP4, 29 blocos de RAM, 4 MULT18X18.
-      Posicionamento e Fmax NAO medidos (o nextpnr nao termina no tempo da nuvem): rodar 10_mode_gov/pnr/rodar_pnr.bat no PC do autor.
+REV43 (16/11/2026): CORE CLEANUP, 16/32/64-BIT I/O, L MNEMONICS, CR NUMBERING
+  (1) INW/INL/INQ rr,(C) and OUTW/OUTL/OUTQ (C),rr (ED 27, 3rd byte = size[7:6] rr[5:3] 001 (IN) / 110 (OUT)): microcode in gen_r64_rom.py (ids 163-168). 2/4/8 bytes na
+      same port C, least significant first; the read accumulates in T2 and writes rr at the end (rr may be BC). In the core: byte lane in ioff (u[41:39]) with immz;
+      io_wd = st_m >> (8*lane); io_rdata << (8*lane). New test t_io in the program generator, with a port modeled in the testbench (read = C + 37*n + chk).
+  (2) 32-bit mnemonics: suffix E replaced by L throughout the project (LDE -> LDL, CALLE -> CALLL, INE -> INL, OUTE -> OUTL, RETE -> RETL, JPE -> JPL, CPE -> CPL rr,rr',
+      CPLE -> CPLL, XCHGE -> XCHGL, CASE -> CASL, MLTUE -> MLTUL, SETE/RESE/BITE -> SETL/RESL/BITL ...). The register names (EA, QA) did NOT change. CPL rr,rr'
+      (ED 02) and the Z80's CPL (complement of A, no operands) have the same name; the difference is in the operands. Internal letters of the generators ('E' in the size tables) did not change.
+  (3) Removed from the core what was unused: "unimp" mechanism (uop[103]; no instruction is left without microcode; the cause 7 exception only applies to illegal ED and privileged),
+      uop[64] (bsrc), uop[85] (4th bit of fop), epc/irq_taken_q/irq_q (only epc stays, read by tb_irq), old_w, f_x2in, m_fwd, x3_wr, m_wr, w_wr, nx_hold_c, nbytes.
+      Unused files moved out of 09_core_min/rtl to 09_core_min/bak/nao_usados: alu64.v, alu_core.v, regmap.v. Simulation and PnR scripts updated.
+  (4) CR: the privilege mode is in CR18 (index 50). The DMA registers, which the documentation gave as CR18-CR29, become CR19-CR30 (the RTL does not implement them as CR).
+      CR00-CR07 are free (scratch). Table: spreadsheet rev21, "Control registers" tab, and section 4.3 of the datasheet.
+  (5) FPU: confere_precisao.py (exact references): SIN 0.8; COS 1.2; TAN 1.7; LN 8.9 (fixed in REV43b: 1.9); YL2X 1.9; YL2P 2.1 units in the last place. FREM/FREM1 follow the list's formula.
+  (6) TESTS: sim_r64 (14 programs of 600 to 1,500 instructions), sim_z80, tb_soc_exc 1-12, tb_soc, 10_mode_gov (cpu_gov x4, crossing, exini, cplneg, sys x2, seq x2, ldir x2, irq x2,
+      blk, io, irq, irq3, ldai, seq, irq2, irq2 IM2, sys_fifo): OK. Program generator: the ED 27 01 opcode stopped being "not implemented" and cause 7 / aux 1 was removed.
+      Scripts rt13_regressao.sh/rt13_lf.sh fixed (mul/div/fpu and mem_arb4 were missing). They do NOT pass (were already old: sb_* ports and internal signals that no longer exist):
+      tb_soc_dma, tb_soc_dma3, tb_soc_hi, tb_soc_nat, tb_dma, tb_dma_win, tb_mmu64. Still to be updated.
+  (7) AREA (yosys synth_gowin, core + governor + mode, 10_mode_gov/pnr/yosys_rev43.log): 14,266 LUT1-4, 1,992 ALU, 6,499 flip-flops, 2,248 MUX2_LUT5-8, 40 RAM16SDP4, 29 RAM blocks, 4 MULT18X18.
+      Placement and Fmax NOT measured (nextpnr does not finish within the cloud's time): run 10_mode_gov/pnr/rodar_pnr.bat on the author's PC.
 
-REV43b (16/11/2026): DMA MAIS RAPIDO, BOOT, NUMERACAO DOS CR EM TODOS OS ARQUIVOS, EXCECOES NOS MODOS LEGADOS, FLN
-  (1) USER/EXINI/MFCR/MTCR: opcodes do RTL e das ROMs (JP USER = ED B4..B7 conforme b2[1:0]; EXINI = ED 09; MFCR = ED 0A n; MTCR = ED 0C n; prefixo do banco sombra = ED 0B)
-      sao a referencia; datasheet (PT/EN/Apendice B) e testes alinhados a eles. A remapeacao antiga (B4/B5/B6/BD/BE/BF) nunca foi feita no RTL e foi abandonada.
-  (2) DMA (r8064_dma.v): sem estados ociosos entre palavras (a proxima palavra/canal e escolhida no clock em que a anterior termina); destino na janela e gravado no clock do 'done';
-      origem na janela ja requisita a escrita na SDRAM no clock em que o dado chega (E_RWB). Medido com tb_dma_win (2048 palavras, janela <-> SDRAM): BUFFER->SDRAM 14.694 -> 8.472 clocks
-      (4,1 clocks/palavra); SDRAM->BUFFER 21.007 -> 14.750 (7,2). WIN_PUT do monitor real: 13,7 ms -> 8,9 ms de simulacao. Escrita postada: o 2o beat do ultimo acesso chega a SDRAM
-      ate 3 clocks depois do DONE (leitura de volta pelo nucleo passa pelo controlador, em ordem; os testes agora esperam 4 clocks).
-  (3) BOOT (r8064_soc BOOT_WORDS/INIT_IMG): o canal 0 copia o buffer (offset 0) para a SDRAM 0 antes de o nucleo sair do reset (boot_busy; janela do DMA durante a copia; boot_clr limpa o
-      CONCLUIDO). tb_soc_boot: 2048 palavras em ~105 us, programa do monitor executa. tb_soc_mon: PING/HELLO/WIN_PUT/WIN_GET/POKE-PEEK/CRC/EXEC OK (monitor.asm usa MTCR 19..21 = ED 0C).
-  (4) NUMERACAO DOS CR: DMA = CR19..CR30 (canal 0: 19-21, canal 1: 22-24, canal 2: 25-27, canal 3: 28-30), modo = CR18, TE = CR14 bit 2. Atualizados: r8064_dma.v, r8064_soc.v,
+REV43b (16/11/2026): FASTER DMA, BOOT, CR NUMBERING IN ALL FILES, EXCEPTIONS IN LEGACY MODES, FLN
+  (1) USER/EXINI/MFCR/MTCR: opcodes of the RTL and ROMs (JP USER = ED B4..B7 according to b2[1:0]; EXINI = ED 09; MFCR = ED 0A n; MTCR = ED 0C n; shadow bank prefix = ED 0B)
+      are the reference; datasheet (PT/EN/Appendix B) and tests aligned to them. The old remapping (B4/B5/B6/BD/BE/BF) was never done in the RTL and was abandoned.
+  (2) DMA (r8064_dma.v): no idle states between words (the next word/channel is chosen on the clock where the previous one ends); destination in the window is written on the 'done' clock;
+      source in the window already requests the write to the SDRAM on the clock where the data arrives (E_RWB). Measured with tb_dma_win (2048 words, window <-> SDRAM): BUFFER->SDRAM 14,694 -> 8,472 clocks
+      (4.1 clocks/word); SDRAM->BUFFER 21,007 -> 14,750 (7.2). WIN_PUT of the real monitor: 13.7 ms -> 8.9 ms of simulation. Posted write: the 2nd beat of the last access reaches the SDRAM
+      up to 3 clocks after DONE (read-back by the core goes through the controller, in order; the tests now wait 4 clocks).
+  (3) BOOT (r8064_soc BOOT_WORDS/INIT_IMG): channel 0 copies the buffer (offset 0) to SDRAM 0 before the core leaves reset (boot_busy; DMA window during the copy; boot_clr clears the
+      DONE). tb_soc_boot: 2048 words in ~105 us, monitor program runs. tb_soc_mon: PING/HELLO/WIN_PUT/WIN_GET/POKE-PEEK/CRC/EXEC OK (monitor.asm uses MTCR 19..21 = ED 0C).
+  (4) CR NUMBERING: DMA = CR19..CR30 (channel 0: 19-21, channel 1: 22-24, channel 2: 25-27, channel 3: 28-30), mode = CR18, TE = CR14 bit 2. Updated: r8064_dma.v, r8064_soc.v,
       core_min (comentarios), tb_soc_dma (19..21), tb_soc_dma3 (28..30), monitor.asm (MTCR = ED 0C), tb_soc_hi/nat/cpi/cpi2 (MTCR = ED 0C, MFCR = ED 0A).
-  (5) EXCECOES NOVAS NOS MODOS LEGADOS: tb_soc_exc 1-12 passam em Z80/ROM (padrao) E em R800 (+r800). Novos cenarios 13 e 14: ED 08 ilegal com TE=1 (CR14 = 5) -> causa 7, aux 0, EPC = o ED 08,
-      instrucao seguinte nao executada; com TE=0 -> executa como NOP. Passam nos dois modos. ERRO DE DIVISAO (causa 6) nao e testado no SoC (o SoC nao instancia mul/div): coberto so
-      pelos programas aleatorios do sim_r64 (q1/q2 regenerados, modo nativo).
-  (6) FLN: LN2 passou a ser dado em duas constantes (LN2H com 32 bits, LN2L), e*LN2H exato; erro maximo 8,9 -> 1,9 unidades da ultima casa (confere_precisao.py). sim_r64 (q1, q2, seed 7): OK.
-      Programa da FPU: 97 passos, 53 constantes. FYL2X/FYL2P nao mudaram (1,9 e 2,1).
+  (5) NEW EXCEPTIONS IN THE LEGACY MODES: tb_soc_exc 1-12 pass in Z80/ROM (default) AND in R800 (+r800). New scenarios 13 and 14: illegal ED 08 with TE=1 (CR14 = 5) -> cause 7, aux 0, EPC = the ED 08,
+      next instruction not executed; with TE=0 -> executes as NOP. Both pass in the two modes. DIVISION ERROR (cause 6) is not tested in the SoC (the SoC does not instantiate mul/div): covered only
+      by the random programs of sim_r64 (q1/q2 regenerated, native mode).
+  (6) FLN: LN2 is now given as two constants (LN2H with 32 bits, LN2L), e*LN2H exact; maximum error 8.9 -> 1.9 units in the last place (confere_precisao.py). sim_r64 (q1, q2, seed 7): OK.
+      FPU program: 97 steps, 53 constants. FYL2X/FYL2P did not change (1.9 and 2.1).
   (7) REGRESSAO (SoC 8 MB + DMA): tb_soc OK; tb_soc_exc 1-14 OK (Z80 e R800); tb_soc_dma OK; tb_soc_dma3 OK; tb_soc_hi OK (8 MB); tb_soc_boot OK; tb_soc_mon OK; tb_dma OK; tb_dma_win OK;
       sim_z80 (r53, r56, zex) OK; sim_r64 q1/q2 OK.
-  (8) PENDENTE/ACHADO ABERTO: tb_soc_nat (mapper + MegaRAM, agora sob o modo R800 porque no modo nativo o mapeamento MSX esta desligado desde a REV46) ainda da 5 erros. Observacao
-      que precisa de investigacao: nos TBs do SoC, depois de "ED 3B rr" (LDW rr,nn), PUSH BC (C5) empilha o valor de AX (rf0) em vez de BC; tb_soc_hi so passa carregando AX. Os testes do
-      nucleo isolado (sim_z80, sim_r64, tb_xing) passam, entao a causa pode estar na ordem de escrita do banco de registradores com o governador. Fmax e posicionamento seguem nao medidos.
+  (8) PENDING/OPEN FINDING: tb_soc_nat (mapper + MegaRAM, now under R800 mode because in native mode the MSX mapping has been off since REV46) still gives 5 errors. Observation
+      that needs investigation: in the SoC TBs, after "ED 3B rr" (LDW rr,nn), PUSH BC (C5) pushes the value of AX (rf0) instead of BC; tb_soc_hi only passes by loading AX. The
+      isolated-core tests (sim_z80, sim_r64, tb_xing) pass, so the cause may be in the register-bank write order with the governor. Fmax and placement remain unmeasured.
 
 
 VARREDURA FINAL (REV43c):
-  - pnr/ys_*.ys: mem_arb4 -> mem_arb5 + r8064_dma + r8064_xbuf; alu64/alu_core apontam para 01_alu_regfile/rtl. Sintese yosys (synth_gowin, board top com boot) OK: ~10.000 LUT4, 4 MULT18X18.
-  - r8064_board_top.v: parametro BOOT=1 (BOOT_WORDS=2048, INIT_IMG=1); monitor_l0..7.hex novos copiados para pnr/. tb_soc_boot passa (imagem copiada para a SDRAM 0 antes do nucleo sair do reset).
-  - 10_mode_gov: tb_fifo/tb_sys_fifo atualizados (portas d_* do DMA ligadas; STATUS inicial 22h = bit JANELA, REV46). Regressao do modulo 10 inteira OK.
-  - 08_fpu seq (39.000 vetores), 09 sim_r64 (q1,q2 +livre), sim_z80 (r53,r56,zex): OK.
-  - tb_mmu64 (modos Sv48/57/64, removidos da MMU) aposentado para bak/. mem_arb4.v e tb_soc_nat_classico.v.tmp movidos para bak/.
+  - pnr/ys_*.ys: mem_arb4 -> mem_arb5 + r8064_dma + r8064_xbuf; alu64/alu_core point to 01_alu_regfile/rtl. Yosys synthesis (synth_gowin, board top with boot) OK: ~10,000 LUT4, 4 MULT18X18.
+  - r8064_board_top.v: parameter BOOT=1 (BOOT_WORDS=2048, INIT_IMG=1); new monitor_l0..7.hex copied to pnr/. tb_soc_boot passes (image copied to SDRAM 0 before the core leaves reset).
+  - 10_mode_gov: tb_fifo/tb_sys_fifo updated (DMA d_* ports connected; initial STATUS 22h = WINDOW bit, REV46). Full regression of module 10 OK.
+  - 08_fpu seq (39,000 vectors), 09 sim_r64 (q1,q2 +livre), sim_z80 (r53,r56,zex): OK.
+  - tb_mmu64 (Sv48/57/64 modes, removed from the MMU) retired to bak/. mem_arb4.v and tb_soc_nat_classico.v.tmp moved to bak/.
 
 REV43d - itens em aberto resolvidos:
-  - "PUSH BC empilha AX" e erros do tb_soc_nat: causa = (a) tb_soc_hi usava ldrr(7,..) (= AX) onde o comentario dizia BC (BC = ldrr(0,..)); (b) os TBs nat/hi/dma/dma3 rodavam com a ROM de uops de BRINQUEDO (uop_toy.mem, sem PUSH real) por um defparam antigo. Com a ROM real, PUSH BC/DE/HL/AF empilham os registradores corretos. defparam removido (backups .bak_pre_toy).
-  - CORRECAO (REV43d, revisao): o r8064_msx_sys.v da arvore tinha PERDIDO o mapper de 4 MB (MAP_BITS=8), a MegaRAM em 400000h (MEGA_BASE), o mapper no modo nativo (janela de 64 KB) e a protecao ASCII8 (d_wblk zera o byte-enable). Restaurados a partir de r8064_msx_sys.v.bak_pre_win (sem cr_mmu_mode, com fifo_win; copia anterior em .bak_pre_restore). O wr_drop provisorio em r8064_soc.v foi removido (redundante). tb_soc_nat volta a esperar a MegaRAM em 406000h; tb_sys (10_mode_gov) passou a esperar o FCh lido de volta = 01h (mapper de 8 bits). Regressao rt13 inteira + modulo 10 + boot + sintese yosys (10.050 LUT4) OK.
+  - "PUSH BC pushes AX" and the tb_soc_nat errors: cause = (a) tb_soc_hi used ldrr(7,..) (= AX) where the comment said BC (BC = ldrr(0,..)); (b) the nat/hi/dma/dma3 TBs ran with the TOY uop ROM (uop_toy.mem, no real PUSH) through an old defparam. With the real ROM, PUSH BC/DE/HL/AF push the correct registers. defparam removed (backups .bak_pre_toy).
+  - CORRECTION (REV43d, review): the tree's r8064_msx_sys.v had LOST the 4 MB mapper (MAP_BITS=8), the MegaRAM at 400000h (MEGA_BASE), the mapper in native mode (64 KB window) and the ASCII8 protection (d_wblk zeroes the byte-enable). Restored from r8064_msx_sys.v.bak_pre_win (without cr_mmu_mode, with fifo_win; previous copy in .bak_pre_restore). The temporary wr_drop in r8064_soc.v was removed (redundant). tb_soc_nat goes back to expecting the MegaRAM at 406000h; tb_sys (10_mode_gov) now expects the FCh read back = 01h (8-bit mapper). Full rt13 regression + module 10 + boot + yosys synthesis (10,050 LUT4) OK.
 
-REV43e - topo de cartucho para a placa V9968_Cartridge (Tang Nano 20K + 3 x SN74LVC8T245 + 3 MOSFET; liga so A0-A7, D0-D7, /IORQ, /RD, /WR, /RESET, WAIT, INT, DIR/BUSDIR):
-  - rtl/r8064_slot_if.v: sincroniza /IORQ /RD /WR e A0-A7 (2 FF), 1 pulso por ciclo, leitura com dado capturado no pulso e barramento liberado assim que /RD ou /IORQ sobem (sem esperar o sincronizador), escrita amostrada 8 clocks (~140 ns) apos /WR (bits ainda subindo), nenhum acionamento fora das portas 0Bh-0Dh. Usa r8064_slot_dec.
-  - rtl/r8064_cart_top.v: clkgen SRC=3 (cristal de 14,31818 MHz da placa, pino 80) + SoC (BOOT=1) + slot_if. INT = fifo_irq; WAIT = 0; /RESET do slot, botao e CMD.b3 (esticado 16 clocks) resetam o SoC (SDRAM e boot refeitos). Camada 2 (janela de 16 KB) desligada: a placa nao tem /SLTSL, A8-A15 nem /MERQ.
-  - pnr/tangnano20k_cart.cst, ys_cart.ys, rodar_pnr_cart.bat, gerar_bitstream_cart.bat. Sintese yosys OK (10.156 LUT4, 40 IOBUF).
-  - sim: tb_slot_if (ciclos do Z80, estabilidade, ponteiro de LEN, INT, portas alheias) e tb_cart_mon (cart_top completo com o monitor real: PING, HELLO, OP desconhecida, INT, /RESET do slot e PING depois do reinicio; +p2 = segunda parte) passam. Aviso do modelo da SDRAM no /RESET ("MAX_REF_GAP"): o controlador e reiniciado e a SDRAM fica sem refresh por ~200 us, irrelevante frente aos 64 ms do chip.
-  - Nao verificado: temporizacao real do MSX (Z80 a 3,58 MHz com esperas de E/S), PnR/Fmax e a ligacao do BUSDIR ao sinal DIR (inferida da rede do PCB). As portas 0Bh-0Dh podem colidir com outro cartucho do usuario (parametros P_ST/P_DT/P_LN de r8064_slot_if).
+REV43e - cartridge top for the V9968_Cartridge board (Tang Nano 20K + 3 x SN74LVC8T245 + 3 MOSFET; connects only A0-A7, D0-D7, /IORQ, /RD, /WR, /RESET, WAIT, INT, DIR/BUSDIR):
+  - rtl/r8064_slot_if.v: synchronizes /IORQ /RD /WR and A0-A7 (2 FF), 1 pulse per cycle, read with data captured on the pulse and bus released as soon as /RD or /IORQ rise (without waiting for the synchronizer), write sampled 8 clocks (~140 ns) after /WR (bits still rising), no drive outside ports 0Bh-0Dh. Uses r8064_slot_dec.
+  - rtl/r8064_cart_top.v: clkgen SRC=3 (the board's 14.31818 MHz crystal, pin 80) + SoC (BOOT=1) + slot_if. INT = fifo_irq; WAIT = 0; the slot /RESET, button and CMD.b3 (stretched 16 clocks) reset the SoC (SDRAM and boot redone). Layer 2 (16 KB window) disabled: the board has no /SLTSL, A8-A15 or /MERQ.
+  - pnr/tangnano20k_cart.cst, ys_cart.ys, rodar_pnr_cart.bat, gerar_bitstream_cart.bat. Yosys synthesis OK (10,156 LUT4, 40 IOBUF).
+  - sim: tb_slot_if (Z80 cycles, stability, LEN pointer, INT, foreign ports) and tb_cart_mon (full cart_top with the real monitor: PING, HELLO, unknown OP, INT, slot /RESET and PING after the restart; +p2 = second part) pass. SDRAM model warning on /RESET ("MAX_REF_GAP"): the controller is restarted and the SDRAM stays without refresh for ~200 us, irrelevant against the chip's 64 ms.
+  - Not verified: real MSX timing (Z80 at 3.58 MHz with I/O waits), PnR/Fmax and the connection of BUSDIR to the DIR signal (inferred from the PCB net). Ports 0Bh-0Dh may collide with another cartridge of the user (parameters P_ST/P_DT/P_LN of r8064_slot_if).
 
 REV44 (16/11, PnR do usuario falhou: LUT4 22367/20736=107%, BSRAM 48/46 - "no BELs remaining for DP" na D-cache):
-  Causa: MUL+DIV+FPU (~7 mil LUTs) entraram depois do ultimo build que coube (14/11, 12,1 mil LUTs).
-  Correcao: (1) define R8064_NOFPU nos ys_board.ys / ys_cart.ys (FPU fora do build da placa; fp_done imediato, resultado 0; sim continua com FPU);
+  Cause: MUL+DIV+FPU (~7 thousand LUTs) came in after the last build that fit (14/11, 12.1 thousand LUTs).
+  Fix: (1) define R8064_NOFPU in ys_board.ys / ys_cart.ys (FPU out of the board build; fp_done immediate, result 0; sim keeps the FPU);
             (2) D-cache IDX 8 -> 7 (r8064_memsys.v; -4 BSRAM do tipo DPX9B).
-  Yosys plano apos a correcao: LUT1-4 = 14.805 (antes 19.251), ALU 1.860, DFF ~8.600, BSRAM 45 (5 DPX9B+10 SDPX9B+30 SPX9), RAM16SDP4 23.
+  Flat Yosys after the fix: LUT1-4 = 14,805 (before 19,251), ALU 1,860, DFF ~8,600, BSRAM 45 (5 DPX9B+10 SDPX9B+30 SPX9), RAM16SDP4 23.
   Regressao rt13_regressao.sh: tudo OK.
 
-REV44b (16/11 noite; PnR do usuario: LUT4 82%, BSRAM 45/46, mas "Unable to find legal placement... utilisation limit": LUT4 17057 + ALU 2068 = 92% dos slices):
-  Medido (yosys plano, LUT1-4 + ALU): divisor 1.840, multiplicador 575, MMU 4->2/8->2 entradas ~950.
-  Correcoes: div_unit com um unico subtrator (sem 2 comparadores de 64 bits; teste tb_muldiv PASS); MMU I=2 / D=2 entradas (r8064_memsys.v);
-             DMA com 2 canais no build da placa (-DR8064_DMA2 nos ys_board/ys_cart; simulacao segue com 4 canais).
-  Resultado: LUT1-4 + ALU 16.665 -> ~15.700 (yosys); nextpnr local: LUT4 16282 + ALU 1916 antes das ultimas 2 trocas; com a versao final as sementes 2,3,4 passaram da legalizacao inicial (a semente 1 da versao anterior falhava).
+REV44b (16/11 night; user PnR: LUT4 82%, BSRAM 45/46, but "Unable to find legal placement... utilisation limit": LUT4 17057 + ALU 2068 = 92% of the slices):
+  Measured (flat yosys, LUT1-4 + ALU): divider 1,840, multiplier 575, MMU 4->2/8->2 entries ~950.
+  Fixes: div_unit with a single subtractor (without 2 64-bit comparators; test tb_muldiv PASS); MMU I=2 / D=2 entries (r8064_memsys.v);
+             DMA with 2 channels in the board build (-DR8064_DMA2 in ys_board/ys_cart; simulation keeps 4 channels).
+  Result: LUT1-4 + ALU 16,665 -> ~15,700 (yosys); local nextpnr: LUT4 16282 + ALU 1916 before the last 2 swaps; with the final version seeds 2,3,4 passed the initial legalization (seed 1 of the previous version failed).
   Regressao rt13_regressao.sh: tudo OK. D-cache/I-cache IDX 6 testado e descartado (vira LUT-RAM, pior).
 
-REV44c (16/11 noite): divisor com UM negador (div_unit.v; copia em 08_fpu/rtl): PRE/PRE2/PRE3 e POST/POST2, uma negacao por clock.
-  Divisao com sinal passa de sz+4 para sz+7 clocks: DIVSB/SW/SL/SQ = 15/23/39/71 (antes 12/20/36/68); sem sinal inalterada (10/18/34/66).
-  tb_muldiv: 20108 vetores, 0 erros de resultado, ciclos conforme sz+7: PASS. sim_mdu/chk.py 3000 vetores: 0 erros (MAXCYC 72). rt13_regressao: tudo OK.
-  Area (yosys plano, LUT1-4 + ALU): 15.698 -> 15.274 (-424, -2,7% do chip). ref/expected_cycles.csv e planilha atualizados (DIVS*: +3).
+REV44c (16/11 night): divider with ONE negator (div_unit.v; copy in 08_fpu/rtl): PRE/PRE2/PRE3 and POST/POST2, one negation per clock.
+  Signed division goes from sz+4 to sz+7 clocks: DIVSB/SW/SL/SQ = 15/23/39/71 (before 12/20/36/68); unsigned unchanged (10/18/34/66).
+  tb_muldiv: 20108 vectors, 0 result errors, cycles as sz+7: PASS. sim_mdu/chk.py 3000 vectors: 0 errors (MAXCYC 72). rt13_regressao: all OK.
+  Area (flat yosys, LUT1-4 + ALU): 15,698 -> 15,274 (-424, -2.7% of the chip). ref/expected_cycles.csv and spreadsheet updated (DIVS*: +3).

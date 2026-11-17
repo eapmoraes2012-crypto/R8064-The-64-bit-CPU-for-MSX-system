@@ -1,14 +1,14 @@
-// mmu.v - MMU do R8064 (premissas minhas; a planilha so define PGINV/PROT/JP USER/LDCR/STCR).
-//  Enderecos virtuais de 64 bits, traduzidos 39 bits (estilo Sv39: bits 63:39 = copia do bit 38, senao falta de pagina).
-//  Pagina de 4 KB, megapagina de 2 MB (folha no nivel 1), 3 niveis, PTE de 64 bits:
-//    [0]V [1]R [2]W [3]X [4]U [5]G [6]A [7]D [29:10]PPN.  Nao-folha: V=1 e R=W=X=0.  V=0 ou (W&&!R) = invalida.
-//  Software gerencia A/D (A=0 ou escrita com D=0 -> falta causa 3). Usuario so acessa U=1; supervisor nao executa U=1.
-//  Endereco fisico: 32 bits de byte; a memoria (cache/SDRAM) tem 4 MB (indice de palavra de 19 bits): PPN[19:10]!=0 -> causa 4 (barramento).
-//  Causas: 1 falta de pagina (invalida/nao canonico/folha no nivel 2/desalinhada), 2 permissao, 3 A/D, 4 fora da memoria.
-//  TLB totalmente associativa de NENT entradas com ASID de 8 bits e bit global; substituicao: primeira invalida, senao circular.
-//  Interface de traducao: v_req/ready (aceito quando v_req&&ready); resultado p_valid na clock seguinte se acertar (latencia 1),
-//  p_valid e um pulso de 1 clock (o consumidor tem de aceita-lo). Falha de TLB: caminhador de tabelas pelo mesmo protocolo m_req/m_accept/m_done da cache.
-//  Com en=0 o endereco passa direto (32 bits baixos).
+// mmu.v - R8064 MMU (my assumptions; the spreadsheet only defines PGINV/PROT/JP USER/LDCR/STCR).
+//  64-bit virtual addresses, translated to 39 bits (Sv39 style: bits 63:39 = copy of bit 38, otherwise page fault).
+//  4 KB page, 2 MB megapage (leaf at level 1), 3 levels, 64-bit PTE:
+//    [0]V [1]R [2]W [3]X [4]U [5]G [6]A [7]D [29:10]PPN.  Non-leaf: V=1 and R=W=X=0.  V=0 or (W&&!R) = invalid.
+//  Software manages A/D (A=0 or write with D=0 -> fault cause 3). User only accesses U=1; supervisor does not execute U=1.
+//  Physical address: 32 byte bits; the memory (cache/SDRAM) is 4 MB (19-bit word index): PPN[19:10]!=0 -> cause 4 (bus).
+//  Causes: 1 page fault (invalid/non-canonical/leaf at level 2/misaligned), 2 permission, 3 A/D, 4 outside memory.
+//  Fully associative TLB of NENT entries with 8-bit ASID and global bit; replacement: first invalid, otherwise circular.
+//  Translation interface: v_req/ready (accepted when v_req&&ready); result p_valid on the next clock if it hits (latency 1),
+//  p_valid is a 1-clock pulse (the consumer has to accept it). TLB miss: table walker through the same m_req/m_accept/m_done protocol as the cache.
+//  With en=0 the address passes straight through (low 32 bits).
 module mmu #(parameter NENT = 16)(
     input  wire        clk, rst,
     input  wire        en, user,
@@ -19,7 +19,7 @@ module mmu #(parameter NENT = 16)(
     input  wire [7:0]  fl_asid,
     input  wire        v_req,
     input  wire [63:0] v_addr,
-    input  wire [1:0]  v_acc,          // 0 leitura, 1 escrita, 2 execucao
+    input  wire [1:0]  v_acc,          // 0 read, 1 write, 2 execute
     output wire        ready,
     output wire        p_valid,
     output wire [31:0] p_addr,
@@ -36,7 +36,7 @@ module mmu #(parameter NENT = 16)(
     reg [7:0]  e_asid [0:NENT-1];
     reg [26:0] e_vpn  [0:NENT-1];
     reg [19:0] e_ppn  [0:NENT-1];
-    // ---------------- estagio 1
+    // ---------------- stage 1
     reg        s1_valid; reg [63:0] s1_addr; reg [1:0] s1_acc; reg s1_user; reg [7:0] s1_asid; reg [19:0] s1_root;
     wire [26:0] s1_vpn = s1_addr[38:12];
     wire canon = (s1_addr[63:39] == {25{s1_addr[38]}});
@@ -54,7 +54,7 @@ module mmu #(parameter NENT = 16)(
     wire hit = |mt;
     wire perm_f = (s1_acc == 2'd0 && !h_r) || (s1_acc == 2'd1 && !h_w) || (s1_acc == 2'd2 && !h_x) || (s1_user && !h_u) || (!s1_user && h_u && s1_acc == 2'd2);
     wire ad_f   = !h_a || (s1_acc == 2'd1 && !h_d);
-    // ---------------- caminhador
+    // ---------------- walker
     localparam [1:0] W_IDLE = 0, W_REQ = 1, W_WAIT = 2;
     reg [1:0] ws; reg [1:0] lvl; reg restart; reg wf_valid; reg [2:0] wf_cause;
     wire flush_any = fl_all | fl_va_en | fl_asid_en;
@@ -73,7 +73,7 @@ module mmu #(parameter NENT = 16)(
     wire leaf = pr | pw | px;
     wire [19:0] pppn = pte[29:10];
     wire [8:0] vpn_l = (lvl == 2'd2) ? s1_addr[38:30] : (lvl == 2'd1) ? s1_addr[29:21] : s1_addr[20:12];
-    wire [8:0] vpn_n = (lvl == 2'd2) ? s1_addr[29:21] : s1_addr[20:12];   // indice do proximo nivel
+    wire [8:0] vpn_n = (lvl == 2'd2) ? s1_addr[29:21] : s1_addr[20:12];   // index of the next level
     // vitima
     reg [$clog2(NENT)-1:0] rr, vic; reg anyfree;
     always @* begin
@@ -87,21 +87,21 @@ module mmu #(parameter NENT = 16)(
             s1_valid <= 0; e_v <= 0; ws <= W_IDLE; restart <= 0; wf_valid <= 0; m_req <= 0; rr <= 0;
             st_hit <= 0; st_miss <= 0; st_walk <= 0; st_fault <= 0; lvl <= 0; wf_cause <= 0;
         end else begin
-            // ---- estagio 1
+            // ---- stage 1
             if (accept) begin s1_valid <= 1; s1_addr <= v_addr; s1_acc <= v_acc; s1_user <= user; s1_asid <= asid; s1_root <= root_ppn; wf_valid <= 0; end
             else if (p_valid) begin s1_valid <= 0; wf_valid <= 0; end
             if (p_valid) begin
                 if (en && canon && hit) st_hit <= st_hit + 1;
                 if (p_fault) st_fault <= st_fault + 1;
             end
-            // ---- descarga
+            // ---- flush
             if (fl_all) e_v <= 0;
             for (i = 0; i < NENT; i = i + 1) begin
                 if (fl_va_en && e_vpn[i][26:9] == fl_va[38:21] && (e_big[i] || e_vpn[i][8:0] == fl_va[20:12])) e_v[i] <= 0;
                 if (fl_asid_en && !e_g[i] && e_asid[i] == fl_asid) e_v[i] <= 0;
             end
             if (flush_any && ws != W_IDLE) restart <= 1;
-            // ---- caminhador
+            // ---- walker
             case (ws)
                 W_IDLE: if (need_walk && !(accept)) begin
                     st_miss <= st_miss + 1; st_walk <= st_walk + 1; lvl <= 2'd2; restart <= 0;

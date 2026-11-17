@@ -16,7 +16,7 @@ module tb_core;
             if (d_we) begin : wbe integer q; for (q = 0; q < 8; q = q + 1) if (d_be[q]) mem[d_addr[11:3]][8*q +: 8] <= d_wdata[8*q +: 8]; end else d_rdata <= mem[d_addr[11:3]]; end end else dc <= 0;
     end
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     initial begin
         repeat (4) @(posedge clk); rst = 0;
@@ -27,8 +27,8 @@ module tb_core;
         chk("HL",  dut.u_rf1.mem_a[3], 64'h68);
         chk("m40", mem[9'h40/8], 5);  chk("m48", mem[9'h48/8], 9);  chk("m50", mem[9'h50/8], 12);
         chk("m58", mem[9'h58/8], 14); chk("m60", mem[9'h60/8], 15);
-        $display("pc=%h flags=%h  erros=%0d", dbg_pc, dbg_f, errs);
-        if (errs == 0) $display("RESULTADO: PROGRAMA DE TESTE OK"); else $display("RESULTADO: %0d ERROS", errs);
+        $display("pc=%h flags=%h  errors=%0d", dbg_pc, dbg_f, errs);
+        if (errs == 0) $display("RESULT: TEST PROGRAM OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

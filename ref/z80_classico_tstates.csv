@@ -1,1271 +1,1271 @@
-﻿pagina;opcode;mnemonico;documentacao;tstates;tstates_alternativo;bytes
-00;00;NOP;Documentada;4;;1
-00;01 nl nh;LD BC,nn;Documentada;10;;3
-00;02;LD (BC),A;Documentada;7;;1
-00;03;INC BC;Documentada;6;;1
-00;04;INC B;Documentada;4;;1
-00;05;DEC B;Documentada;4;;1
-00;06 n;LD B,n;Documentada;7;;2
-00;07;RLCA;Documentada;4;;1
-00;08;EX AF,AF';Documentada;4;;1
-00;09;ADD HL,BC;Documentada;11;;1
-00;0A;LD A,(BC);Documentada;7;;1
-00;0B;DEC BC;Documentada;6;;1
-00;0C;INC C;Documentada;4;;1
-00;0D;DEC C;Documentada;4;;1
-00;0E n;LD C,n;Documentada;7;;2
-00;0F;RRCA;Documentada;4;;1
-00;10 e;DJNZ e;Documentada;13;8;2
-00;11 nl nh;LD DE,nn;Documentada;10;;3
-00;12;LD (DE),A;Documentada;7;;1
-00;13;INC DE;Documentada;6;;1
-00;14;INC D;Documentada;4;;1
-00;15;DEC D;Documentada;4;;1
-00;16 n;LD D,n;Documentada;7;;2
-00;17;RLA;Documentada;4;;1
-00;18 e;JR e;Documentada;12;;2
-00;19;ADD HL,DE;Documentada;11;;1
-00;1A;LD A,(DE);Documentada;7;;1
-00;1B;DEC DE;Documentada;6;;1
-00;1C;INC E;Documentada;4;;1
-00;1D;DEC E;Documentada;4;;1
-00;1E n;LD E,n;Documentada;7;;2
-00;1F;RRA;Documentada;4;;1
-00;20 e;JR NZ,e;Documentada;12;7;2
-00;21 nl nh;LD HL,nn;Documentada;10;;3
-00;22 nl nh;LD (nn),HL;Documentada;16;;3
-00;23;INC HL;Documentada;6;;1
-00;24;INC H;Documentada;4;;1
-00;25;DEC H;Documentada;4;;1
-00;26 n;LD H,n;Documentada;7;;2
-00;27;DAA;Documentada;4;;1
-00;28 e;JR Z,e;Documentada;12;7;2
-00;29;ADD HL,HL;Documentada;11;;1
-00;2A nl nh;LD HL,(nn);Documentada;16;;3
-00;2B;DEC HL;Documentada;6;;1
-00;2C;INC L;Documentada;4;;1
-00;2D;DEC L;Documentada;4;;1
-00;2E n;LD L,n;Documentada;7;;2
-00;2F;CPL;Documentada;4;;1
-00;30 e;JR NC,e;Documentada;12;7;2
-00;31 nl nh;LD SP,nn;Documentada;10;;3
-00;32 nl nh;LD (nn),A;Documentada;13;;3
-00;33;INC SP;Documentada;6;;1
-00;34;INC (HL);Documentada;11;;1
-00;35;DEC (HL);Documentada;11;;1
-00;36 n;LD (HL),n;Documentada;10;;2
-00;37;SCF;Documentada;4;;1
-00;38 e;JR C,e;Documentada;12;7;2
-00;39;ADD HL,SP;Documentada;11;;1
-00;3A nl nh;LD A,(nn);Documentada;13;;3
-00;3B;DEC SP;Documentada;6;;1
-00;3C;INC A;Documentada;4;;1
-00;3D;DEC A;Documentada;4;;1
-00;3E n;LD A,n;Documentada;7;;2
-00;3F;CCF;Documentada;4;;1
-00;40;LD B,B;Documentada;4;;1
-00;41;LD B,C;Documentada;4;;1
-00;42;LD B,D;Documentada;4;;1
-00;43;LD B,E;Documentada;4;;1
-00;44;LD B,H;Documentada;4;;1
-00;45;LD B,L;Documentada;4;;1
-00;46;LD B,(HL);Documentada;7;;1
-00;47;LD B,A;Documentada;4;;1
-00;48;LD C,B;Documentada;4;;1
-00;49;LD C,C;Documentada;4;;1
-00;4A;LD C,D;Documentada;4;;1
-00;4B;LD C,E;Documentada;4;;1
-00;4C;LD C,H;Documentada;4;;1
-00;4D;LD C,L;Documentada;4;;1
-00;4E;LD C,(HL);Documentada;7;;1
-00;4F;LD C,A;Documentada;4;;1
-00;50;LD D,B;Documentada;4;;1
-00;51;LD D,C;Documentada;4;;1
-00;52;LD D,D;Documentada;4;;1
-00;53;LD D,E;Documentada;4;;1
-00;54;LD D,H;Documentada;4;;1
-00;55;LD D,L;Documentada;4;;1
-00;56;LD D,(HL);Documentada;7;;1
-00;57;LD D,A;Documentada;4;;1
-00;58;LD E,B;Documentada;4;;1
-00;59;LD E,C;Documentada;4;;1
-00;5A;LD E,D;Documentada;4;;1
-00;5B;LD E,E;Documentada;4;;1
-00;5C;LD E,H;Documentada;4;;1
-00;5D;LD E,L;Documentada;4;;1
-00;5E;LD E,(HL);Documentada;7;;1
-00;5F;LD E,A;Documentada;4;;1
-00;60;LD H,B;Documentada;4;;1
-00;61;LD H,C;Documentada;4;;1
-00;62;LD H,D;Documentada;4;;1
-00;63;LD H,E;Documentada;4;;1
-00;64;LD H,H;Documentada;4;;1
-00;65;LD H,L;Documentada;4;;1
-00;66;LD H,(HL);Documentada;7;;1
-00;67;LD H,A;Documentada;4;;1
-00;68;LD L,B;Documentada;4;;1
-00;69;LD L,C;Documentada;4;;1
-00;6A;LD L,D;Documentada;4;;1
-00;6B;LD L,E;Documentada;4;;1
-00;6C;LD L,H;Documentada;4;;1
-00;6D;LD L,L;Documentada;4;;1
-00;6E;LD L,(HL);Documentada;7;;1
-00;6F;LD L,A;Documentada;4;;1
-00;70;LD (HL),B;Documentada;7;;1
-00;71;LD (HL),C;Documentada;7;;1
-00;72;LD (HL),D;Documentada;7;;1
-00;73;LD (HL),E;Documentada;7;;1
-00;74;LD (HL),H;Documentada;7;;1
-00;75;LD (HL),L;Documentada;7;;1
-00;76;HALT;Documentada;4;;1
-00;77;LD (HL),A;Documentada;7;;1
-00;78;LD A,B;Documentada;4;;1
-00;79;LD A,C;Documentada;4;;1
-00;7A;LD A,D;Documentada;4;;1
-00;7B;LD A,E;Documentada;4;;1
-00;7C;LD A,H;Documentada;4;;1
-00;7D;LD A,L;Documentada;4;;1
-00;7E;LD A,(HL);Documentada;7;;1
-00;7F;LD A,A;Documentada;4;;1
-00;80;ADD A,B;Documentada;4;;1
-00;81;ADD A,C;Documentada;4;;1
-00;82;ADD A,D;Documentada;4;;1
-00;83;ADD A,E;Documentada;4;;1
-00;84;ADD A,H;Documentada;4;;1
-00;85;ADD A,L;Documentada;4;;1
-00;86;ADD A,(HL);Documentada;7;;1
-00;87;ADD A,A;Documentada;4;;1
-00;88;ADC A,B;Documentada;4;;1
-00;89;ADC A,C;Documentada;4;;1
-00;8A;ADC A,D;Documentada;4;;1
-00;8B;ADC A,E;Documentada;4;;1
-00;8C;ADC A,H;Documentada;4;;1
-00;8D;ADC A,L;Documentada;4;;1
-00;8E;ADC A,(HL);Documentada;7;;1
-00;8F;ADC A,A;Documentada;4;;1
-00;90;SUB B;Documentada;4;;1
-00;91;SUB C;Documentada;4;;1
-00;92;SUB D;Documentada;4;;1
-00;93;SUB E;Documentada;4;;1
-00;94;SUB H;Documentada;4;;1
-00;95;SUB L;Documentada;4;;1
-00;96;SUB (HL);Documentada;7;;1
-00;97;SUB A;Documentada;4;;1
-00;98;SBC A,B;Documentada;4;;1
-00;99;SBC A,C;Documentada;4;;1
-00;9A;SBC A,D;Documentada;4;;1
-00;9B;SBC A,E;Documentada;4;;1
-00;9C;SBC A,H;Documentada;4;;1
-00;9D;SBC A,L;Documentada;4;;1
-00;9E;SBC A,(HL);Documentada;7;;1
-00;9F;SBC A,A;Documentada;4;;1
-00;A0;AND B;Documentada;4;;1
-00;A1;AND C;Documentada;4;;1
-00;A2;AND D;Documentada;4;;1
-00;A3;AND E;Documentada;4;;1
-00;A4;AND H;Documentada;4;;1
-00;A5;AND L;Documentada;4;;1
-00;A6;AND (HL);Documentada;7;;1
-00;A7;AND A;Documentada;4;;1
-00;A8;XOR B;Documentada;4;;1
-00;A9;XOR C;Documentada;4;;1
-00;AA;XOR D;Documentada;4;;1
-00;AB;XOR E;Documentada;4;;1
-00;AC;XOR H;Documentada;4;;1
-00;AD;XOR L;Documentada;4;;1
-00;AE;XOR (HL);Documentada;7;;1
-00;AF;XOR A;Documentada;4;;1
-00;B0;OR B;Documentada;4;;1
-00;B1;OR C;Documentada;4;;1
-00;B2;OR D;Documentada;4;;1
-00;B3;OR E;Documentada;4;;1
-00;B4;OR H;Documentada;4;;1
-00;B5;OR L;Documentada;4;;1
-00;B6;OR (HL);Documentada;7;;1
-00;B7;OR A;Documentada;4;;1
-00;B8;CP B;Documentada;4;;1
-00;B9;CP C;Documentada;4;;1
-00;BA;CP D;Documentada;4;;1
-00;BB;CP E;Documentada;4;;1
-00;BC;CP H;Documentada;4;;1
-00;BD;CP L;Documentada;4;;1
-00;BE;CP (HL);Documentada;7;;1
-00;BF;CP A;Documentada;4;;1
-00;C0;RET NZ;Documentada;11;5;1
-00;C1;POP BC;Documentada;10;;1
-00;C2 nl nh;JP NZ,nn;Documentada;10;;3
-00;C3 nl nh;JP nn;Documentada;10;;3
-00;C4 nl nh;CALL NZ,nn;Documentada;17;10;3
-00;C5;PUSH BC;Documentada;11;;1
-00;C6 n;ADD A,n;Documentada;7;;2
-00;C7;RST 00H;Documentada;11;;1
-00;C8;RET Z;Documentada;11;5;1
-00;C9;RET;Documentada;10;;1
-00;CA nl nh;JP Z,nn;Documentada;10;;3
-00;CC nl nh;CALL Z,nn;Documentada;17;10;3
-00;CD nl nh;CALL nn;Documentada;17;;3
-00;CE n;ADC A,n;Documentada;7;;2
-00;CF;RST 08H;Documentada;11;;1
-00;D0;RET NC;Documentada;11;5;1
-00;D1;POP DE;Documentada;10;;1
-00;D2 nl nh;JP NC,nn;Documentada;10;;3
-00;D3 n;OUT (n),A;Documentada;11;;2
-00;D4 nl nh;CALL NC,nn;Documentada;17;10;3
-00;D5;PUSH DE;Documentada;11;;1
-00;D6 n;SUB n;Documentada;7;;2
-00;D7;RST 10H;Documentada;11;;1
-00;D8;RET C;Documentada;11;5;1
-00;D9;EXX;Documentada;4;;1
-00;DA nl nh;JP C,nn;Documentada;10;;3
-00;DB n;IN A,(n);Documentada;11;;2
-00;DC nl nh;CALL C,nn;Documentada;17;10;3
-00;DE n;SBC A,n;Documentada;7;;2
-00;DF;RST 18H;Documentada;11;;1
-00;E0;RET PO;Documentada;11;5;1
-00;E1;POP HL;Documentada;10;;1
-00;E2 nl nh;JP PO,nn;Documentada;10;;3
-00;E3;EX (SP),HL;Documentada;19;;1
-00;E4 nl nh;CALL PO,nn;Documentada;17;10;3
-00;E5;PUSH HL;Documentada;11;;1
-00;E6 n;AND n;Documentada;7;;2
-00;E7;RST 20H;Documentada;11;;1
-00;E8;RET PE;Documentada;11;5;1
-00;E9;JP (HL);Documentada;4;;1
-00;EA nl nh;JP PE,nn;Documentada;10;;3
-00;EB;EX DE,HL;Documentada;4;;1
-00;EC nl nh;CALL PE,nn;Documentada;17;10;3
-00;EE n;XOR n;Documentada;7;;2
-00;EF;RST 28H;Documentada;11;;1
-00;F0;RET P;Documentada;11;5;1
-00;F1;POP AF;Documentada;10;;1
-00;F2 nl nh;JP P,nn;Documentada;10;;3
-00;F3;DI;Documentada;4;;1
-00;F4 nl nh;CALL P,nn;Documentada;17;10;3
-00;F5;PUSH AF;Documentada;11;;1
-00;F6 n;OR n;Documentada;7;;2
-00;F7;RST 30H;Documentada;11;;1
-00;F8;RET M;Documentada;11;5;1
-00;F9;LD SP,HL;Documentada;6;;1
-00;FA nl nh;JP M,nn;Documentada;10;;3
-00;FB;EI;Documentada;4;;1
-00;FC nl nh;CALL M,nn;Documentada;17;10;3
-00;FE n;CP n;Documentada;7;;2
-00;FF;RST 38H;Documentada;11;;1
-CB;CB 00;RLC B;Documentada;8;;2
-CB;CB 01;RLC C;Documentada;8;;2
-CB;CB 02;RLC D;Documentada;8;;2
-CB;CB 03;RLC E;Documentada;8;;2
-CB;CB 04;RLC H;Documentada;8;;2
-CB;CB 05;RLC L;Documentada;8;;2
-CB;CB 06;RLC (HL);Documentada;15;;2
-CB;CB 07;RLC A;Documentada;8;;2
-CB;CB 08;RRC B;Documentada;8;;2
-CB;CB 09;RRC C;Documentada;8;;2
-CB;CB 0A;RRC D;Documentada;8;;2
-CB;CB 0B;RRC E;Documentada;8;;2
-CB;CB 0C;RRC H;Documentada;8;;2
-CB;CB 0D;RRC L;Documentada;8;;2
-CB;CB 0E;RRC (HL);Documentada;15;;2
-CB;CB 0F;RRC A;Documentada;8;;2
-CB;CB 10;RL B;Documentada;8;;2
-CB;CB 11;RL C;Documentada;8;;2
-CB;CB 12;RL D;Documentada;8;;2
-CB;CB 13;RL E;Documentada;8;;2
-CB;CB 14;RL H;Documentada;8;;2
-CB;CB 15;RL L;Documentada;8;;2
-CB;CB 16;RL (HL);Documentada;15;;2
-CB;CB 17;RL A;Documentada;8;;2
-CB;CB 18;RR B;Documentada;8;;2
-CB;CB 19;RR C;Documentada;8;;2
-CB;CB 1A;RR D;Documentada;8;;2
-CB;CB 1B;RR E;Documentada;8;;2
-CB;CB 1C;RR H;Documentada;8;;2
-CB;CB 1D;RR L;Documentada;8;;2
-CB;CB 1E;RR (HL);Documentada;15;;2
-CB;CB 1F;RR A;Documentada;8;;2
-CB;CB 20;SLA B;Documentada;8;;2
-CB;CB 21;SLA C;Documentada;8;;2
-CB;CB 22;SLA D;Documentada;8;;2
-CB;CB 23;SLA E;Documentada;8;;2
-CB;CB 24;SLA H;Documentada;8;;2
-CB;CB 25;SLA L;Documentada;8;;2
-CB;CB 26;SLA (HL);Documentada;15;;2
-CB;CB 27;SLA A;Documentada;8;;2
-CB;CB 28;SRA B;Documentada;8;;2
-CB;CB 29;SRA C;Documentada;8;;2
-CB;CB 2A;SRA D;Documentada;8;;2
-CB;CB 2B;SRA E;Documentada;8;;2
-CB;CB 2C;SRA H;Documentada;8;;2
-CB;CB 2D;SRA L;Documentada;8;;2
-CB;CB 2E;SRA (HL);Documentada;15;;2
-CB;CB 2F;SRA A;Documentada;8;;2
-CB;CB 30;SLL B;Não documentada;8;;2
-CB;CB 31;SLL C;Não documentada;8;;2
-CB;CB 32;SLL D;Não documentada;8;;2
-CB;CB 33;SLL E;Não documentada;8;;2
-CB;CB 34;SLL H;Não documentada;8;;2
-CB;CB 35;SLL L;Não documentada;8;;2
-CB;CB 36;SLL (HL);Não documentada;15;;2
-CB;CB 37;SLL A;Não documentada;8;;2
-CB;CB 38;SRL B;Documentada;8;;2
-CB;CB 39;SRL C;Documentada;8;;2
-CB;CB 3A;SRL D;Documentada;8;;2
-CB;CB 3B;SRL E;Documentada;8;;2
-CB;CB 3C;SRL H;Documentada;8;;2
-CB;CB 3D;SRL L;Documentada;8;;2
-CB;CB 3E;SRL (HL);Documentada;15;;2
-CB;CB 3F;SRL A;Documentada;8;;2
-CB;CB 40;BIT 0,B;Documentada;8;;2
-CB;CB 41;BIT 0,C;Documentada;8;;2
-CB;CB 42;BIT 0,D;Documentada;8;;2
-CB;CB 43;BIT 0,E;Documentada;8;;2
-CB;CB 44;BIT 0,H;Documentada;8;;2
-CB;CB 45;BIT 0,L;Documentada;8;;2
-CB;CB 46;BIT 0,(HL);Documentada;12;;2
-CB;CB 47;BIT 0,A;Documentada;8;;2
-CB;CB 48;BIT 1,B;Documentada;8;;2
-CB;CB 49;BIT 1,C;Documentada;8;;2
-CB;CB 4A;BIT 1,D;Documentada;8;;2
-CB;CB 4B;BIT 1,E;Documentada;8;;2
-CB;CB 4C;BIT 1,H;Documentada;8;;2
-CB;CB 4D;BIT 1,L;Documentada;8;;2
-CB;CB 4E;BIT 1,(HL);Documentada;12;;2
-CB;CB 4F;BIT 1,A;Documentada;8;;2
-CB;CB 50;BIT 2,B;Documentada;8;;2
-CB;CB 51;BIT 2,C;Documentada;8;;2
-CB;CB 52;BIT 2,D;Documentada;8;;2
-CB;CB 53;BIT 2,E;Documentada;8;;2
-CB;CB 54;BIT 2,H;Documentada;8;;2
-CB;CB 55;BIT 2,L;Documentada;8;;2
-CB;CB 56;BIT 2,(HL);Documentada;12;;2
-CB;CB 57;BIT 2,A;Documentada;8;;2
-CB;CB 58;BIT 3,B;Documentada;8;;2
-CB;CB 59;BIT 3,C;Documentada;8;;2
-CB;CB 5A;BIT 3,D;Documentada;8;;2
-CB;CB 5B;BIT 3,E;Documentada;8;;2
-CB;CB 5C;BIT 3,H;Documentada;8;;2
-CB;CB 5D;BIT 3,L;Documentada;8;;2
-CB;CB 5E;BIT 3,(HL);Documentada;12;;2
-CB;CB 5F;BIT 3,A;Documentada;8;;2
-CB;CB 60;BIT 4,B;Documentada;8;;2
-CB;CB 61;BIT 4,C;Documentada;8;;2
-CB;CB 62;BIT 4,D;Documentada;8;;2
-CB;CB 63;BIT 4,E;Documentada;8;;2
-CB;CB 64;BIT 4,H;Documentada;8;;2
-CB;CB 65;BIT 4,L;Documentada;8;;2
-CB;CB 66;BIT 4,(HL);Documentada;12;;2
-CB;CB 67;BIT 4,A;Documentada;8;;2
-CB;CB 68;BIT 5,B;Documentada;8;;2
-CB;CB 69;BIT 5,C;Documentada;8;;2
-CB;CB 6A;BIT 5,D;Documentada;8;;2
-CB;CB 6B;BIT 5,E;Documentada;8;;2
-CB;CB 6C;BIT 5,H;Documentada;8;;2
-CB;CB 6D;BIT 5,L;Documentada;8;;2
-CB;CB 6E;BIT 5,(HL);Documentada;12;;2
-CB;CB 6F;BIT 5,A;Documentada;8;;2
-CB;CB 70;BIT 6,B;Documentada;8;;2
-CB;CB 71;BIT 6,C;Documentada;8;;2
-CB;CB 72;BIT 6,D;Documentada;8;;2
-CB;CB 73;BIT 6,E;Documentada;8;;2
-CB;CB 74;BIT 6,H;Documentada;8;;2
-CB;CB 75;BIT 6,L;Documentada;8;;2
-CB;CB 76;BIT 6,(HL);Documentada;12;;2
-CB;CB 77;BIT 6,A;Documentada;8;;2
-CB;CB 78;BIT 7,B;Documentada;8;;2
-CB;CB 79;BIT 7,C;Documentada;8;;2
-CB;CB 7A;BIT 7,D;Documentada;8;;2
-CB;CB 7B;BIT 7,E;Documentada;8;;2
-CB;CB 7C;BIT 7,H;Documentada;8;;2
-CB;CB 7D;BIT 7,L;Documentada;8;;2
-CB;CB 7E;BIT 7,(HL);Documentada;12;;2
-CB;CB 7F;BIT 7,A;Documentada;8;;2
-CB;CB 80;RES 0,B;Documentada;8;;2
-CB;CB 81;RES 0,C;Documentada;8;;2
-CB;CB 82;RES 0,D;Documentada;8;;2
-CB;CB 83;RES 0,E;Documentada;8;;2
-CB;CB 84;RES 0,H;Documentada;8;;2
-CB;CB 85;RES 0,L;Documentada;8;;2
-CB;CB 86;RES 0,(HL);Documentada;15;;2
-CB;CB 87;RES 0,A;Documentada;8;;2
-CB;CB 88;RES 1,B;Documentada;8;;2
-CB;CB 89;RES 1,C;Documentada;8;;2
-CB;CB 8A;RES 1,D;Documentada;8;;2
-CB;CB 8B;RES 1,E;Documentada;8;;2
-CB;CB 8C;RES 1,H;Documentada;8;;2
-CB;CB 8D;RES 1,L;Documentada;8;;2
-CB;CB 8E;RES 1,(HL);Documentada;15;;2
-CB;CB 8F;RES 1,A;Documentada;8;;2
-CB;CB 90;RES 2,B;Documentada;8;;2
-CB;CB 91;RES 2,C;Documentada;8;;2
-CB;CB 92;RES 2,D;Documentada;8;;2
-CB;CB 93;RES 2,E;Documentada;8;;2
-CB;CB 94;RES 2,H;Documentada;8;;2
-CB;CB 95;RES 2,L;Documentada;8;;2
-CB;CB 96;RES 2,(HL);Documentada;15;;2
-CB;CB 97;RES 2,A;Documentada;8;;2
-CB;CB 98;RES 3,B;Documentada;8;;2
-CB;CB 99;RES 3,C;Documentada;8;;2
-CB;CB 9A;RES 3,D;Documentada;8;;2
-CB;CB 9B;RES 3,E;Documentada;8;;2
-CB;CB 9C;RES 3,H;Documentada;8;;2
-CB;CB 9D;RES 3,L;Documentada;8;;2
-CB;CB 9E;RES 3,(HL);Documentada;15;;2
-CB;CB 9F;RES 3,A;Documentada;8;;2
-CB;CB A0;RES 4,B;Documentada;8;;2
-CB;CB A1;RES 4,C;Documentada;8;;2
-CB;CB A2;RES 4,D;Documentada;8;;2
-CB;CB A3;RES 4,E;Documentada;8;;2
-CB;CB A4;RES 4,H;Documentada;8;;2
-CB;CB A5;RES 4,L;Documentada;8;;2
-CB;CB A6;RES 4,(HL);Documentada;15;;2
-CB;CB A7;RES 4,A;Documentada;8;;2
-CB;CB A8;RES 5,B;Documentada;8;;2
-CB;CB A9;RES 5,C;Documentada;8;;2
-CB;CB AA;RES 5,D;Documentada;8;;2
-CB;CB AB;RES 5,E;Documentada;8;;2
-CB;CB AC;RES 5,H;Documentada;8;;2
-CB;CB AD;RES 5,L;Documentada;8;;2
-CB;CB AE;RES 5,(HL);Documentada;15;;2
-CB;CB AF;RES 5,A;Documentada;8;;2
-CB;CB B0;RES 6,B;Documentada;8;;2
-CB;CB B1;RES 6,C;Documentada;8;;2
-CB;CB B2;RES 6,D;Documentada;8;;2
-CB;CB B3;RES 6,E;Documentada;8;;2
-CB;CB B4;RES 6,H;Documentada;8;;2
-CB;CB B5;RES 6,L;Documentada;8;;2
-CB;CB B6;RES 6,(HL);Documentada;15;;2
-CB;CB B7;RES 6,A;Documentada;8;;2
-CB;CB B8;RES 7,B;Documentada;8;;2
-CB;CB B9;RES 7,C;Documentada;8;;2
-CB;CB BA;RES 7,D;Documentada;8;;2
-CB;CB BB;RES 7,E;Documentada;8;;2
-CB;CB BC;RES 7,H;Documentada;8;;2
-CB;CB BD;RES 7,L;Documentada;8;;2
-CB;CB BE;RES 7,(HL);Documentada;15;;2
-CB;CB BF;RES 7,A;Documentada;8;;2
-CB;CB C0;SET 0,B;Documentada;8;;2
-CB;CB C1;SET 0,C;Documentada;8;;2
-CB;CB C2;SET 0,D;Documentada;8;;2
-CB;CB C3;SET 0,E;Documentada;8;;2
-CB;CB C4;SET 0,H;Documentada;8;;2
-CB;CB C5;SET 0,L;Documentada;8;;2
-CB;CB C6;SET 0,(HL);Documentada;15;;2
-CB;CB C7;SET 0,A;Documentada;8;;2
-CB;CB C8;SET 1,B;Documentada;8;;2
-CB;CB C9;SET 1,C;Documentada;8;;2
-CB;CB CA;SET 1,D;Documentada;8;;2
-CB;CB CB;SET 1,E;Documentada;8;;2
-CB;CB CC;SET 1,H;Documentada;8;;2
-CB;CB CD;SET 1,L;Documentada;8;;2
-CB;CB CE;SET 1,(HL);Documentada;15;;2
-CB;CB CF;SET 1,A;Documentada;8;;2
-CB;CB D0;SET 2,B;Documentada;8;;2
-CB;CB D1;SET 2,C;Documentada;8;;2
-CB;CB D2;SET 2,D;Documentada;8;;2
-CB;CB D3;SET 2,E;Documentada;8;;2
-CB;CB D4;SET 2,H;Documentada;8;;2
-CB;CB D5;SET 2,L;Documentada;8;;2
-CB;CB D6;SET 2,(HL);Documentada;15;;2
-CB;CB D7;SET 2,A;Documentada;8;;2
-CB;CB D8;SET 3,B;Documentada;8;;2
-CB;CB D9;SET 3,C;Documentada;8;;2
-CB;CB DA;SET 3,D;Documentada;8;;2
-CB;CB DB;SET 3,E;Documentada;8;;2
-CB;CB DC;SET 3,H;Documentada;8;;2
-CB;CB DD;SET 3,L;Documentada;8;;2
-CB;CB DE;SET 3,(HL);Documentada;15;;2
-CB;CB DF;SET 3,A;Documentada;8;;2
-CB;CB E0;SET 4,B;Documentada;8;;2
-CB;CB E1;SET 4,C;Documentada;8;;2
-CB;CB E2;SET 4,D;Documentada;8;;2
-CB;CB E3;SET 4,E;Documentada;8;;2
-CB;CB E4;SET 4,H;Documentada;8;;2
-CB;CB E5;SET 4,L;Documentada;8;;2
-CB;CB E6;SET 4,(HL);Documentada;15;;2
-CB;CB E7;SET 4,A;Documentada;8;;2
-CB;CB E8;SET 5,B;Documentada;8;;2
-CB;CB E9;SET 5,C;Documentada;8;;2
-CB;CB EA;SET 5,D;Documentada;8;;2
-CB;CB EB;SET 5,E;Documentada;8;;2
-CB;CB EC;SET 5,H;Documentada;8;;2
-CB;CB ED;SET 5,L;Documentada;8;;2
-CB;CB EE;SET 5,(HL);Documentada;15;;2
-CB;CB EF;SET 5,A;Documentada;8;;2
-CB;CB F0;SET 6,B;Documentada;8;;2
-CB;CB F1;SET 6,C;Documentada;8;;2
-CB;CB F2;SET 6,D;Documentada;8;;2
-CB;CB F3;SET 6,E;Documentada;8;;2
-CB;CB F4;SET 6,H;Documentada;8;;2
-CB;CB F5;SET 6,L;Documentada;8;;2
-CB;CB F6;SET 6,(HL);Documentada;15;;2
-CB;CB F7;SET 6,A;Documentada;8;;2
-CB;CB F8;SET 7,B;Documentada;8;;2
-CB;CB F9;SET 7,C;Documentada;8;;2
-CB;CB FA;SET 7,D;Documentada;8;;2
-CB;CB FB;SET 7,E;Documentada;8;;2
-CB;CB FC;SET 7,H;Documentada;8;;2
-CB;CB FD;SET 7,L;Documentada;8;;2
-CB;CB FE;SET 7,(HL);Documentada;15;;2
-CB;CB FF;SET 7,A;Documentada;8;;2
-ED;ED 40;IN B,(C);Documentada;12;;2
-ED;ED 41;OUT (C),B;Documentada;12;;2
-ED;ED 42;SBC HL,BC;Documentada;15;;2
-ED;ED 43 nl nh;LD (nn),BC;Documentada;20;;4
-ED;ED 44;NEG;Documentada;8;;2
-ED;ED 45;RETN;Documentada;14;;2
-ED;ED 46;IM 0;Documentada;8;;2
-ED;ED 47;LD I,A;Documentada;9;;2
-ED;ED 48;IN C,(C);Documentada;12;;2
-ED;ED 49;OUT (C),C;Documentada;12;;2
-ED;ED 4A;ADC HL,BC;Documentada;15;;2
-ED;ED 4B nl nh;LD BC,(nn);Documentada;20;;4
-ED;ED 4C;NEG;Não documentada;8;;2
-ED;ED 4D;RETI;Documentada;14;;2
-ED;ED 4E;IM 0;Não documentada;8;;2
-ED;ED 4F;LD R,A;Documentada;9;;2
-ED;ED 50;IN D,(C);Documentada;12;;2
-ED;ED 51;OUT (C),D;Documentada;12;;2
-ED;ED 52;SBC HL,DE;Documentada;15;;2
-ED;ED 53 nl nh;LD (nn),DE;Documentada;20;;4
-ED;ED 54;NEG;Não documentada;8;;2
-ED;ED 55;RETN;Não documentada;14;;2
-ED;ED 56;IM 1;Documentada;8;;2
-ED;ED 57;LD A,I;Documentada;9;;2
-ED;ED 58;IN E,(C);Documentada;12;;2
-ED;ED 59;OUT (C),E;Documentada;12;;2
-ED;ED 5A;ADC HL,DE;Documentada;15;;2
-ED;ED 5B nl nh;LD DE,(nn);Documentada;20;;4
-ED;ED 5C;NEG;Não documentada;8;;2
-ED;ED 5D;RETN;Não documentada;14;;2
-ED;ED 5E;IM 2;Documentada;8;;2
-ED;ED 5F;LD A,R;Documentada;9;;2
-ED;ED 60;IN H,(C);Documentada;12;;2
-ED;ED 61;OUT (C),H;Documentada;12;;2
-ED;ED 62;SBC HL,HL;Documentada;15;;2
-ED;ED 63 nl nh;LD (nn),HL;Documentada;20;;4
-ED;ED 64;NEG;Não documentada;8;;2
-ED;ED 65;RETN;Não documentada;14;;2
-ED;ED 66;IM 0;Não documentada;8;;2
-ED;ED 67;RRD;Documentada;18;;2
-ED;ED 68;IN L,(C);Documentada;12;;2
-ED;ED 69;OUT (C),L;Documentada;12;;2
-ED;ED 6A;ADC HL,HL;Documentada;15;;2
-ED;ED 6B nl nh;LD HL,(nn);Documentada;20;;4
-ED;ED 6C;NEG;Não documentada;8;;2
-ED;ED 6D;RETN;Não documentada;14;;2
-ED;ED 6E;IM 0;Não documentada;8;;2
-ED;ED 6F;RLD;Documentada;18;;2
-ED;ED 70;IN F,(C);Não documentada;12;;2
-ED;ED 71;OUT (C),0;Não documentada;12;;2
-ED;ED 72;SBC HL,SP;Documentada;15;;2
-ED;ED 73 nl nh;LD (nn),SP;Documentada;20;;4
-ED;ED 74;NEG;Não documentada;8;;2
-ED;ED 75;RETN;Não documentada;14;;2
-ED;ED 76;IM 1;Não documentada;8;;2
-ED;ED 77;NOP;Não documentada;8;;2
-ED;ED 78;IN A,(C);Documentada;12;;2
-ED;ED 79;OUT (C),A;Documentada;12;;2
-ED;ED 7A;ADC HL,SP;Documentada;15;;2
-ED;ED 7B nl nh;LD SP,(nn);Documentada;20;;4
-ED;ED 7C;NEG;Não documentada;8;;2
-ED;ED 7D;RETN;Não documentada;14;;2
-ED;ED 7E;IM 2;Não documentada;8;;2
-ED;ED 7F;NOP;Não documentada;8;;2
-ED;ED A0;LDI;Documentada;16;;2
-ED;ED A1;CPI;Documentada;16;;2
-ED;ED A2;INI;Documentada;16;;2
-ED;ED A3;OUTI;Documentada;16;;2
-ED;ED A8;LDD;Documentada;16;;2
-ED;ED A9;CPD;Documentada;16;;2
-ED;ED AA;IND;Documentada;16;;2
-ED;ED AB;OUTD;Documentada;16;;2
-ED;ED B0;LDIR;Documentada;21;16;2
-ED;ED B1;CPIR;Documentada;21;16;2
-ED;ED B2;INIR;Documentada;21;16;2
-ED;ED B3;OTIR;Documentada;21;16;2
-ED;ED B8;LDDR;Documentada;21;16;2
-ED;ED B9;CPDR;Documentada;21;16;2
-ED;ED BA;INDR;Documentada;21;16;2
-ED;ED BB;OTDR;Documentada;21;16;2
-DD;DD 09;ADD IX,BC;Documentada;15;;2
-DD;DD 19;ADD IX,DE;Documentada;15;;2
-DD;DD 21 nl nh;LD IX,nn;Documentada;14;;4
-DD;DD 22 nl nh;LD (nn),IX;Documentada;20;;4
-DD;DD 23;INC IX;Documentada;10;;2
-DD;DD 24;INC IXH;Não documentada;8;;2
-DD;DD 25;DEC IXH;Não documentada;8;;2
-DD;DD 26 n;LD IXH,n;Não documentada;11;;3
-DD;DD 29;ADD IX,IX;Documentada;15;;2
-DD;DD 2A nl nh;LD IX,(nn);Documentada;20;;4
-DD;DD 2B;DEC IX;Documentada;10;;2
-DD;DD 2C;INC IXL;Não documentada;8;;2
-DD;DD 2D;DEC IXL;Não documentada;8;;2
-DD;DD 2E n;LD IXL,n;Não documentada;11;;3
-DD;DD 34 d;INC (IX+d);Documentada;23;;3
-DD;DD 35 d;DEC (IX+d);Documentada;23;;3
-DD;DD 36 d n;LD (IX+d),n;Documentada;19;;4
-DD;DD 39;ADD IX,SP;Documentada;15;;2
-DD;DD 44;LD B,IXH;Não documentada;8;;2
-DD;DD 45;LD B,IXL;Não documentada;8;;2
-DD;DD 46 d;LD B,(IX+d);Documentada;19;;3
-DD;DD 4C;LD C,IXH;Não documentada;8;;2
-DD;DD 4D;LD C,IXL;Não documentada;8;;2
-DD;DD 4E d;LD C,(IX+d);Documentada;19;;3
-DD;DD 54;LD D,IXH;Não documentada;8;;2
-DD;DD 55;LD D,IXL;Não documentada;8;;2
-DD;DD 56 d;LD D,(IX+d);Documentada;19;;3
-DD;DD 5C;LD E,IXH;Não documentada;8;;2
-DD;DD 5D;LD E,IXL;Não documentada;8;;2
-DD;DD 5E d;LD E,(IX+d);Documentada;19;;3
-DD;DD 60;LD IXH,B;Não documentada;8;;2
-DD;DD 61;LD IXH,C;Não documentada;8;;2
-DD;DD 62;LD IXH,D;Não documentada;8;;2
-DD;DD 63;LD IXH,E;Não documentada;8;;2
-DD;DD 64;LD IXH,IXH;Não documentada;8;;2
-DD;DD 65;LD IXH,IXL;Não documentada;8;;2
-DD;DD 66 d;LD H,(IX+d);Documentada;19;;3
-DD;DD 67;LD IXH,A;Não documentada;8;;2
-DD;DD 68;LD IXL,B;Não documentada;8;;2
-DD;DD 69;LD IXL,C;Não documentada;8;;2
-DD;DD 6A;LD IXL,D;Não documentada;8;;2
-DD;DD 6B;LD IXL,E;Não documentada;8;;2
-DD;DD 6C;LD IXL,IXH;Não documentada;8;;2
-DD;DD 6D;LD IXL,IXL;Não documentada;8;;2
-DD;DD 6E d;LD L,(IX+d);Documentada;19;;3
-DD;DD 6F;LD IXL,A;Não documentada;8;;2
-DD;DD 70 d;LD (IX+d),B;Documentada;19;;3
-DD;DD 71 d;LD (IX+d),C;Documentada;19;;3
-DD;DD 72 d;LD (IX+d),D;Documentada;19;;3
-DD;DD 73 d;LD (IX+d),E;Documentada;19;;3
-DD;DD 74 d;LD (IX+d),H;Documentada;19;;3
-DD;DD 75 d;LD (IX+d),L;Documentada;19;;3
-DD;DD 77 d;LD (IX+d),A;Documentada;19;;3
-DD;DD 7C;LD A,IXH;Não documentada;8;;2
-DD;DD 7D;LD A,IXL;Não documentada;8;;2
-DD;DD 7E d;LD A,(IX+d);Documentada;19;;3
-DD;DD 84;ADD A,IXH;Não documentada;8;;2
-DD;DD 85;ADD A,IXL;Não documentada;8;;2
-DD;DD 86 d;ADD A,(IX+d);Documentada;19;;3
-DD;DD 8C;ADC A,IXH;Não documentada;8;;2
-DD;DD 8D;ADC A,IXL;Não documentada;8;;2
-DD;DD 8E d;ADC A,(IX+d);Documentada;19;;3
-DD;DD 94;SUB IXH;Não documentada;8;;2
-DD;DD 95;SUB IXL;Não documentada;8;;2
-DD;DD 96 d;SUB (IX+d);Documentada;19;;3
-DD;DD 9C;SBC A,IXH;Não documentada;8;;2
-DD;DD 9D;SBC A,IXL;Não documentada;8;;2
-DD;DD 9E d;SBC A,(IX+d);Documentada;19;;3
-DD;DD A4;AND IXH;Não documentada;8;;2
-DD;DD A5;AND IXL;Não documentada;8;;2
-DD;DD A6 d;AND (IX+d);Documentada;19;;3
-DD;DD AC;XOR IXH;Não documentada;8;;2
-DD;DD AD;XOR IXL;Não documentada;8;;2
-DD;DD AE d;XOR (IX+d);Documentada;19;;3
-DD;DD B4;OR IXH;Não documentada;8;;2
-DD;DD B5;OR IXL;Não documentada;8;;2
-DD;DD B6 d;OR (IX+d);Documentada;19;;3
-DD;DD BC;CP IXH;Não documentada;8;;2
-DD;DD BD;CP IXL;Não documentada;8;;2
-DD;DD BE d;CP (IX+d);Documentada;19;;3
-DD;DD E1;POP IX;Documentada;14;;2
-DD;DD E3;EX (SP),IX;Documentada;23;;2
-DD;DD E5;PUSH IX;Documentada;15;;2
-DD;DD E9;JP (IX);Documentada;8;;2
-DD;DD F9;LD SP,IX;Documentada;10;;2
-FD;FD 09;ADD IY,BC;Documentada;15;;2
-FD;FD 19;ADD IY,DE;Documentada;15;;2
-FD;FD 21 nl nh;LD IY,nn;Documentada;14;;4
-FD;FD 22 nl nh;LD (nn),IY;Documentada;20;;4
-FD;FD 23;INC IY;Documentada;10;;2
-FD;FD 24;INC IYH;Não documentada;8;;2
-FD;FD 25;DEC IYH;Não documentada;8;;2
-FD;FD 26 n;LD IYH,n;Não documentada;11;;3
-FD;FD 29;ADD IY,IY;Documentada;15;;2
-FD;FD 2A nl nh;LD IY,(nn);Documentada;20;;4
-FD;FD 2B;DEC IY;Documentada;10;;2
-FD;FD 2C;INC IYL;Não documentada;8;;2
-FD;FD 2D;DEC IYL;Não documentada;8;;2
-FD;FD 2E n;LD IYL,n;Não documentada;11;;3
-FD;FD 34 d;INC (IY+d);Documentada;23;;3
-FD;FD 35 d;DEC (IY+d);Documentada;23;;3
-FD;FD 36 d n;LD (IY+d),n;Documentada;19;;4
-FD;FD 39;ADD IY,SP;Documentada;15;;2
-FD;FD 44;LD B,IYH;Não documentada;8;;2
-FD;FD 45;LD B,IYL;Não documentada;8;;2
-FD;FD 46 d;LD B,(IY+d);Documentada;19;;3
-FD;FD 4C;LD C,IYH;Não documentada;8;;2
-FD;FD 4D;LD C,IYL;Não documentada;8;;2
-FD;FD 4E d;LD C,(IY+d);Documentada;19;;3
-FD;FD 54;LD D,IYH;Não documentada;8;;2
-FD;FD 55;LD D,IYL;Não documentada;8;;2
-FD;FD 56 d;LD D,(IY+d);Documentada;19;;3
-FD;FD 5C;LD E,IYH;Não documentada;8;;2
-FD;FD 5D;LD E,IYL;Não documentada;8;;2
-FD;FD 5E d;LD E,(IY+d);Documentada;19;;3
-FD;FD 60;LD IYH,B;Não documentada;8;;2
-FD;FD 61;LD IYH,C;Não documentada;8;;2
-FD;FD 62;LD IYH,D;Não documentada;8;;2
-FD;FD 63;LD IYH,E;Não documentada;8;;2
-FD;FD 64;LD IYH,IYH;Não documentada;8;;2
-FD;FD 65;LD IYH,IYL;Não documentada;8;;2
-FD;FD 66 d;LD H,(IY+d);Documentada;19;;3
-FD;FD 67;LD IYH,A;Não documentada;8;;2
-FD;FD 68;LD IYL,B;Não documentada;8;;2
-FD;FD 69;LD IYL,C;Não documentada;8;;2
-FD;FD 6A;LD IYL,D;Não documentada;8;;2
-FD;FD 6B;LD IYL,E;Não documentada;8;;2
-FD;FD 6C;LD IYL,IYH;Não documentada;8;;2
-FD;FD 6D;LD IYL,IYL;Não documentada;8;;2
-FD;FD 6E d;LD L,(IY+d);Documentada;19;;3
-FD;FD 6F;LD IYL,A;Não documentada;8;;2
-FD;FD 70 d;LD (IY+d),B;Documentada;19;;3
-FD;FD 71 d;LD (IY+d),C;Documentada;19;;3
-FD;FD 72 d;LD (IY+d),D;Documentada;19;;3
-FD;FD 73 d;LD (IY+d),E;Documentada;19;;3
-FD;FD 74 d;LD (IY+d),H;Documentada;19;;3
-FD;FD 75 d;LD (IY+d),L;Documentada;19;;3
-FD;FD 77 d;LD (IY+d),A;Documentada;19;;3
-FD;FD 7C;LD A,IYH;Não documentada;8;;2
-FD;FD 7D;LD A,IYL;Não documentada;8;;2
-FD;FD 7E d;LD A,(IY+d);Documentada;19;;3
-FD;FD 84;ADD A,IYH;Não documentada;8;;2
-FD;FD 85;ADD A,IYL;Não documentada;8;;2
-FD;FD 86 d;ADD A,(IY+d);Documentada;19;;3
-FD;FD 8C;ADC A,IYH;Não documentada;8;;2
-FD;FD 8D;ADC A,IYL;Não documentada;8;;2
-FD;FD 8E d;ADC A,(IY+d);Documentada;19;;3
-FD;FD 94;SUB IYH;Não documentada;8;;2
-FD;FD 95;SUB IYL;Não documentada;8;;2
-FD;FD 96 d;SUB (IY+d);Documentada;19;;3
-FD;FD 9C;SBC A,IYH;Não documentada;8;;2
-FD;FD 9D;SBC A,IYL;Não documentada;8;;2
-FD;FD 9E d;SBC A,(IY+d);Documentada;19;;3
-FD;FD A4;AND IYH;Não documentada;8;;2
-FD;FD A5;AND IYL;Não documentada;8;;2
-FD;FD A6 d;AND (IY+d);Documentada;19;;3
-FD;FD AC;XOR IYH;Não documentada;8;;2
-FD;FD AD;XOR IYL;Não documentada;8;;2
-FD;FD AE d;XOR (IY+d);Documentada;19;;3
-FD;FD B4;OR IYH;Não documentada;8;;2
-FD;FD B5;OR IYL;Não documentada;8;;2
-FD;FD B6 d;OR (IY+d);Documentada;19;;3
-FD;FD BC;CP IYH;Não documentada;8;;2
-FD;FD BD;CP IYL;Não documentada;8;;2
-FD;FD BE d;CP (IY+d);Documentada;19;;3
-FD;FD E1;POP IY;Documentada;14;;2
-FD;FD E3;EX (SP),IY;Documentada;23;;2
-FD;FD E5;PUSH IY;Documentada;15;;2
-FD;FD E9;JP (IY);Documentada;8;;2
-FD;FD F9;LD SP,IY;Documentada;10;;2
-DDCB;DD CB d 00;RLC (IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 01;RLC (IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 02;RLC (IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 03;RLC (IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 04;RLC (IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 05;RLC (IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 06;RLC (IX+d);Documentada;23;;4
-DDCB;DD CB d 07;RLC (IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 08;RRC (IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 09;RRC (IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 0A;RRC (IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 0B;RRC (IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 0C;RRC (IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 0D;RRC (IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 0E;RRC (IX+d);Documentada;23;;4
-DDCB;DD CB d 0F;RRC (IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 10;RL (IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 11;RL (IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 12;RL (IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 13;RL (IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 14;RL (IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 15;RL (IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 16;RL (IX+d);Documentada;23;;4
-DDCB;DD CB d 17;RL (IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 18;RR (IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 19;RR (IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 1A;RR (IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 1B;RR (IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 1C;RR (IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 1D;RR (IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 1E;RR (IX+d);Documentada;23;;4
-DDCB;DD CB d 1F;RR (IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 20;SLA (IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 21;SLA (IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 22;SLA (IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 23;SLA (IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 24;SLA (IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 25;SLA (IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 26;SLA (IX+d);Documentada;23;;4
-DDCB;DD CB d 27;SLA (IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 28;SRA (IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 29;SRA (IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 2A;SRA (IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 2B;SRA (IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 2C;SRA (IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 2D;SRA (IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 2E;SRA (IX+d);Documentada;23;;4
-DDCB;DD CB d 2F;SRA (IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 30;SLL (IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 31;SLL (IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 32;SLL (IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 33;SLL (IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 34;SLL (IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 35;SLL (IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 36;SLL (IX+d);Não documentada;23;;4
-DDCB;DD CB d 37;SLL (IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 38;SRL (IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 39;SRL (IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 3A;SRL (IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 3B;SRL (IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 3C;SRL (IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 3D;SRL (IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 3E;SRL (IX+d);Documentada;23;;4
-DDCB;DD CB d 3F;SRL (IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 40;BIT 0,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 41;BIT 0,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 42;BIT 0,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 43;BIT 0,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 44;BIT 0,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 45;BIT 0,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 46;BIT 0,(IX+d);Documentada;20;;4
-DDCB;DD CB d 47;BIT 0,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 48;BIT 1,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 49;BIT 1,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 4A;BIT 1,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 4B;BIT 1,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 4C;BIT 1,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 4D;BIT 1,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 4E;BIT 1,(IX+d);Documentada;20;;4
-DDCB;DD CB d 4F;BIT 1,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 50;BIT 2,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 51;BIT 2,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 52;BIT 2,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 53;BIT 2,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 54;BIT 2,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 55;BIT 2,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 56;BIT 2,(IX+d);Documentada;20;;4
-DDCB;DD CB d 57;BIT 2,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 58;BIT 3,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 59;BIT 3,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 5A;BIT 3,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 5B;BIT 3,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 5C;BIT 3,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 5D;BIT 3,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 5E;BIT 3,(IX+d);Documentada;20;;4
-DDCB;DD CB d 5F;BIT 3,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 60;BIT 4,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 61;BIT 4,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 62;BIT 4,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 63;BIT 4,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 64;BIT 4,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 65;BIT 4,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 66;BIT 4,(IX+d);Documentada;20;;4
-DDCB;DD CB d 67;BIT 4,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 68;BIT 5,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 69;BIT 5,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 6A;BIT 5,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 6B;BIT 5,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 6C;BIT 5,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 6D;BIT 5,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 6E;BIT 5,(IX+d);Documentada;20;;4
-DDCB;DD CB d 6F;BIT 5,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 70;BIT 6,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 71;BIT 6,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 72;BIT 6,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 73;BIT 6,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 74;BIT 6,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 75;BIT 6,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 76;BIT 6,(IX+d);Documentada;20;;4
-DDCB;DD CB d 77;BIT 6,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 78;BIT 7,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 79;BIT 7,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 7A;BIT 7,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 7B;BIT 7,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 7C;BIT 7,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 7D;BIT 7,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 7E;BIT 7,(IX+d);Documentada;20;;4
-DDCB;DD CB d 7F;BIT 7,(IX+d);Não documentada;20;;4
-DDCB;DD CB d 80;RES 0,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 81;RES 0,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 82;RES 0,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 83;RES 0,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 84;RES 0,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 85;RES 0,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 86;RES 0,(IX+d);Documentada;23;;4
-DDCB;DD CB d 87;RES 0,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 88;RES 1,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 89;RES 1,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 8A;RES 1,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 8B;RES 1,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 8C;RES 1,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 8D;RES 1,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 8E;RES 1,(IX+d);Documentada;23;;4
-DDCB;DD CB d 8F;RES 1,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 90;RES 2,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 91;RES 2,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 92;RES 2,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 93;RES 2,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 94;RES 2,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 95;RES 2,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 96;RES 2,(IX+d);Documentada;23;;4
-DDCB;DD CB d 97;RES 2,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d 98;RES 3,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d 99;RES 3,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d 9A;RES 3,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d 9B;RES 3,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d 9C;RES 3,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d 9D;RES 3,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d 9E;RES 3,(IX+d);Documentada;23;;4
-DDCB;DD CB d 9F;RES 3,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d A0;RES 4,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d A1;RES 4,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d A2;RES 4,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d A3;RES 4,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d A4;RES 4,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d A5;RES 4,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d A6;RES 4,(IX+d);Documentada;23;;4
-DDCB;DD CB d A7;RES 4,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d A8;RES 5,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d A9;RES 5,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d AA;RES 5,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d AB;RES 5,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d AC;RES 5,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d AD;RES 5,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d AE;RES 5,(IX+d);Documentada;23;;4
-DDCB;DD CB d AF;RES 5,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d B0;RES 6,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d B1;RES 6,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d B2;RES 6,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d B3;RES 6,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d B4;RES 6,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d B5;RES 6,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d B6;RES 6,(IX+d);Documentada;23;;4
-DDCB;DD CB d B7;RES 6,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d B8;RES 7,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d B9;RES 7,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d BA;RES 7,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d BB;RES 7,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d BC;RES 7,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d BD;RES 7,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d BE;RES 7,(IX+d);Documentada;23;;4
-DDCB;DD CB d BF;RES 7,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d C0;SET 0,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d C1;SET 0,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d C2;SET 0,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d C3;SET 0,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d C4;SET 0,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d C5;SET 0,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d C6;SET 0,(IX+d);Documentada;23;;4
-DDCB;DD CB d C7;SET 0,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d C8;SET 1,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d C9;SET 1,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d CA;SET 1,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d CB;SET 1,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d CC;SET 1,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d CD;SET 1,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d CE;SET 1,(IX+d);Documentada;23;;4
-DDCB;DD CB d CF;SET 1,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d D0;SET 2,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d D1;SET 2,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d D2;SET 2,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d D3;SET 2,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d D4;SET 2,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d D5;SET 2,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d D6;SET 2,(IX+d);Documentada;23;;4
-DDCB;DD CB d D7;SET 2,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d D8;SET 3,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d D9;SET 3,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d DA;SET 3,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d DB;SET 3,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d DC;SET 3,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d DD;SET 3,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d DE;SET 3,(IX+d);Documentada;23;;4
-DDCB;DD CB d DF;SET 3,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d E0;SET 4,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d E1;SET 4,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d E2;SET 4,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d E3;SET 4,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d E4;SET 4,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d E5;SET 4,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d E6;SET 4,(IX+d);Documentada;23;;4
-DDCB;DD CB d E7;SET 4,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d E8;SET 5,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d E9;SET 5,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d EA;SET 5,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d EB;SET 5,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d EC;SET 5,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d ED;SET 5,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d EE;SET 5,(IX+d);Documentada;23;;4
-DDCB;DD CB d EF;SET 5,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d F0;SET 6,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d F1;SET 6,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d F2;SET 6,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d F3;SET 6,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d F4;SET 6,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d F5;SET 6,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d F6;SET 6,(IX+d);Documentada;23;;4
-DDCB;DD CB d F7;SET 6,(IX+d),A;Não documentada;23;;4
-DDCB;DD CB d F8;SET 7,(IX+d),B;Não documentada;23;;4
-DDCB;DD CB d F9;SET 7,(IX+d),C;Não documentada;23;;4
-DDCB;DD CB d FA;SET 7,(IX+d),D;Não documentada;23;;4
-DDCB;DD CB d FB;SET 7,(IX+d),E;Não documentada;23;;4
-DDCB;DD CB d FC;SET 7,(IX+d),H;Não documentada;23;;4
-DDCB;DD CB d FD;SET 7,(IX+d),L;Não documentada;23;;4
-DDCB;DD CB d FE;SET 7,(IX+d);Documentada;23;;4
-DDCB;DD CB d FF;SET 7,(IX+d),A;Não documentada;23;;4
-FDCB;FD CB d 00;RLC (IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 01;RLC (IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 02;RLC (IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 03;RLC (IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 04;RLC (IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 05;RLC (IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 06;RLC (IY+d);Documentada;23;;4
-FDCB;FD CB d 07;RLC (IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 08;RRC (IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 09;RRC (IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 0A;RRC (IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 0B;RRC (IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 0C;RRC (IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 0D;RRC (IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 0E;RRC (IY+d);Documentada;23;;4
-FDCB;FD CB d 0F;RRC (IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 10;RL (IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 11;RL (IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 12;RL (IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 13;RL (IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 14;RL (IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 15;RL (IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 16;RL (IY+d);Documentada;23;;4
-FDCB;FD CB d 17;RL (IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 18;RR (IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 19;RR (IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 1A;RR (IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 1B;RR (IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 1C;RR (IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 1D;RR (IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 1E;RR (IY+d);Documentada;23;;4
-FDCB;FD CB d 1F;RR (IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 20;SLA (IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 21;SLA (IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 22;SLA (IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 23;SLA (IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 24;SLA (IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 25;SLA (IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 26;SLA (IY+d);Documentada;23;;4
-FDCB;FD CB d 27;SLA (IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 28;SRA (IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 29;SRA (IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 2A;SRA (IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 2B;SRA (IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 2C;SRA (IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 2D;SRA (IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 2E;SRA (IY+d);Documentada;23;;4
-FDCB;FD CB d 2F;SRA (IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 30;SLL (IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 31;SLL (IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 32;SLL (IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 33;SLL (IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 34;SLL (IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 35;SLL (IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 36;SLL (IY+d);Não documentada;23;;4
-FDCB;FD CB d 37;SLL (IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 38;SRL (IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 39;SRL (IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 3A;SRL (IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 3B;SRL (IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 3C;SRL (IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 3D;SRL (IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 3E;SRL (IY+d);Documentada;23;;4
-FDCB;FD CB d 3F;SRL (IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 40;BIT 0,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 41;BIT 0,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 42;BIT 0,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 43;BIT 0,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 44;BIT 0,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 45;BIT 0,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 46;BIT 0,(IY+d);Documentada;20;;4
-FDCB;FD CB d 47;BIT 0,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 48;BIT 1,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 49;BIT 1,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 4A;BIT 1,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 4B;BIT 1,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 4C;BIT 1,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 4D;BIT 1,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 4E;BIT 1,(IY+d);Documentada;20;;4
-FDCB;FD CB d 4F;BIT 1,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 50;BIT 2,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 51;BIT 2,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 52;BIT 2,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 53;BIT 2,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 54;BIT 2,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 55;BIT 2,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 56;BIT 2,(IY+d);Documentada;20;;4
-FDCB;FD CB d 57;BIT 2,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 58;BIT 3,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 59;BIT 3,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 5A;BIT 3,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 5B;BIT 3,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 5C;BIT 3,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 5D;BIT 3,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 5E;BIT 3,(IY+d);Documentada;20;;4
-FDCB;FD CB d 5F;BIT 3,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 60;BIT 4,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 61;BIT 4,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 62;BIT 4,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 63;BIT 4,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 64;BIT 4,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 65;BIT 4,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 66;BIT 4,(IY+d);Documentada;20;;4
-FDCB;FD CB d 67;BIT 4,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 68;BIT 5,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 69;BIT 5,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 6A;BIT 5,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 6B;BIT 5,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 6C;BIT 5,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 6D;BIT 5,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 6E;BIT 5,(IY+d);Documentada;20;;4
-FDCB;FD CB d 6F;BIT 5,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 70;BIT 6,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 71;BIT 6,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 72;BIT 6,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 73;BIT 6,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 74;BIT 6,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 75;BIT 6,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 76;BIT 6,(IY+d);Documentada;20;;4
-FDCB;FD CB d 77;BIT 6,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 78;BIT 7,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 79;BIT 7,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 7A;BIT 7,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 7B;BIT 7,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 7C;BIT 7,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 7D;BIT 7,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 7E;BIT 7,(IY+d);Documentada;20;;4
-FDCB;FD CB d 7F;BIT 7,(IY+d);Não documentada;20;;4
-FDCB;FD CB d 80;RES 0,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 81;RES 0,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 82;RES 0,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 83;RES 0,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 84;RES 0,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 85;RES 0,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 86;RES 0,(IY+d);Documentada;23;;4
-FDCB;FD CB d 87;RES 0,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 88;RES 1,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 89;RES 1,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 8A;RES 1,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 8B;RES 1,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 8C;RES 1,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 8D;RES 1,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 8E;RES 1,(IY+d);Documentada;23;;4
-FDCB;FD CB d 8F;RES 1,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 90;RES 2,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 91;RES 2,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 92;RES 2,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 93;RES 2,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 94;RES 2,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 95;RES 2,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 96;RES 2,(IY+d);Documentada;23;;4
-FDCB;FD CB d 97;RES 2,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d 98;RES 3,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d 99;RES 3,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d 9A;RES 3,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d 9B;RES 3,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d 9C;RES 3,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d 9D;RES 3,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d 9E;RES 3,(IY+d);Documentada;23;;4
-FDCB;FD CB d 9F;RES 3,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d A0;RES 4,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d A1;RES 4,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d A2;RES 4,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d A3;RES 4,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d A4;RES 4,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d A5;RES 4,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d A6;RES 4,(IY+d);Documentada;23;;4
-FDCB;FD CB d A7;RES 4,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d A8;RES 5,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d A9;RES 5,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d AA;RES 5,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d AB;RES 5,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d AC;RES 5,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d AD;RES 5,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d AE;RES 5,(IY+d);Documentada;23;;4
-FDCB;FD CB d AF;RES 5,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d B0;RES 6,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d B1;RES 6,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d B2;RES 6,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d B3;RES 6,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d B4;RES 6,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d B5;RES 6,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d B6;RES 6,(IY+d);Documentada;23;;4
-FDCB;FD CB d B7;RES 6,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d B8;RES 7,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d B9;RES 7,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d BA;RES 7,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d BB;RES 7,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d BC;RES 7,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d BD;RES 7,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d BE;RES 7,(IY+d);Documentada;23;;4
-FDCB;FD CB d BF;RES 7,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d C0;SET 0,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d C1;SET 0,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d C2;SET 0,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d C3;SET 0,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d C4;SET 0,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d C5;SET 0,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d C6;SET 0,(IY+d);Documentada;23;;4
-FDCB;FD CB d C7;SET 0,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d C8;SET 1,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d C9;SET 1,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d CA;SET 1,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d CB;SET 1,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d CC;SET 1,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d CD;SET 1,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d CE;SET 1,(IY+d);Documentada;23;;4
-FDCB;FD CB d CF;SET 1,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d D0;SET 2,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d D1;SET 2,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d D2;SET 2,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d D3;SET 2,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d D4;SET 2,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d D5;SET 2,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d D6;SET 2,(IY+d);Documentada;23;;4
-FDCB;FD CB d D7;SET 2,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d D8;SET 3,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d D9;SET 3,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d DA;SET 3,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d DB;SET 3,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d DC;SET 3,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d DD;SET 3,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d DE;SET 3,(IY+d);Documentada;23;;4
-FDCB;FD CB d DF;SET 3,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d E0;SET 4,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d E1;SET 4,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d E2;SET 4,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d E3;SET 4,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d E4;SET 4,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d E5;SET 4,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d E6;SET 4,(IY+d);Documentada;23;;4
-FDCB;FD CB d E7;SET 4,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d E8;SET 5,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d E9;SET 5,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d EA;SET 5,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d EB;SET 5,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d EC;SET 5,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d ED;SET 5,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d EE;SET 5,(IY+d);Documentada;23;;4
-FDCB;FD CB d EF;SET 5,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d F0;SET 6,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d F1;SET 6,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d F2;SET 6,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d F3;SET 6,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d F4;SET 6,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d F5;SET 6,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d F6;SET 6,(IY+d);Documentada;23;;4
-FDCB;FD CB d F7;SET 6,(IY+d),A;Não documentada;23;;4
-FDCB;FD CB d F8;SET 7,(IY+d),B;Não documentada;23;;4
-FDCB;FD CB d F9;SET 7,(IY+d),C;Não documentada;23;;4
-FDCB;FD CB d FA;SET 7,(IY+d),D;Não documentada;23;;4
-FDCB;FD CB d FB;SET 7,(IY+d),E;Não documentada;23;;4
-FDCB;FD CB d FC;SET 7,(IY+d),H;Não documentada;23;;4
-FDCB;FD CB d FD;SET 7,(IY+d),L;Não documentada;23;;4
-FDCB;FD CB d FE;SET 7,(IY+d);Documentada;23;;4
-FDCB;FD CB d FF;SET 7,(IY+d),A;Não documentada;23;;4
+﻿page;opcode;mnemonic;documentation;tstates;alt_tstates;bytes
+00;00;NOP;Documented;4;;1
+00;01 nl nh;LD BC,nn;Documented;10;;3
+00;02;LD (BC),A;Documented;7;;1
+00;03;INC BC;Documented;6;;1
+00;04;INC B;Documented;4;;1
+00;05;DEC B;Documented;4;;1
+00;06 n;LD B,n;Documented;7;;2
+00;07;RLCA;Documented;4;;1
+00;08;EX AF,AF';Documented;4;;1
+00;09;ADD HL,BC;Documented;11;;1
+00;0A;LD A,(BC);Documented;7;;1
+00;0B;DEC BC;Documented;6;;1
+00;0C;INC C;Documented;4;;1
+00;0D;DEC C;Documented;4;;1
+00;0E n;LD C,n;Documented;7;;2
+00;0F;RRCA;Documented;4;;1
+00;10 e;DJNZ e;Documented;13;8;2
+00;11 nl nh;LD DE,nn;Documented;10;;3
+00;12;LD (DE),A;Documented;7;;1
+00;13;INC DE;Documented;6;;1
+00;14;INC D;Documented;4;;1
+00;15;DEC D;Documented;4;;1
+00;16 n;LD D,n;Documented;7;;2
+00;17;RLA;Documented;4;;1
+00;18 e;JR e;Documented;12;;2
+00;19;ADD HL,DE;Documented;11;;1
+00;1A;LD A,(DE);Documented;7;;1
+00;1B;DEC DE;Documented;6;;1
+00;1C;INC E;Documented;4;;1
+00;1D;DEC E;Documented;4;;1
+00;1E n;LD E,n;Documented;7;;2
+00;1F;RRA;Documented;4;;1
+00;20 e;JR NZ,e;Documented;12;7;2
+00;21 nl nh;LD HL,nn;Documented;10;;3
+00;22 nl nh;LD (nn),HL;Documented;16;;3
+00;23;INC HL;Documented;6;;1
+00;24;INC H;Documented;4;;1
+00;25;DEC H;Documented;4;;1
+00;26 n;LD H,n;Documented;7;;2
+00;27;DAA;Documented;4;;1
+00;28 e;JR Z,e;Documented;12;7;2
+00;29;ADD HL,HL;Documented;11;;1
+00;2A nl nh;LD HL,(nn);Documented;16;;3
+00;2B;DEC HL;Documented;6;;1
+00;2C;INC L;Documented;4;;1
+00;2D;DEC L;Documented;4;;1
+00;2E n;LD L,n;Documented;7;;2
+00;2F;CPL;Documented;4;;1
+00;30 e;JR NC,e;Documented;12;7;2
+00;31 nl nh;LD SP,nn;Documented;10;;3
+00;32 nl nh;LD (nn),A;Documented;13;;3
+00;33;INC SP;Documented;6;;1
+00;34;INC (HL);Documented;11;;1
+00;35;DEC (HL);Documented;11;;1
+00;36 n;LD (HL),n;Documented;10;;2
+00;37;SCF;Documented;4;;1
+00;38 e;JR C,e;Documented;12;7;2
+00;39;ADD HL,SP;Documented;11;;1
+00;3A nl nh;LD A,(nn);Documented;13;;3
+00;3B;DEC SP;Documented;6;;1
+00;3C;INC A;Documented;4;;1
+00;3D;DEC A;Documented;4;;1
+00;3E n;LD A,n;Documented;7;;2
+00;3F;CCF;Documented;4;;1
+00;40;LD B,B;Documented;4;;1
+00;41;LD B,C;Documented;4;;1
+00;42;LD B,D;Documented;4;;1
+00;43;LD B,E;Documented;4;;1
+00;44;LD B,H;Documented;4;;1
+00;45;LD B,L;Documented;4;;1
+00;46;LD B,(HL);Documented;7;;1
+00;47;LD B,A;Documented;4;;1
+00;48;LD C,B;Documented;4;;1
+00;49;LD C,C;Documented;4;;1
+00;4A;LD C,D;Documented;4;;1
+00;4B;LD C,E;Documented;4;;1
+00;4C;LD C,H;Documented;4;;1
+00;4D;LD C,L;Documented;4;;1
+00;4E;LD C,(HL);Documented;7;;1
+00;4F;LD C,A;Documented;4;;1
+00;50;LD D,B;Documented;4;;1
+00;51;LD D,C;Documented;4;;1
+00;52;LD D,D;Documented;4;;1
+00;53;LD D,E;Documented;4;;1
+00;54;LD D,H;Documented;4;;1
+00;55;LD D,L;Documented;4;;1
+00;56;LD D,(HL);Documented;7;;1
+00;57;LD D,A;Documented;4;;1
+00;58;LD E,B;Documented;4;;1
+00;59;LD E,C;Documented;4;;1
+00;5A;LD E,D;Documented;4;;1
+00;5B;LD E,E;Documented;4;;1
+00;5C;LD E,H;Documented;4;;1
+00;5D;LD E,L;Documented;4;;1
+00;5E;LD E,(HL);Documented;7;;1
+00;5F;LD E,A;Documented;4;;1
+00;60;LD H,B;Documented;4;;1
+00;61;LD H,C;Documented;4;;1
+00;62;LD H,D;Documented;4;;1
+00;63;LD H,E;Documented;4;;1
+00;64;LD H,H;Documented;4;;1
+00;65;LD H,L;Documented;4;;1
+00;66;LD H,(HL);Documented;7;;1
+00;67;LD H,A;Documented;4;;1
+00;68;LD L,B;Documented;4;;1
+00;69;LD L,C;Documented;4;;1
+00;6A;LD L,D;Documented;4;;1
+00;6B;LD L,E;Documented;4;;1
+00;6C;LD L,H;Documented;4;;1
+00;6D;LD L,L;Documented;4;;1
+00;6E;LD L,(HL);Documented;7;;1
+00;6F;LD L,A;Documented;4;;1
+00;70;LD (HL),B;Documented;7;;1
+00;71;LD (HL),C;Documented;7;;1
+00;72;LD (HL),D;Documented;7;;1
+00;73;LD (HL),E;Documented;7;;1
+00;74;LD (HL),H;Documented;7;;1
+00;75;LD (HL),L;Documented;7;;1
+00;76;HALT;Documented;4;;1
+00;77;LD (HL),A;Documented;7;;1
+00;78;LD A,B;Documented;4;;1
+00;79;LD A,C;Documented;4;;1
+00;7A;LD A,D;Documented;4;;1
+00;7B;LD A,E;Documented;4;;1
+00;7C;LD A,H;Documented;4;;1
+00;7D;LD A,L;Documented;4;;1
+00;7E;LD A,(HL);Documented;7;;1
+00;7F;LD A,A;Documented;4;;1
+00;80;ADD A,B;Documented;4;;1
+00;81;ADD A,C;Documented;4;;1
+00;82;ADD A,D;Documented;4;;1
+00;83;ADD A,E;Documented;4;;1
+00;84;ADD A,H;Documented;4;;1
+00;85;ADD A,L;Documented;4;;1
+00;86;ADD A,(HL);Documented;7;;1
+00;87;ADD A,A;Documented;4;;1
+00;88;ADC A,B;Documented;4;;1
+00;89;ADC A,C;Documented;4;;1
+00;8A;ADC A,D;Documented;4;;1
+00;8B;ADC A,E;Documented;4;;1
+00;8C;ADC A,H;Documented;4;;1
+00;8D;ADC A,L;Documented;4;;1
+00;8E;ADC A,(HL);Documented;7;;1
+00;8F;ADC A,A;Documented;4;;1
+00;90;SUB B;Documented;4;;1
+00;91;SUB C;Documented;4;;1
+00;92;SUB D;Documented;4;;1
+00;93;SUB E;Documented;4;;1
+00;94;SUB H;Documented;4;;1
+00;95;SUB L;Documented;4;;1
+00;96;SUB (HL);Documented;7;;1
+00;97;SUB A;Documented;4;;1
+00;98;SBC A,B;Documented;4;;1
+00;99;SBC A,C;Documented;4;;1
+00;9A;SBC A,D;Documented;4;;1
+00;9B;SBC A,E;Documented;4;;1
+00;9C;SBC A,H;Documented;4;;1
+00;9D;SBC A,L;Documented;4;;1
+00;9E;SBC A,(HL);Documented;7;;1
+00;9F;SBC A,A;Documented;4;;1
+00;A0;AND B;Documented;4;;1
+00;A1;AND C;Documented;4;;1
+00;A2;AND D;Documented;4;;1
+00;A3;AND E;Documented;4;;1
+00;A4;AND H;Documented;4;;1
+00;A5;AND L;Documented;4;;1
+00;A6;AND (HL);Documented;7;;1
+00;A7;AND A;Documented;4;;1
+00;A8;XOR B;Documented;4;;1
+00;A9;XOR C;Documented;4;;1
+00;AA;XOR D;Documented;4;;1
+00;AB;XOR E;Documented;4;;1
+00;AC;XOR H;Documented;4;;1
+00;AD;XOR L;Documented;4;;1
+00;AE;XOR (HL);Documented;7;;1
+00;AF;XOR A;Documented;4;;1
+00;B0;OR B;Documented;4;;1
+00;B1;OR C;Documented;4;;1
+00;B2;OR D;Documented;4;;1
+00;B3;OR E;Documented;4;;1
+00;B4;OR H;Documented;4;;1
+00;B5;OR L;Documented;4;;1
+00;B6;OR (HL);Documented;7;;1
+00;B7;OR A;Documented;4;;1
+00;B8;CP B;Documented;4;;1
+00;B9;CP C;Documented;4;;1
+00;BA;CP D;Documented;4;;1
+00;BB;CP E;Documented;4;;1
+00;BC;CP H;Documented;4;;1
+00;BD;CP L;Documented;4;;1
+00;BE;CP (HL);Documented;7;;1
+00;BF;CP A;Documented;4;;1
+00;C0;RET NZ;Documented;11;5;1
+00;C1;POP BC;Documented;10;;1
+00;C2 nl nh;JP NZ,nn;Documented;10;;3
+00;C3 nl nh;JP nn;Documented;10;;3
+00;C4 nl nh;CALL NZ,nn;Documented;17;10;3
+00;C5;PUSH BC;Documented;11;;1
+00;C6 n;ADD A,n;Documented;7;;2
+00;C7;RST 00H;Documented;11;;1
+00;C8;RET Z;Documented;11;5;1
+00;C9;RET;Documented;10;;1
+00;CA nl nh;JP Z,nn;Documented;10;;3
+00;CC nl nh;CALL Z,nn;Documented;17;10;3
+00;CD nl nh;CALL nn;Documented;17;;3
+00;CE n;ADC A,n;Documented;7;;2
+00;CF;RST 08H;Documented;11;;1
+00;D0;RET NC;Documented;11;5;1
+00;D1;POP DE;Documented;10;;1
+00;D2 nl nh;JP NC,nn;Documented;10;;3
+00;D3 n;OUT (n),A;Documented;11;;2
+00;D4 nl nh;CALL NC,nn;Documented;17;10;3
+00;D5;PUSH DE;Documented;11;;1
+00;D6 n;SUB n;Documented;7;;2
+00;D7;RST 10H;Documented;11;;1
+00;D8;RET C;Documented;11;5;1
+00;D9;EXX;Documented;4;;1
+00;DA nl nh;JP C,nn;Documented;10;;3
+00;DB n;IN A,(n);Documented;11;;2
+00;DC nl nh;CALL C,nn;Documented;17;10;3
+00;DE n;SBC A,n;Documented;7;;2
+00;DF;RST 18H;Documented;11;;1
+00;E0;RET PO;Documented;11;5;1
+00;E1;POP HL;Documented;10;;1
+00;E2 nl nh;JP PO,nn;Documented;10;;3
+00;E3;EX (SP),HL;Documented;19;;1
+00;E4 nl nh;CALL PO,nn;Documented;17;10;3
+00;E5;PUSH HL;Documented;11;;1
+00;E6 n;AND n;Documented;7;;2
+00;E7;RST 20H;Documented;11;;1
+00;E8;RET PE;Documented;11;5;1
+00;E9;JP (HL);Documented;4;;1
+00;EA nl nh;JP PE,nn;Documented;10;;3
+00;EB;EX DE,HL;Documented;4;;1
+00;EC nl nh;CALL PE,nn;Documented;17;10;3
+00;EE n;XOR n;Documented;7;;2
+00;EF;RST 28H;Documented;11;;1
+00;F0;RET P;Documented;11;5;1
+00;F1;POP AF;Documented;10;;1
+00;F2 nl nh;JP P,nn;Documented;10;;3
+00;F3;DI;Documented;4;;1
+00;F4 nl nh;CALL P,nn;Documented;17;10;3
+00;F5;PUSH AF;Documented;11;;1
+00;F6 n;OR n;Documented;7;;2
+00;F7;RST 30H;Documented;11;;1
+00;F8;RET M;Documented;11;5;1
+00;F9;LD SP,HL;Documented;6;;1
+00;FA nl nh;JP M,nn;Documented;10;;3
+00;FB;EI;Documented;4;;1
+00;FC nl nh;CALL M,nn;Documented;17;10;3
+00;FE n;CP n;Documented;7;;2
+00;FF;RST 38H;Documented;11;;1
+CB;CB 00;RLC B;Documented;8;;2
+CB;CB 01;RLC C;Documented;8;;2
+CB;CB 02;RLC D;Documented;8;;2
+CB;CB 03;RLC E;Documented;8;;2
+CB;CB 04;RLC H;Documented;8;;2
+CB;CB 05;RLC L;Documented;8;;2
+CB;CB 06;RLC (HL);Documented;15;;2
+CB;CB 07;RLC A;Documented;8;;2
+CB;CB 08;RRC B;Documented;8;;2
+CB;CB 09;RRC C;Documented;8;;2
+CB;CB 0A;RRC D;Documented;8;;2
+CB;CB 0B;RRC E;Documented;8;;2
+CB;CB 0C;RRC H;Documented;8;;2
+CB;CB 0D;RRC L;Documented;8;;2
+CB;CB 0E;RRC (HL);Documented;15;;2
+CB;CB 0F;RRC A;Documented;8;;2
+CB;CB 10;RL B;Documented;8;;2
+CB;CB 11;RL C;Documented;8;;2
+CB;CB 12;RL D;Documented;8;;2
+CB;CB 13;RL E;Documented;8;;2
+CB;CB 14;RL H;Documented;8;;2
+CB;CB 15;RL L;Documented;8;;2
+CB;CB 16;RL (HL);Documented;15;;2
+CB;CB 17;RL A;Documented;8;;2
+CB;CB 18;RR B;Documented;8;;2
+CB;CB 19;RR C;Documented;8;;2
+CB;CB 1A;RR D;Documented;8;;2
+CB;CB 1B;RR E;Documented;8;;2
+CB;CB 1C;RR H;Documented;8;;2
+CB;CB 1D;RR L;Documented;8;;2
+CB;CB 1E;RR (HL);Documented;15;;2
+CB;CB 1F;RR A;Documented;8;;2
+CB;CB 20;SLA B;Documented;8;;2
+CB;CB 21;SLA C;Documented;8;;2
+CB;CB 22;SLA D;Documented;8;;2
+CB;CB 23;SLA E;Documented;8;;2
+CB;CB 24;SLA H;Documented;8;;2
+CB;CB 25;SLA L;Documented;8;;2
+CB;CB 26;SLA (HL);Documented;15;;2
+CB;CB 27;SLA A;Documented;8;;2
+CB;CB 28;SRA B;Documented;8;;2
+CB;CB 29;SRA C;Documented;8;;2
+CB;CB 2A;SRA D;Documented;8;;2
+CB;CB 2B;SRA E;Documented;8;;2
+CB;CB 2C;SRA H;Documented;8;;2
+CB;CB 2D;SRA L;Documented;8;;2
+CB;CB 2E;SRA (HL);Documented;15;;2
+CB;CB 2F;SRA A;Documented;8;;2
+CB;CB 30;SLL B;Undocumented;8;;2
+CB;CB 31;SLL C;Undocumented;8;;2
+CB;CB 32;SLL D;Undocumented;8;;2
+CB;CB 33;SLL E;Undocumented;8;;2
+CB;CB 34;SLL H;Undocumented;8;;2
+CB;CB 35;SLL L;Undocumented;8;;2
+CB;CB 36;SLL (HL);Undocumented;15;;2
+CB;CB 37;SLL A;Undocumented;8;;2
+CB;CB 38;SRL B;Documented;8;;2
+CB;CB 39;SRL C;Documented;8;;2
+CB;CB 3A;SRL D;Documented;8;;2
+CB;CB 3B;SRL E;Documented;8;;2
+CB;CB 3C;SRL H;Documented;8;;2
+CB;CB 3D;SRL L;Documented;8;;2
+CB;CB 3E;SRL (HL);Documented;15;;2
+CB;CB 3F;SRL A;Documented;8;;2
+CB;CB 40;BIT 0,B;Documented;8;;2
+CB;CB 41;BIT 0,C;Documented;8;;2
+CB;CB 42;BIT 0,D;Documented;8;;2
+CB;CB 43;BIT 0,E;Documented;8;;2
+CB;CB 44;BIT 0,H;Documented;8;;2
+CB;CB 45;BIT 0,L;Documented;8;;2
+CB;CB 46;BIT 0,(HL);Documented;12;;2
+CB;CB 47;BIT 0,A;Documented;8;;2
+CB;CB 48;BIT 1,B;Documented;8;;2
+CB;CB 49;BIT 1,C;Documented;8;;2
+CB;CB 4A;BIT 1,D;Documented;8;;2
+CB;CB 4B;BIT 1,E;Documented;8;;2
+CB;CB 4C;BIT 1,H;Documented;8;;2
+CB;CB 4D;BIT 1,L;Documented;8;;2
+CB;CB 4E;BIT 1,(HL);Documented;12;;2
+CB;CB 4F;BIT 1,A;Documented;8;;2
+CB;CB 50;BIT 2,B;Documented;8;;2
+CB;CB 51;BIT 2,C;Documented;8;;2
+CB;CB 52;BIT 2,D;Documented;8;;2
+CB;CB 53;BIT 2,E;Documented;8;;2
+CB;CB 54;BIT 2,H;Documented;8;;2
+CB;CB 55;BIT 2,L;Documented;8;;2
+CB;CB 56;BIT 2,(HL);Documented;12;;2
+CB;CB 57;BIT 2,A;Documented;8;;2
+CB;CB 58;BIT 3,B;Documented;8;;2
+CB;CB 59;BIT 3,C;Documented;8;;2
+CB;CB 5A;BIT 3,D;Documented;8;;2
+CB;CB 5B;BIT 3,E;Documented;8;;2
+CB;CB 5C;BIT 3,H;Documented;8;;2
+CB;CB 5D;BIT 3,L;Documented;8;;2
+CB;CB 5E;BIT 3,(HL);Documented;12;;2
+CB;CB 5F;BIT 3,A;Documented;8;;2
+CB;CB 60;BIT 4,B;Documented;8;;2
+CB;CB 61;BIT 4,C;Documented;8;;2
+CB;CB 62;BIT 4,D;Documented;8;;2
+CB;CB 63;BIT 4,E;Documented;8;;2
+CB;CB 64;BIT 4,H;Documented;8;;2
+CB;CB 65;BIT 4,L;Documented;8;;2
+CB;CB 66;BIT 4,(HL);Documented;12;;2
+CB;CB 67;BIT 4,A;Documented;8;;2
+CB;CB 68;BIT 5,B;Documented;8;;2
+CB;CB 69;BIT 5,C;Documented;8;;2
+CB;CB 6A;BIT 5,D;Documented;8;;2
+CB;CB 6B;BIT 5,E;Documented;8;;2
+CB;CB 6C;BIT 5,H;Documented;8;;2
+CB;CB 6D;BIT 5,L;Documented;8;;2
+CB;CB 6E;BIT 5,(HL);Documented;12;;2
+CB;CB 6F;BIT 5,A;Documented;8;;2
+CB;CB 70;BIT 6,B;Documented;8;;2
+CB;CB 71;BIT 6,C;Documented;8;;2
+CB;CB 72;BIT 6,D;Documented;8;;2
+CB;CB 73;BIT 6,E;Documented;8;;2
+CB;CB 74;BIT 6,H;Documented;8;;2
+CB;CB 75;BIT 6,L;Documented;8;;2
+CB;CB 76;BIT 6,(HL);Documented;12;;2
+CB;CB 77;BIT 6,A;Documented;8;;2
+CB;CB 78;BIT 7,B;Documented;8;;2
+CB;CB 79;BIT 7,C;Documented;8;;2
+CB;CB 7A;BIT 7,D;Documented;8;;2
+CB;CB 7B;BIT 7,E;Documented;8;;2
+CB;CB 7C;BIT 7,H;Documented;8;;2
+CB;CB 7D;BIT 7,L;Documented;8;;2
+CB;CB 7E;BIT 7,(HL);Documented;12;;2
+CB;CB 7F;BIT 7,A;Documented;8;;2
+CB;CB 80;RES 0,B;Documented;8;;2
+CB;CB 81;RES 0,C;Documented;8;;2
+CB;CB 82;RES 0,D;Documented;8;;2
+CB;CB 83;RES 0,E;Documented;8;;2
+CB;CB 84;RES 0,H;Documented;8;;2
+CB;CB 85;RES 0,L;Documented;8;;2
+CB;CB 86;RES 0,(HL);Documented;15;;2
+CB;CB 87;RES 0,A;Documented;8;;2
+CB;CB 88;RES 1,B;Documented;8;;2
+CB;CB 89;RES 1,C;Documented;8;;2
+CB;CB 8A;RES 1,D;Documented;8;;2
+CB;CB 8B;RES 1,E;Documented;8;;2
+CB;CB 8C;RES 1,H;Documented;8;;2
+CB;CB 8D;RES 1,L;Documented;8;;2
+CB;CB 8E;RES 1,(HL);Documented;15;;2
+CB;CB 8F;RES 1,A;Documented;8;;2
+CB;CB 90;RES 2,B;Documented;8;;2
+CB;CB 91;RES 2,C;Documented;8;;2
+CB;CB 92;RES 2,D;Documented;8;;2
+CB;CB 93;RES 2,E;Documented;8;;2
+CB;CB 94;RES 2,H;Documented;8;;2
+CB;CB 95;RES 2,L;Documented;8;;2
+CB;CB 96;RES 2,(HL);Documented;15;;2
+CB;CB 97;RES 2,A;Documented;8;;2
+CB;CB 98;RES 3,B;Documented;8;;2
+CB;CB 99;RES 3,C;Documented;8;;2
+CB;CB 9A;RES 3,D;Documented;8;;2
+CB;CB 9B;RES 3,E;Documented;8;;2
+CB;CB 9C;RES 3,H;Documented;8;;2
+CB;CB 9D;RES 3,L;Documented;8;;2
+CB;CB 9E;RES 3,(HL);Documented;15;;2
+CB;CB 9F;RES 3,A;Documented;8;;2
+CB;CB A0;RES 4,B;Documented;8;;2
+CB;CB A1;RES 4,C;Documented;8;;2
+CB;CB A2;RES 4,D;Documented;8;;2
+CB;CB A3;RES 4,E;Documented;8;;2
+CB;CB A4;RES 4,H;Documented;8;;2
+CB;CB A5;RES 4,L;Documented;8;;2
+CB;CB A6;RES 4,(HL);Documented;15;;2
+CB;CB A7;RES 4,A;Documented;8;;2
+CB;CB A8;RES 5,B;Documented;8;;2
+CB;CB A9;RES 5,C;Documented;8;;2
+CB;CB AA;RES 5,D;Documented;8;;2
+CB;CB AB;RES 5,E;Documented;8;;2
+CB;CB AC;RES 5,H;Documented;8;;2
+CB;CB AD;RES 5,L;Documented;8;;2
+CB;CB AE;RES 5,(HL);Documented;15;;2
+CB;CB AF;RES 5,A;Documented;8;;2
+CB;CB B0;RES 6,B;Documented;8;;2
+CB;CB B1;RES 6,C;Documented;8;;2
+CB;CB B2;RES 6,D;Documented;8;;2
+CB;CB B3;RES 6,E;Documented;8;;2
+CB;CB B4;RES 6,H;Documented;8;;2
+CB;CB B5;RES 6,L;Documented;8;;2
+CB;CB B6;RES 6,(HL);Documented;15;;2
+CB;CB B7;RES 6,A;Documented;8;;2
+CB;CB B8;RES 7,B;Documented;8;;2
+CB;CB B9;RES 7,C;Documented;8;;2
+CB;CB BA;RES 7,D;Documented;8;;2
+CB;CB BB;RES 7,E;Documented;8;;2
+CB;CB BC;RES 7,H;Documented;8;;2
+CB;CB BD;RES 7,L;Documented;8;;2
+CB;CB BE;RES 7,(HL);Documented;15;;2
+CB;CB BF;RES 7,A;Documented;8;;2
+CB;CB C0;SET 0,B;Documented;8;;2
+CB;CB C1;SET 0,C;Documented;8;;2
+CB;CB C2;SET 0,D;Documented;8;;2
+CB;CB C3;SET 0,E;Documented;8;;2
+CB;CB C4;SET 0,H;Documented;8;;2
+CB;CB C5;SET 0,L;Documented;8;;2
+CB;CB C6;SET 0,(HL);Documented;15;;2
+CB;CB C7;SET 0,A;Documented;8;;2
+CB;CB C8;SET 1,B;Documented;8;;2
+CB;CB C9;SET 1,C;Documented;8;;2
+CB;CB CA;SET 1,D;Documented;8;;2
+CB;CB CB;SET 1,E;Documented;8;;2
+CB;CB CC;SET 1,H;Documented;8;;2
+CB;CB CD;SET 1,L;Documented;8;;2
+CB;CB CE;SET 1,(HL);Documented;15;;2
+CB;CB CF;SET 1,A;Documented;8;;2
+CB;CB D0;SET 2,B;Documented;8;;2
+CB;CB D1;SET 2,C;Documented;8;;2
+CB;CB D2;SET 2,D;Documented;8;;2
+CB;CB D3;SET 2,E;Documented;8;;2
+CB;CB D4;SET 2,H;Documented;8;;2
+CB;CB D5;SET 2,L;Documented;8;;2
+CB;CB D6;SET 2,(HL);Documented;15;;2
+CB;CB D7;SET 2,A;Documented;8;;2
+CB;CB D8;SET 3,B;Documented;8;;2
+CB;CB D9;SET 3,C;Documented;8;;2
+CB;CB DA;SET 3,D;Documented;8;;2
+CB;CB DB;SET 3,E;Documented;8;;2
+CB;CB DC;SET 3,H;Documented;8;;2
+CB;CB DD;SET 3,L;Documented;8;;2
+CB;CB DE;SET 3,(HL);Documented;15;;2
+CB;CB DF;SET 3,A;Documented;8;;2
+CB;CB E0;SET 4,B;Documented;8;;2
+CB;CB E1;SET 4,C;Documented;8;;2
+CB;CB E2;SET 4,D;Documented;8;;2
+CB;CB E3;SET 4,E;Documented;8;;2
+CB;CB E4;SET 4,H;Documented;8;;2
+CB;CB E5;SET 4,L;Documented;8;;2
+CB;CB E6;SET 4,(HL);Documented;15;;2
+CB;CB E7;SET 4,A;Documented;8;;2
+CB;CB E8;SET 5,B;Documented;8;;2
+CB;CB E9;SET 5,C;Documented;8;;2
+CB;CB EA;SET 5,D;Documented;8;;2
+CB;CB EB;SET 5,E;Documented;8;;2
+CB;CB EC;SET 5,H;Documented;8;;2
+CB;CB ED;SET 5,L;Documented;8;;2
+CB;CB EE;SET 5,(HL);Documented;15;;2
+CB;CB EF;SET 5,A;Documented;8;;2
+CB;CB F0;SET 6,B;Documented;8;;2
+CB;CB F1;SET 6,C;Documented;8;;2
+CB;CB F2;SET 6,D;Documented;8;;2
+CB;CB F3;SET 6,E;Documented;8;;2
+CB;CB F4;SET 6,H;Documented;8;;2
+CB;CB F5;SET 6,L;Documented;8;;2
+CB;CB F6;SET 6,(HL);Documented;15;;2
+CB;CB F7;SET 6,A;Documented;8;;2
+CB;CB F8;SET 7,B;Documented;8;;2
+CB;CB F9;SET 7,C;Documented;8;;2
+CB;CB FA;SET 7,D;Documented;8;;2
+CB;CB FB;SET 7,E;Documented;8;;2
+CB;CB FC;SET 7,H;Documented;8;;2
+CB;CB FD;SET 7,L;Documented;8;;2
+CB;CB FE;SET 7,(HL);Documented;15;;2
+CB;CB FF;SET 7,A;Documented;8;;2
+ED;ED 40;IN B,(C);Documented;12;;2
+ED;ED 41;OUT (C),B;Documented;12;;2
+ED;ED 42;SBC HL,BC;Documented;15;;2
+ED;ED 43 nl nh;LD (nn),BC;Documented;20;;4
+ED;ED 44;NEG;Documented;8;;2
+ED;ED 45;RETN;Documented;14;;2
+ED;ED 46;IM 0;Documented;8;;2
+ED;ED 47;LD I,A;Documented;9;;2
+ED;ED 48;IN C,(C);Documented;12;;2
+ED;ED 49;OUT (C),C;Documented;12;;2
+ED;ED 4A;ADC HL,BC;Documented;15;;2
+ED;ED 4B nl nh;LD BC,(nn);Documented;20;;4
+ED;ED 4C;NEG;Undocumented;8;;2
+ED;ED 4D;RETI;Documented;14;;2
+ED;ED 4E;IM 0;Undocumented;8;;2
+ED;ED 4F;LD R,A;Documented;9;;2
+ED;ED 50;IN D,(C);Documented;12;;2
+ED;ED 51;OUT (C),D;Documented;12;;2
+ED;ED 52;SBC HL,DE;Documented;15;;2
+ED;ED 53 nl nh;LD (nn),DE;Documented;20;;4
+ED;ED 54;NEG;Undocumented;8;;2
+ED;ED 55;RETN;Undocumented;14;;2
+ED;ED 56;IM 1;Documented;8;;2
+ED;ED 57;LD A,I;Documented;9;;2
+ED;ED 58;IN E,(C);Documented;12;;2
+ED;ED 59;OUT (C),E;Documented;12;;2
+ED;ED 5A;ADC HL,DE;Documented;15;;2
+ED;ED 5B nl nh;LD DE,(nn);Documented;20;;4
+ED;ED 5C;NEG;Undocumented;8;;2
+ED;ED 5D;RETN;Undocumented;14;;2
+ED;ED 5E;IM 2;Documented;8;;2
+ED;ED 5F;LD A,R;Documented;9;;2
+ED;ED 60;IN H,(C);Documented;12;;2
+ED;ED 61;OUT (C),H;Documented;12;;2
+ED;ED 62;SBC HL,HL;Documented;15;;2
+ED;ED 63 nl nh;LD (nn),HL;Documented;20;;4
+ED;ED 64;NEG;Undocumented;8;;2
+ED;ED 65;RETN;Undocumented;14;;2
+ED;ED 66;IM 0;Undocumented;8;;2
+ED;ED 67;RRD;Documented;18;;2
+ED;ED 68;IN L,(C);Documented;12;;2
+ED;ED 69;OUT (C),L;Documented;12;;2
+ED;ED 6A;ADC HL,HL;Documented;15;;2
+ED;ED 6B nl nh;LD HL,(nn);Documented;20;;4
+ED;ED 6C;NEG;Undocumented;8;;2
+ED;ED 6D;RETN;Undocumented;14;;2
+ED;ED 6E;IM 0;Undocumented;8;;2
+ED;ED 6F;RLD;Documented;18;;2
+ED;ED 70;IN F,(C);Undocumented;12;;2
+ED;ED 71;OUT (C),0;Undocumented;12;;2
+ED;ED 72;SBC HL,SP;Documented;15;;2
+ED;ED 73 nl nh;LD (nn),SP;Documented;20;;4
+ED;ED 74;NEG;Undocumented;8;;2
+ED;ED 75;RETN;Undocumented;14;;2
+ED;ED 76;IM 1;Undocumented;8;;2
+ED;ED 77;NOP;Undocumented;8;;2
+ED;ED 78;IN A,(C);Documented;12;;2
+ED;ED 79;OUT (C),A;Documented;12;;2
+ED;ED 7A;ADC HL,SP;Documented;15;;2
+ED;ED 7B nl nh;LD SP,(nn);Documented;20;;4
+ED;ED 7C;NEG;Undocumented;8;;2
+ED;ED 7D;RETN;Undocumented;14;;2
+ED;ED 7E;IM 2;Undocumented;8;;2
+ED;ED 7F;NOP;Undocumented;8;;2
+ED;ED A0;LDI;Documented;16;;2
+ED;ED A1;CPI;Documented;16;;2
+ED;ED A2;INI;Documented;16;;2
+ED;ED A3;OUTI;Documented;16;;2
+ED;ED A8;LDD;Documented;16;;2
+ED;ED A9;CPD;Documented;16;;2
+ED;ED AA;IND;Documented;16;;2
+ED;ED AB;OUTD;Documented;16;;2
+ED;ED B0;LDIR;Documented;21;16;2
+ED;ED B1;CPIR;Documented;21;16;2
+ED;ED B2;INIR;Documented;21;16;2
+ED;ED B3;OTIR;Documented;21;16;2
+ED;ED B8;LDDR;Documented;21;16;2
+ED;ED B9;CPDR;Documented;21;16;2
+ED;ED BA;INDR;Documented;21;16;2
+ED;ED BB;OTDR;Documented;21;16;2
+DD;DD 09;ADD IX,BC;Documented;15;;2
+DD;DD 19;ADD IX,DE;Documented;15;;2
+DD;DD 21 nl nh;LD IX,nn;Documented;14;;4
+DD;DD 22 nl nh;LD (nn),IX;Documented;20;;4
+DD;DD 23;INC IX;Documented;10;;2
+DD;DD 24;INC IXH;Undocumented;8;;2
+DD;DD 25;DEC IXH;Undocumented;8;;2
+DD;DD 26 n;LD IXH,n;Undocumented;11;;3
+DD;DD 29;ADD IX,IX;Documented;15;;2
+DD;DD 2A nl nh;LD IX,(nn);Documented;20;;4
+DD;DD 2B;DEC IX;Documented;10;;2
+DD;DD 2C;INC IXL;Undocumented;8;;2
+DD;DD 2D;DEC IXL;Undocumented;8;;2
+DD;DD 2E n;LD IXL,n;Undocumented;11;;3
+DD;DD 34 d;INC (IX+d);Documented;23;;3
+DD;DD 35 d;DEC (IX+d);Documented;23;;3
+DD;DD 36 d n;LD (IX+d),n;Documented;19;;4
+DD;DD 39;ADD IX,SP;Documented;15;;2
+DD;DD 44;LD B,IXH;Undocumented;8;;2
+DD;DD 45;LD B,IXL;Undocumented;8;;2
+DD;DD 46 d;LD B,(IX+d);Documented;19;;3
+DD;DD 4C;LD C,IXH;Undocumented;8;;2
+DD;DD 4D;LD C,IXL;Undocumented;8;;2
+DD;DD 4E d;LD C,(IX+d);Documented;19;;3
+DD;DD 54;LD D,IXH;Undocumented;8;;2
+DD;DD 55;LD D,IXL;Undocumented;8;;2
+DD;DD 56 d;LD D,(IX+d);Documented;19;;3
+DD;DD 5C;LD E,IXH;Undocumented;8;;2
+DD;DD 5D;LD E,IXL;Undocumented;8;;2
+DD;DD 5E d;LD E,(IX+d);Documented;19;;3
+DD;DD 60;LD IXH,B;Undocumented;8;;2
+DD;DD 61;LD IXH,C;Undocumented;8;;2
+DD;DD 62;LD IXH,D;Undocumented;8;;2
+DD;DD 63;LD IXH,E;Undocumented;8;;2
+DD;DD 64;LD IXH,IXH;Undocumented;8;;2
+DD;DD 65;LD IXH,IXL;Undocumented;8;;2
+DD;DD 66 d;LD H,(IX+d);Documented;19;;3
+DD;DD 67;LD IXH,A;Undocumented;8;;2
+DD;DD 68;LD IXL,B;Undocumented;8;;2
+DD;DD 69;LD IXL,C;Undocumented;8;;2
+DD;DD 6A;LD IXL,D;Undocumented;8;;2
+DD;DD 6B;LD IXL,E;Undocumented;8;;2
+DD;DD 6C;LD IXL,IXH;Undocumented;8;;2
+DD;DD 6D;LD IXL,IXL;Undocumented;8;;2
+DD;DD 6E d;LD L,(IX+d);Documented;19;;3
+DD;DD 6F;LD IXL,A;Undocumented;8;;2
+DD;DD 70 d;LD (IX+d),B;Documented;19;;3
+DD;DD 71 d;LD (IX+d),C;Documented;19;;3
+DD;DD 72 d;LD (IX+d),D;Documented;19;;3
+DD;DD 73 d;LD (IX+d),E;Documented;19;;3
+DD;DD 74 d;LD (IX+d),H;Documented;19;;3
+DD;DD 75 d;LD (IX+d),L;Documented;19;;3
+DD;DD 77 d;LD (IX+d),A;Documented;19;;3
+DD;DD 7C;LD A,IXH;Undocumented;8;;2
+DD;DD 7D;LD A,IXL;Undocumented;8;;2
+DD;DD 7E d;LD A,(IX+d);Documented;19;;3
+DD;DD 84;ADD A,IXH;Undocumented;8;;2
+DD;DD 85;ADD A,IXL;Undocumented;8;;2
+DD;DD 86 d;ADD A,(IX+d);Documented;19;;3
+DD;DD 8C;ADC A,IXH;Undocumented;8;;2
+DD;DD 8D;ADC A,IXL;Undocumented;8;;2
+DD;DD 8E d;ADC A,(IX+d);Documented;19;;3
+DD;DD 94;SUB IXH;Undocumented;8;;2
+DD;DD 95;SUB IXL;Undocumented;8;;2
+DD;DD 96 d;SUB (IX+d);Documented;19;;3
+DD;DD 9C;SBC A,IXH;Undocumented;8;;2
+DD;DD 9D;SBC A,IXL;Undocumented;8;;2
+DD;DD 9E d;SBC A,(IX+d);Documented;19;;3
+DD;DD A4;AND IXH;Undocumented;8;;2
+DD;DD A5;AND IXL;Undocumented;8;;2
+DD;DD A6 d;AND (IX+d);Documented;19;;3
+DD;DD AC;XOR IXH;Undocumented;8;;2
+DD;DD AD;XOR IXL;Undocumented;8;;2
+DD;DD AE d;XOR (IX+d);Documented;19;;3
+DD;DD B4;OR IXH;Undocumented;8;;2
+DD;DD B5;OR IXL;Undocumented;8;;2
+DD;DD B6 d;OR (IX+d);Documented;19;;3
+DD;DD BC;CP IXH;Undocumented;8;;2
+DD;DD BD;CP IXL;Undocumented;8;;2
+DD;DD BE d;CP (IX+d);Documented;19;;3
+DD;DD E1;POP IX;Documented;14;;2
+DD;DD E3;EX (SP),IX;Documented;23;;2
+DD;DD E5;PUSH IX;Documented;15;;2
+DD;DD E9;JP (IX);Documented;8;;2
+DD;DD F9;LD SP,IX;Documented;10;;2
+FD;FD 09;ADD IY,BC;Documented;15;;2
+FD;FD 19;ADD IY,DE;Documented;15;;2
+FD;FD 21 nl nh;LD IY,nn;Documented;14;;4
+FD;FD 22 nl nh;LD (nn),IY;Documented;20;;4
+FD;FD 23;INC IY;Documented;10;;2
+FD;FD 24;INC IYH;Undocumented;8;;2
+FD;FD 25;DEC IYH;Undocumented;8;;2
+FD;FD 26 n;LD IYH,n;Undocumented;11;;3
+FD;FD 29;ADD IY,IY;Documented;15;;2
+FD;FD 2A nl nh;LD IY,(nn);Documented;20;;4
+FD;FD 2B;DEC IY;Documented;10;;2
+FD;FD 2C;INC IYL;Undocumented;8;;2
+FD;FD 2D;DEC IYL;Undocumented;8;;2
+FD;FD 2E n;LD IYL,n;Undocumented;11;;3
+FD;FD 34 d;INC (IY+d);Documented;23;;3
+FD;FD 35 d;DEC (IY+d);Documented;23;;3
+FD;FD 36 d n;LD (IY+d),n;Documented;19;;4
+FD;FD 39;ADD IY,SP;Documented;15;;2
+FD;FD 44;LD B,IYH;Undocumented;8;;2
+FD;FD 45;LD B,IYL;Undocumented;8;;2
+FD;FD 46 d;LD B,(IY+d);Documented;19;;3
+FD;FD 4C;LD C,IYH;Undocumented;8;;2
+FD;FD 4D;LD C,IYL;Undocumented;8;;2
+FD;FD 4E d;LD C,(IY+d);Documented;19;;3
+FD;FD 54;LD D,IYH;Undocumented;8;;2
+FD;FD 55;LD D,IYL;Undocumented;8;;2
+FD;FD 56 d;LD D,(IY+d);Documented;19;;3
+FD;FD 5C;LD E,IYH;Undocumented;8;;2
+FD;FD 5D;LD E,IYL;Undocumented;8;;2
+FD;FD 5E d;LD E,(IY+d);Documented;19;;3
+FD;FD 60;LD IYH,B;Undocumented;8;;2
+FD;FD 61;LD IYH,C;Undocumented;8;;2
+FD;FD 62;LD IYH,D;Undocumented;8;;2
+FD;FD 63;LD IYH,E;Undocumented;8;;2
+FD;FD 64;LD IYH,IYH;Undocumented;8;;2
+FD;FD 65;LD IYH,IYL;Undocumented;8;;2
+FD;FD 66 d;LD H,(IY+d);Documented;19;;3
+FD;FD 67;LD IYH,A;Undocumented;8;;2
+FD;FD 68;LD IYL,B;Undocumented;8;;2
+FD;FD 69;LD IYL,C;Undocumented;8;;2
+FD;FD 6A;LD IYL,D;Undocumented;8;;2
+FD;FD 6B;LD IYL,E;Undocumented;8;;2
+FD;FD 6C;LD IYL,IYH;Undocumented;8;;2
+FD;FD 6D;LD IYL,IYL;Undocumented;8;;2
+FD;FD 6E d;LD L,(IY+d);Documented;19;;3
+FD;FD 6F;LD IYL,A;Undocumented;8;;2
+FD;FD 70 d;LD (IY+d),B;Documented;19;;3
+FD;FD 71 d;LD (IY+d),C;Documented;19;;3
+FD;FD 72 d;LD (IY+d),D;Documented;19;;3
+FD;FD 73 d;LD (IY+d),E;Documented;19;;3
+FD;FD 74 d;LD (IY+d),H;Documented;19;;3
+FD;FD 75 d;LD (IY+d),L;Documented;19;;3
+FD;FD 77 d;LD (IY+d),A;Documented;19;;3
+FD;FD 7C;LD A,IYH;Undocumented;8;;2
+FD;FD 7D;LD A,IYL;Undocumented;8;;2
+FD;FD 7E d;LD A,(IY+d);Documented;19;;3
+FD;FD 84;ADD A,IYH;Undocumented;8;;2
+FD;FD 85;ADD A,IYL;Undocumented;8;;2
+FD;FD 86 d;ADD A,(IY+d);Documented;19;;3
+FD;FD 8C;ADC A,IYH;Undocumented;8;;2
+FD;FD 8D;ADC A,IYL;Undocumented;8;;2
+FD;FD 8E d;ADC A,(IY+d);Documented;19;;3
+FD;FD 94;SUB IYH;Undocumented;8;;2
+FD;FD 95;SUB IYL;Undocumented;8;;2
+FD;FD 96 d;SUB (IY+d);Documented;19;;3
+FD;FD 9C;SBC A,IYH;Undocumented;8;;2
+FD;FD 9D;SBC A,IYL;Undocumented;8;;2
+FD;FD 9E d;SBC A,(IY+d);Documented;19;;3
+FD;FD A4;AND IYH;Undocumented;8;;2
+FD;FD A5;AND IYL;Undocumented;8;;2
+FD;FD A6 d;AND (IY+d);Documented;19;;3
+FD;FD AC;XOR IYH;Undocumented;8;;2
+FD;FD AD;XOR IYL;Undocumented;8;;2
+FD;FD AE d;XOR (IY+d);Documented;19;;3
+FD;FD B4;OR IYH;Undocumented;8;;2
+FD;FD B5;OR IYL;Undocumented;8;;2
+FD;FD B6 d;OR (IY+d);Documented;19;;3
+FD;FD BC;CP IYH;Undocumented;8;;2
+FD;FD BD;CP IYL;Undocumented;8;;2
+FD;FD BE d;CP (IY+d);Documented;19;;3
+FD;FD E1;POP IY;Documented;14;;2
+FD;FD E3;EX (SP),IY;Documented;23;;2
+FD;FD E5;PUSH IY;Documented;15;;2
+FD;FD E9;JP (IY);Documented;8;;2
+FD;FD F9;LD SP,IY;Documented;10;;2
+DDCB;DD CB d 00;RLC (IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 01;RLC (IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 02;RLC (IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 03;RLC (IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 04;RLC (IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 05;RLC (IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 06;RLC (IX+d);Documented;23;;4
+DDCB;DD CB d 07;RLC (IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 08;RRC (IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 09;RRC (IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 0A;RRC (IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 0B;RRC (IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 0C;RRC (IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 0D;RRC (IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 0E;RRC (IX+d);Documented;23;;4
+DDCB;DD CB d 0F;RRC (IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 10;RL (IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 11;RL (IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 12;RL (IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 13;RL (IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 14;RL (IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 15;RL (IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 16;RL (IX+d);Documented;23;;4
+DDCB;DD CB d 17;RL (IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 18;RR (IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 19;RR (IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 1A;RR (IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 1B;RR (IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 1C;RR (IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 1D;RR (IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 1E;RR (IX+d);Documented;23;;4
+DDCB;DD CB d 1F;RR (IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 20;SLA (IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 21;SLA (IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 22;SLA (IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 23;SLA (IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 24;SLA (IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 25;SLA (IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 26;SLA (IX+d);Documented;23;;4
+DDCB;DD CB d 27;SLA (IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 28;SRA (IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 29;SRA (IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 2A;SRA (IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 2B;SRA (IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 2C;SRA (IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 2D;SRA (IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 2E;SRA (IX+d);Documented;23;;4
+DDCB;DD CB d 2F;SRA (IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 30;SLL (IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 31;SLL (IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 32;SLL (IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 33;SLL (IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 34;SLL (IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 35;SLL (IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 36;SLL (IX+d);Undocumented;23;;4
+DDCB;DD CB d 37;SLL (IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 38;SRL (IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 39;SRL (IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 3A;SRL (IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 3B;SRL (IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 3C;SRL (IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 3D;SRL (IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 3E;SRL (IX+d);Documented;23;;4
+DDCB;DD CB d 3F;SRL (IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 40;BIT 0,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 41;BIT 0,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 42;BIT 0,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 43;BIT 0,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 44;BIT 0,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 45;BIT 0,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 46;BIT 0,(IX+d);Documented;20;;4
+DDCB;DD CB d 47;BIT 0,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 48;BIT 1,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 49;BIT 1,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 4A;BIT 1,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 4B;BIT 1,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 4C;BIT 1,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 4D;BIT 1,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 4E;BIT 1,(IX+d);Documented;20;;4
+DDCB;DD CB d 4F;BIT 1,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 50;BIT 2,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 51;BIT 2,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 52;BIT 2,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 53;BIT 2,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 54;BIT 2,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 55;BIT 2,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 56;BIT 2,(IX+d);Documented;20;;4
+DDCB;DD CB d 57;BIT 2,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 58;BIT 3,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 59;BIT 3,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 5A;BIT 3,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 5B;BIT 3,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 5C;BIT 3,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 5D;BIT 3,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 5E;BIT 3,(IX+d);Documented;20;;4
+DDCB;DD CB d 5F;BIT 3,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 60;BIT 4,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 61;BIT 4,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 62;BIT 4,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 63;BIT 4,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 64;BIT 4,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 65;BIT 4,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 66;BIT 4,(IX+d);Documented;20;;4
+DDCB;DD CB d 67;BIT 4,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 68;BIT 5,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 69;BIT 5,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 6A;BIT 5,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 6B;BIT 5,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 6C;BIT 5,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 6D;BIT 5,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 6E;BIT 5,(IX+d);Documented;20;;4
+DDCB;DD CB d 6F;BIT 5,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 70;BIT 6,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 71;BIT 6,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 72;BIT 6,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 73;BIT 6,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 74;BIT 6,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 75;BIT 6,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 76;BIT 6,(IX+d);Documented;20;;4
+DDCB;DD CB d 77;BIT 6,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 78;BIT 7,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 79;BIT 7,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 7A;BIT 7,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 7B;BIT 7,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 7C;BIT 7,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 7D;BIT 7,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 7E;BIT 7,(IX+d);Documented;20;;4
+DDCB;DD CB d 7F;BIT 7,(IX+d);Undocumented;20;;4
+DDCB;DD CB d 80;RES 0,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 81;RES 0,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 82;RES 0,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 83;RES 0,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 84;RES 0,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 85;RES 0,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 86;RES 0,(IX+d);Documented;23;;4
+DDCB;DD CB d 87;RES 0,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 88;RES 1,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 89;RES 1,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 8A;RES 1,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 8B;RES 1,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 8C;RES 1,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 8D;RES 1,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 8E;RES 1,(IX+d);Documented;23;;4
+DDCB;DD CB d 8F;RES 1,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 90;RES 2,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 91;RES 2,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 92;RES 2,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 93;RES 2,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 94;RES 2,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 95;RES 2,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 96;RES 2,(IX+d);Documented;23;;4
+DDCB;DD CB d 97;RES 2,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d 98;RES 3,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d 99;RES 3,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d 9A;RES 3,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d 9B;RES 3,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d 9C;RES 3,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d 9D;RES 3,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d 9E;RES 3,(IX+d);Documented;23;;4
+DDCB;DD CB d 9F;RES 3,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d A0;RES 4,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d A1;RES 4,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d A2;RES 4,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d A3;RES 4,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d A4;RES 4,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d A5;RES 4,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d A6;RES 4,(IX+d);Documented;23;;4
+DDCB;DD CB d A7;RES 4,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d A8;RES 5,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d A9;RES 5,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d AA;RES 5,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d AB;RES 5,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d AC;RES 5,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d AD;RES 5,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d AE;RES 5,(IX+d);Documented;23;;4
+DDCB;DD CB d AF;RES 5,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d B0;RES 6,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d B1;RES 6,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d B2;RES 6,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d B3;RES 6,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d B4;RES 6,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d B5;RES 6,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d B6;RES 6,(IX+d);Documented;23;;4
+DDCB;DD CB d B7;RES 6,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d B8;RES 7,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d B9;RES 7,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d BA;RES 7,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d BB;RES 7,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d BC;RES 7,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d BD;RES 7,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d BE;RES 7,(IX+d);Documented;23;;4
+DDCB;DD CB d BF;RES 7,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d C0;SET 0,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d C1;SET 0,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d C2;SET 0,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d C3;SET 0,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d C4;SET 0,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d C5;SET 0,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d C6;SET 0,(IX+d);Documented;23;;4
+DDCB;DD CB d C7;SET 0,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d C8;SET 1,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d C9;SET 1,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d CA;SET 1,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d CB;SET 1,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d CC;SET 1,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d CD;SET 1,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d CE;SET 1,(IX+d);Documented;23;;4
+DDCB;DD CB d CF;SET 1,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d D0;SET 2,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d D1;SET 2,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d D2;SET 2,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d D3;SET 2,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d D4;SET 2,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d D5;SET 2,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d D6;SET 2,(IX+d);Documented;23;;4
+DDCB;DD CB d D7;SET 2,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d D8;SET 3,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d D9;SET 3,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d DA;SET 3,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d DB;SET 3,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d DC;SET 3,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d DD;SET 3,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d DE;SET 3,(IX+d);Documented;23;;4
+DDCB;DD CB d DF;SET 3,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d E0;SET 4,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d E1;SET 4,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d E2;SET 4,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d E3;SET 4,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d E4;SET 4,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d E5;SET 4,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d E6;SET 4,(IX+d);Documented;23;;4
+DDCB;DD CB d E7;SET 4,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d E8;SET 5,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d E9;SET 5,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d EA;SET 5,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d EB;SET 5,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d EC;SET 5,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d ED;SET 5,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d EE;SET 5,(IX+d);Documented;23;;4
+DDCB;DD CB d EF;SET 5,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d F0;SET 6,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d F1;SET 6,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d F2;SET 6,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d F3;SET 6,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d F4;SET 6,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d F5;SET 6,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d F6;SET 6,(IX+d);Documented;23;;4
+DDCB;DD CB d F7;SET 6,(IX+d),A;Undocumented;23;;4
+DDCB;DD CB d F8;SET 7,(IX+d),B;Undocumented;23;;4
+DDCB;DD CB d F9;SET 7,(IX+d),C;Undocumented;23;;4
+DDCB;DD CB d FA;SET 7,(IX+d),D;Undocumented;23;;4
+DDCB;DD CB d FB;SET 7,(IX+d),E;Undocumented;23;;4
+DDCB;DD CB d FC;SET 7,(IX+d),H;Undocumented;23;;4
+DDCB;DD CB d FD;SET 7,(IX+d),L;Undocumented;23;;4
+DDCB;DD CB d FE;SET 7,(IX+d);Documented;23;;4
+DDCB;DD CB d FF;SET 7,(IX+d),A;Undocumented;23;;4
+FDCB;FD CB d 00;RLC (IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 01;RLC (IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 02;RLC (IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 03;RLC (IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 04;RLC (IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 05;RLC (IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 06;RLC (IY+d);Documented;23;;4
+FDCB;FD CB d 07;RLC (IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 08;RRC (IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 09;RRC (IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 0A;RRC (IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 0B;RRC (IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 0C;RRC (IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 0D;RRC (IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 0E;RRC (IY+d);Documented;23;;4
+FDCB;FD CB d 0F;RRC (IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 10;RL (IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 11;RL (IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 12;RL (IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 13;RL (IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 14;RL (IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 15;RL (IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 16;RL (IY+d);Documented;23;;4
+FDCB;FD CB d 17;RL (IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 18;RR (IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 19;RR (IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 1A;RR (IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 1B;RR (IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 1C;RR (IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 1D;RR (IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 1E;RR (IY+d);Documented;23;;4
+FDCB;FD CB d 1F;RR (IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 20;SLA (IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 21;SLA (IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 22;SLA (IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 23;SLA (IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 24;SLA (IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 25;SLA (IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 26;SLA (IY+d);Documented;23;;4
+FDCB;FD CB d 27;SLA (IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 28;SRA (IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 29;SRA (IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 2A;SRA (IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 2B;SRA (IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 2C;SRA (IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 2D;SRA (IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 2E;SRA (IY+d);Documented;23;;4
+FDCB;FD CB d 2F;SRA (IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 30;SLL (IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 31;SLL (IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 32;SLL (IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 33;SLL (IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 34;SLL (IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 35;SLL (IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 36;SLL (IY+d);Undocumented;23;;4
+FDCB;FD CB d 37;SLL (IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 38;SRL (IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 39;SRL (IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 3A;SRL (IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 3B;SRL (IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 3C;SRL (IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 3D;SRL (IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 3E;SRL (IY+d);Documented;23;;4
+FDCB;FD CB d 3F;SRL (IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 40;BIT 0,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 41;BIT 0,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 42;BIT 0,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 43;BIT 0,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 44;BIT 0,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 45;BIT 0,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 46;BIT 0,(IY+d);Documented;20;;4
+FDCB;FD CB d 47;BIT 0,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 48;BIT 1,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 49;BIT 1,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 4A;BIT 1,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 4B;BIT 1,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 4C;BIT 1,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 4D;BIT 1,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 4E;BIT 1,(IY+d);Documented;20;;4
+FDCB;FD CB d 4F;BIT 1,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 50;BIT 2,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 51;BIT 2,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 52;BIT 2,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 53;BIT 2,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 54;BIT 2,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 55;BIT 2,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 56;BIT 2,(IY+d);Documented;20;;4
+FDCB;FD CB d 57;BIT 2,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 58;BIT 3,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 59;BIT 3,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 5A;BIT 3,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 5B;BIT 3,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 5C;BIT 3,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 5D;BIT 3,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 5E;BIT 3,(IY+d);Documented;20;;4
+FDCB;FD CB d 5F;BIT 3,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 60;BIT 4,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 61;BIT 4,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 62;BIT 4,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 63;BIT 4,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 64;BIT 4,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 65;BIT 4,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 66;BIT 4,(IY+d);Documented;20;;4
+FDCB;FD CB d 67;BIT 4,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 68;BIT 5,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 69;BIT 5,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 6A;BIT 5,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 6B;BIT 5,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 6C;BIT 5,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 6D;BIT 5,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 6E;BIT 5,(IY+d);Documented;20;;4
+FDCB;FD CB d 6F;BIT 5,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 70;BIT 6,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 71;BIT 6,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 72;BIT 6,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 73;BIT 6,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 74;BIT 6,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 75;BIT 6,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 76;BIT 6,(IY+d);Documented;20;;4
+FDCB;FD CB d 77;BIT 6,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 78;BIT 7,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 79;BIT 7,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 7A;BIT 7,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 7B;BIT 7,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 7C;BIT 7,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 7D;BIT 7,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 7E;BIT 7,(IY+d);Documented;20;;4
+FDCB;FD CB d 7F;BIT 7,(IY+d);Undocumented;20;;4
+FDCB;FD CB d 80;RES 0,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 81;RES 0,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 82;RES 0,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 83;RES 0,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 84;RES 0,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 85;RES 0,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 86;RES 0,(IY+d);Documented;23;;4
+FDCB;FD CB d 87;RES 0,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 88;RES 1,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 89;RES 1,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 8A;RES 1,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 8B;RES 1,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 8C;RES 1,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 8D;RES 1,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 8E;RES 1,(IY+d);Documented;23;;4
+FDCB;FD CB d 8F;RES 1,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 90;RES 2,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 91;RES 2,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 92;RES 2,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 93;RES 2,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 94;RES 2,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 95;RES 2,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 96;RES 2,(IY+d);Documented;23;;4
+FDCB;FD CB d 97;RES 2,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d 98;RES 3,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d 99;RES 3,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d 9A;RES 3,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d 9B;RES 3,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d 9C;RES 3,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d 9D;RES 3,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d 9E;RES 3,(IY+d);Documented;23;;4
+FDCB;FD CB d 9F;RES 3,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d A0;RES 4,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d A1;RES 4,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d A2;RES 4,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d A3;RES 4,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d A4;RES 4,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d A5;RES 4,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d A6;RES 4,(IY+d);Documented;23;;4
+FDCB;FD CB d A7;RES 4,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d A8;RES 5,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d A9;RES 5,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d AA;RES 5,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d AB;RES 5,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d AC;RES 5,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d AD;RES 5,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d AE;RES 5,(IY+d);Documented;23;;4
+FDCB;FD CB d AF;RES 5,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d B0;RES 6,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d B1;RES 6,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d B2;RES 6,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d B3;RES 6,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d B4;RES 6,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d B5;RES 6,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d B6;RES 6,(IY+d);Documented;23;;4
+FDCB;FD CB d B7;RES 6,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d B8;RES 7,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d B9;RES 7,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d BA;RES 7,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d BB;RES 7,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d BC;RES 7,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d BD;RES 7,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d BE;RES 7,(IY+d);Documented;23;;4
+FDCB;FD CB d BF;RES 7,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d C0;SET 0,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d C1;SET 0,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d C2;SET 0,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d C3;SET 0,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d C4;SET 0,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d C5;SET 0,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d C6;SET 0,(IY+d);Documented;23;;4
+FDCB;FD CB d C7;SET 0,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d C8;SET 1,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d C9;SET 1,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d CA;SET 1,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d CB;SET 1,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d CC;SET 1,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d CD;SET 1,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d CE;SET 1,(IY+d);Documented;23;;4
+FDCB;FD CB d CF;SET 1,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d D0;SET 2,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d D1;SET 2,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d D2;SET 2,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d D3;SET 2,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d D4;SET 2,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d D5;SET 2,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d D6;SET 2,(IY+d);Documented;23;;4
+FDCB;FD CB d D7;SET 2,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d D8;SET 3,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d D9;SET 3,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d DA;SET 3,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d DB;SET 3,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d DC;SET 3,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d DD;SET 3,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d DE;SET 3,(IY+d);Documented;23;;4
+FDCB;FD CB d DF;SET 3,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d E0;SET 4,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d E1;SET 4,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d E2;SET 4,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d E3;SET 4,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d E4;SET 4,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d E5;SET 4,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d E6;SET 4,(IY+d);Documented;23;;4
+FDCB;FD CB d E7;SET 4,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d E8;SET 5,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d E9;SET 5,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d EA;SET 5,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d EB;SET 5,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d EC;SET 5,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d ED;SET 5,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d EE;SET 5,(IY+d);Documented;23;;4
+FDCB;FD CB d EF;SET 5,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d F0;SET 6,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d F1;SET 6,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d F2;SET 6,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d F3;SET 6,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d F4;SET 6,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d F5;SET 6,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d F6;SET 6,(IY+d);Documented;23;;4
+FDCB;FD CB d F7;SET 6,(IY+d),A;Undocumented;23;;4
+FDCB;FD CB d F8;SET 7,(IY+d),B;Undocumented;23;;4
+FDCB;FD CB d F9;SET 7,(IY+d),C;Undocumented;23;;4
+FDCB;FD CB d FA;SET 7,(IY+d),D;Undocumented;23;;4
+FDCB;FD CB d FB;SET 7,(IY+d),E;Undocumented;23;;4
+FDCB;FD CB d FC;SET 7,(IY+d),H;Undocumented;23;;4
+FDCB;FD CB d FD;SET 7,(IY+d),L;Undocumented;23;;4
+FDCB;FD CB d FE;SET 7,(IY+d);Documented;23;;4
+FDCB;FD CB d FF;SET 7,(IY+d),A;Undocumented;23;;4

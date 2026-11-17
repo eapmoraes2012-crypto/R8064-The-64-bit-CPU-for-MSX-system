@@ -1,19 +1,19 @@
-Modulo 09 - nucleo minimo (esqueleto de area). Veja resultados_modulo09.txt. rtl/ = RTL (r8064_core_min.v + modulos 01 + decodificador ED), sim/ = testbench e gerador de ROMs, pnr/ = invólucro e logs de P&R.
+Module 09 - minimal core (area skeleton). See resultados_modulo09.txt. rtl/ = RTL (r8064_core_min.v + module 01 + ED decoder), sim/ = testbench and ROM generator, pnr/ = wrapper and P&R logs.
 
-Z80 NO NUCLEO (14/11/2026, REV35)
-sim/gen_z80_rom.py  -> microcodigo do Z80 real (pagina principal, CB, DD/FD, DDCB/FDCB e os ED do Z80). E um modulo: gen_roms.py o importa e grava tudo em
-                       uop.mem / mainctrl.mem (REV36: a ROM padrao e a do Z80; os prog*.mem foram reescritos em Z80 real). O cabecalho descreve os bits 80-94 da uop.
-sim_z80/            -> teste contra o modelo de referencia (12_z80/ref/z80ref.c), instrucao a instrucao: PC, AF, BC, DE, HL, IX, IY, SP, grupo alternativo e memoria final.
-   rodar_z80core.bat  roda os vetores prontos de vec/ (2 programas aleatorios com todas as paginas + 20.000 instrucoes do ZEXDOC). Esperado: "RESULTADO: Z80 NO NUCLEO OK" nos tres.
-   gerar_vetores.sh   gera programas novos e roda (Linux/WSL: gcc, python3, iverilog):  ./gerar_vetores.sh 7 20000 1 2 3
-   z80trace.c         gera o traco de referencia; gen_z80_prog.py gera o programa aleatorio; tb_z80core.v compara.
-O que o teste NAO cobre / limites conhecidos: ver 13_soc/resultado_soc.txt, REV35.
+Z80 IN THE CORE (14/11/2026, REV35)
+sim/gen_z80_rom.py  -> microcode of the real Z80 (main page, CB, DD/FD, DDCB/FDCB and the Z80 ED ones). It is a module: gen_roms.py imports it and writes everything to
+                       uop.mem / mainctrl.mem (REV36: the default ROM is the Z80 one; the prog*.mem files were rewritten in real Z80). The header describes uop bits 80-94.
+sim_z80/            -> test against the reference model (12_z80/ref/z80ref.c), instruction by instruction: PC, AF, BC, DE, HL, IX, IY, SP, alternate set and final memory.
+   rodar_z80core.bat  runs the ready-made vectors in vec/ (2 random programs with all pages + 20,000 ZEXDOC instructions). Expected: "RESULT: Z80 IN CORE OK" in all three.
+   gerar_vetores.sh   generates new programs and runs (Linux/WSL: gcc, python3, iverilog):  ./gerar_vetores.sh 7 20000 1 2 3
+   z80trace.c         generates the reference trace; gen_z80_prog.py generates the random program; tb_z80core.v compares.
+What the test does NOT cover / known limits: see 13_soc/resultado_soc.txt, REV35.
 
-MULTIPLICACAO E DIVISAO (15/11/2026, REV39): o nucleo instancia mul_unit e div_unit de 03_muldiv/rtl. Qualquer compilacao do nucleo precisa desses dois arquivos
- (ex.: iverilog ... ../rtl/*.v ../../03_muldiv/rtl/mul_unit.v ../../03_muldiv/rtl/div_unit.v). Os .bat e .ys do repositorio ja os incluem.
-sim/gen_r64_rom.py -> instrucoes proprias do R8064 (pagina ED); premissas em PREMISSAS_R8064.txt; teste em sim_r64/ (rodar_r64.bat).
-PRIVILEGIO E EXCECOES (15/11/2026, REV40): MODELO_PRIVILEGIO.txt (modos, CR18, causas, SYSRT, instrucoes de sistema, flags de MLT/DIV, DJNZW com BC).
- Testes: sim_r64/rodar_r64.bat (passo a passo e +livre) e 13_soc/rodar_exc.bat (cenarios 9 a 12).
-FPU (15/11/2026, REV41): MODELO_FPU.txt. O nucleo instancia 08_fpu/rtl/fpu_unit.v (que instancia fpu_seq.v): qualquer compilacao do nucleo precisa tambem
- desses dois arquivos (os .bat, .ys e .sh do repositorio ja os incluem).
-REV43 (16/11/2026): INW/OUTW implementados; mnemonicos de 32 bits agora com sufixo L (INL, OUTL, CALLL...); modo de privilegio no CR18 e DMA em CR19-CR30; limpeza do nucleo. Ver 13_soc/resultado_soc.txt, REV43.
+MULTIPLY AND DIVIDE (15/11/2026, REV39): the core instantiates mul_unit and div_unit from 03_muldiv/rtl. Any compilation of the core needs these two files
+ (e.g.: iverilog ... ../rtl/*.v ../../03_muldiv/rtl/mul_unit.v ../../03_muldiv/rtl/div_unit.v). The repository's .bat and .ys files already include them.
+sim/gen_r64_rom.py -> R8064's own instructions (ED page); assumptions in PREMISSAS_R8064.txt; test in sim_r64/ (rodar_r64.bat).
+PRIVILEGE AND EXCEPTIONS (15/11/2026, REV40): MODELO_PRIVILEGIO.txt (modes, CR18, causes, SYSRT, system instructions, MLT/DIV flags, DJNZW with BC).
+ Tests: sim_r64/rodar_r64.bat (step by step and free-running) and 13_soc/rodar_exc.bat (scenarios 9 to 12).
+FPU (15/11/2026, REV41): MODELO_FPU.txt. The core instantiates 08_fpu/rtl/fpu_unit.v (which instantiates fpu_seq.v): any compilation of the core also needs
+ these two files (the repository's .bat, .ys and .sh files already include them).
+REV43 (16/11/2026): INW/OUTW implemented; 32-bit mnemonics now with an L suffix (INL, OUTL, CALLL...); privilege mode in CR18 and DMA in CR19-CR30; core cleanup. See 13_soc/resultado_soc.txt, REV43.

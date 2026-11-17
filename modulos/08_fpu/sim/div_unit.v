@@ -1,8 +1,8 @@
-// div_unit.v - divisor iterativo de 1 bit por clock (restaurador), sem sinal e com sinal.
-//   Dividendo de 2*sz bits = {hi,lo}, divisor d de sz bits; sz: 0=8,1=16,2=32,3=64. Quociente e resto de sz bits.
-//   Sem sinal: ocupa sz+2 clocks (LOAD + sz iteracoes + DONE). Com sinal: sz+4 (PRE + LOAD + sz + POST + DONE).
-//   err = 1 em divisao por zero ou quociente fora da faixa (estouro). Em erro, termina mais cedo.
-//   Com sinal: quociente truncado para zero; resto com o sinal do dividendo.
+// div_unit.v - iterative divider, 1 bit per clock (restoring), unsigned and signed.
+//   Dividend of 2*sz bits = {hi,lo}, divisor d of sz bits; sz: 0=8,1=16,2=32,3=64. Quotient and remainder of sz bits.
+//   Unsigned: takes sz+2 clocks (LOAD + sz iterations + DONE). Signed: sz+4 (PRE + LOAD + sz + POST + DONE).
+//   err = 1 on divide by zero or quotient out of range (overflow). On error, it finishes earlier.
+//   Signed: quotient truncated toward zero; remainder with the sign of the dividend.
 module div_unit(
     input  wire        clk, rst,
     input  wire        start,
@@ -27,7 +27,7 @@ module div_unit(
     wire        ge   = (nr >= {1'b0, rd});
     wire [64:0] rem_n = ge ? (nr - {1'b0, rd}) : nr;
     wire [63:0] ql_n  = ((ql << 1) | {63'd0, ge}) & M;
-    // PRE: valor absoluto
+    // PRE: absolute value
     wire        top_hi = (s == 2'd0) ? rh[7] : (s == 2'd1) ? rh[15] : (s == 2'd2) ? rh[31] : rh[63];
     wire        top_d  = (s == 2'd0) ? rd[7] : (s == 2'd1) ? rd[15] : (s == 2'd2) ? rd[31] : rd[63];
     wire [63:0] lo_neg = (~rl + 64'd1) & M;

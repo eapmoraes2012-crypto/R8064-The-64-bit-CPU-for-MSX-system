@@ -10,7 +10,7 @@ module r8064_msx_sys #(parameter ROM_FILE = "gov_rom.mem", parameter FIFO_BASE =
     output wire        d_req, d_we, output wire [63:0] d_paddr, output wire [1:0] d_size, output wire [63:0] d_wdata, output wire [7:0] d_be,
     input  wire        d_ack, input wire [63:0] d_rdata,
     output wire        i_hit, d_hit, d_wr_ok,
-    // barramento de E/S
+    // I/O bus
     input  wire        io_we, io_re, input wire [7:0] io_a, io_wd, output wire [7:0] io_rd, output wire io_oe,
     output wire        io_x_we, io_x_re, output wire [7:0] io_x_a, io_x_wd, input wire [7:0] io_x_rd,
     input  wire [7:0]  port_c,

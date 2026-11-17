@@ -1,13 +1,13 @@
-// r8064_soc.v - integracao: sistema MSX (nucleo+modo+governador+msx_mem+FIFOs) + MMU (TLB I e D) + cache I 4 KB + cache D 8 KB + arbitros + controlador de SDRAM.
-// Caminho de instrucoes : core i_req/i_paddr -> MMU-I (v_req) -> cache I -> arbitro I (cache I > caminhador I) -+
+// r8064_soc.v - integration: MSX system (core+mode+governor+msx_mem+FIFOs) + MMU (I and D TLB) + 4 KB I cache + 8 KB D cache + arbiters + SDRAM controller.
+// Instruction path : core i_req/i_paddr -> MMU-I (v_req) -> I cache -> I arbiter (I cache > I walker) -+
 //                                                                                                          +-> arbitro topo (D > I) -> sdram_ctrl -> pinos
-// Caminho de dados      : core d_req/d_paddr -> MMU-D (v_req) -> cache D -> arbitro D (cache D > caminhador D) -+
-// Cada lado tem uma FSM de adaptacao do protocolo ack do nucleo para o protocolo req/ready/rvalid da cache (ver comentarios). Faltas de traducao: sao sinalizadas em
-// i_fault/d_fault (+causa); o nucleo as recebe como excecao (CR43 causa, CR44 endereco, CR45 EPC; salta para CR41); controle da MMU nos CR46-49 do nucleo. Com mmu_en=0 o endereco passa direto (32 bits baixos).
-// Memoria fisica = 8 MB (indice de palavra de 64 bits de 20 bits = p_addr[22:3]).
-// DMA de 4 canais (r8064_dma): registradores CR19..CR30 (MTCR), status/IE nas portas EDh/EEh/EFh, 5o mestre do arbitro da SDRAM; buffer de troca de 16 KB (r8064_xbuf, janela MSX).
-// BOOT (BOOT_WORDS > 0): apos a inicializacao da SDRAM o canal 0 do DMA copia BOOT_WORDS palavras do buffer da janela (offset 0; conteudo inicial = INIT_IMG=1: 8 arquivos
-//   <INIT_PFX><lane>.hex) para a SDRAM 0; o nucleo fica em reset (boot_busy=1) ate o fim e a janela pertence ao DMA durante a copia. BOOT_WORDS=0: sem boot (nucleo parte direto).
+// Data path        : core d_req/d_paddr -> MMU-D (v_req) -> D cache -> D arbiter (D cache > D walker) -+
+// Each side has an FSM that adapts the core's ack protocol to the cache's req/ready/rvalid protocol (see comments). Translation faults are signaled on
+// i_fault/d_fault (+cause); the core receives them as an exception (CR43 cause, CR44 address, CR45 EPC; jumps to CR41); MMU control in the core's CR46-49. With mmu_en=0 the address passes straight through (low 32 bits).
+// Physical memory = 8 MB (20-bit 64-bit word index = p_addr[22:3]).
+// 4-channel DMA (r8064_dma): registers CR19..CR30 (MTCR), status/IE on ports EDh/EEh/EFh, 5th master of the SDRAM arbiter; 16 KB exchange buffer (r8064_xbuf, MSX window).
+// BOOT (BOOT_WORDS > 0): after SDRAM initialization DMA channel 0 copies BOOT_WORDS words from the window buffer (offset 0; initial content = INIT_IMG=1: 8 files
+//   <INIT_PFX><lane>.hex) to SDRAM 0; the core stays in reset (boot_busy=1) until the end and the window belongs to the DMA during the copy. BOOT_WORDS=0: no boot (the core starts directly).
 module r8064_soc #(parameter FIFO_BASE = 8'hE8, parameter INIT_CYC = 20000, parameter REF_INT = 400, parameter BOOT_WORDS = 0, parameter INIT_IMG = 0)(
     input  wire        clk, rst, irq,
     // E/S
@@ -15,7 +15,7 @@ module r8064_soc #(parameter FIFO_BASE = 8'hE8, parameter INIT_CYC = 20000, para
     output wire        io_x_we, io_x_re, output wire [7:0] io_x_a, io_x_wd, input wire [7:0] io_x_rd,
     input  wire [7:0]  port_c,
     input  wire        fm_we, fm_re, input wire [1:0] fm_a, input wire [7:0] fm_wd, output wire [7:0] fm_rd,
-    // janela de troca MSX (page 2, 16 KB): acesso do slot ao buffer (endereco A[13:0], sincronizado; s_a estavel >= 1 clock antes de sb_re)
+    // MSX exchange window (page 2, 16 KB): slot access to the buffer (address A[13:0], synchronized; s_a stable >= 1 clock before sb_re)
     input  wire        sb_we, sb_re, input wire [13:0] sb_a, input wire [7:0] sb_wd, output wire [7:0] sb_rd,
     output wire        fifo_irq, fifo_rst,
     output wire        native64, clk_sel, is_z80, is_rom, mode_busy,
@@ -27,15 +27,15 @@ module r8064_soc #(parameter FIFO_BASE = 8'hE8, parameter INIT_CYC = 20000, para
     output wire        s_cke, s_cs_n, s_ras_n, s_cas_n, s_we_n, output wire [3:0] s_dqm, output wire [1:0] s_ba, output wire [10:0] s_a,
     output wire [31:0] s_dq_o, output wire s_dq_oe, input wire [31:0] s_dq_i
 );
-    // ---------------- DMA de 4 canais (r8064_dma): registradores em CR19..CR30, status/IE nas portas EDh/EEh/EFh, 5o mestre da SDRAM ----------------
+    // ---------------- 4-channel DMA (r8064_dma): registers in CR19..CR30, status/IE on ports EDh/EEh/EFh, 5th SDRAM master ----------------
     wire dma_cr_we; wire [3:0] dma_cr_idx; wire [63:0] dma_cr_wd;
     wire dma_pop, dma_push; wire [7:0] dma_wd; wire dma_a_avail, dma_b_space; wire [7:0] dma_a_q;
     wire dma_irq, dma_inv, dma_io_sel; wire [7:0] dma_io_rd;
     wire fifo_win, xb_re, xb_we; wire [10:0] xb_a; wire [63:0] xb_wd, xb_q;
     wire sx_we, sx_re; wire [7:0] sx_a, sx_wd;
-    assign io_x_we = sx_we && !dma_io_sel; assign io_x_re = sx_re && !dma_io_sel; assign io_x_a = sx_a; assign io_x_wd = sx_wd;   // as portas do DMA nao saem do SoC
+    assign io_x_we = sx_we && !dma_io_sel; assign io_x_re = sx_re && !dma_io_sel; assign io_x_a = sx_a; assign io_x_wd = sx_wd;   // the DMA ports do not leave the SoC
     wire x_req, x_we, x_acc, x_done; wire [19:0] x_addr; wire [63:0] x_wd, x_rd; wire [7:0] x_be;
-    // sequenciador de boot: 0 espera init_done | 1 pulso boot_go | 2 espera 1 clock | 3 espera o canal 0 concluir | 4 pulso boot_clr e libera o nucleo
+    // boot sequencer: 0 waits init_done | 1 boot_go pulse | 2 waits 1 clock | 3 waits for channel 0 to finish | 4 boot_clr pulse and releases the core
     reg boot_busy; reg [2:0] bst; wire boot_go = (bst == 3'd1), boot_clr = (bst == 3'd4), boot_done;
     always @(posedge clk) begin
         if (rst) begin boot_busy <= (BOOT_WORDS != 0); bst <= (BOOT_WORDS != 0) ? 3'd0 : 3'd5; end
@@ -56,7 +56,7 @@ module r8064_soc #(parameter FIFO_BASE = 8'hE8, parameter INIT_CYC = 20000, para
         .irq(dma_irq), .inv(dma_inv), .boot_go(boot_go), .boot_cnt(BOOT_WORDS[18:0]), .boot_done(boot_done), .boot_clr(boot_clr));
     r8064_xbuf #(.INIT_IMG(INIT_IMG)) u_xbuf(.clk(clk), .win(fifo_win && !boot_busy), .s_we(sb_we), .s_re(sb_re), .s_a(sb_a), .s_wd(sb_wd), .s_rd(sb_rd),
         .d_re(xb_re), .d_we(xb_we), .d_a(xb_a), .d_wd(xb_wd), .d_q(xb_q));
-    // ---------------- sistema MSX + nucleo ----------------
+    // ---------------- MSX system + core ----------------
     wire [7:0] mmu_asid, fl_asid; wire [19:0] mmu_root; wire fl_all, fl_va_en, fl_asid_en, cache_inv; wire [63:0] fl_va;
     wire c_i_req, c_i_ack, c_d_req, c_d_we, c_d_ack; wire [63:0] c_i_pa, c_i_rd, c_d_pa, c_d_wd, c_d_rd; wire [1:0] c_d_sz; wire [7:0] c_d_be; wire hit_i, hit_d, wr_ok;
     r8064_msx_sys #(.FIFO_BASE(FIFO_BASE)) u_sys(.clk(clk), .rst(rst | boot_busy), .irq(irq & ~dma_irq),
@@ -73,7 +73,7 @@ module r8064_soc #(parameter FIFO_BASE = 8'hE8, parameter INIT_CYC = 20000, para
         .native64(native64), .clk_sel(clk_sel), .is_z80(is_z80), .is_rom(is_rom), .mode_busy(mode_busy),
         .dbg_pc(dbg_pc), .dbg_f(dbg_f), .dbg_sig(dbg_sig), .gov_cv(gov_cv));
 
-    // ---------------- subsistema de memoria ----------------
+    // ---------------- memory subsystem ----------------
     r8064_memsys #(.INIT_CYC(INIT_CYC), .REF_INT(REF_INT)) u_mem(.clk(clk), .rst(rst),
         .c_i_req(c_i_req), .c_i_ack(c_i_ack), .c_i_pa(c_i_pa), .c_i_rd(c_i_rd),
         .c_d_req(c_d_req), .c_d_we(c_d_we), .c_d_ack(c_d_ack), .c_d_pa(c_d_pa), .c_d_wd(c_d_wd), .c_d_be(c_d_be), .c_d_rd(c_d_rd),

@@ -1,8 +1,8 @@
-# fpref.py - modelo de referencia EXATO (Fraction) do nucleo aritmetico da FPU de 80 bits do R8064.
-# Convencoes (x87): rc 0=nearest-even 1=para -inf 2=para +inf 3=para zero; pc 0=24 bits 2=53 bits 3=64 bits (1 = 64).
+# fpref.py - EXACT reference model (Fraction) of the arithmetic core of the R8064 80-bit FPU.
+# Conventions (x87): rc 0=nearest-even 1=toward -inf 2=toward +inf 3=toward zero; pc 0=24 bits 2=53 bits 3=64 bits (1 = 64).
 # flags: bit0 IE, bit1 DE, bit2 ZE, bit3 OE, bit4 UE, bit5 PE.  up = magnitude incrementada no arredondamento (C1).
-# cc = (c3,c2,c0) so em CMP.  Decisoes minhas: formatos nao suportados (pseudo-denormal, nao normalizado, pseudo-NaN/inf) -> IE + indefinido;
-# tininess ANTES do arredondamento; UE = tiny && inexato; NaN com dois NaN: maior significando (tie -> A); denormal na entrada -> DE.
+# cc = (c3,c2,c0) only in CMP.  My decisions: unsupported formats (pseudo-denormal, unnormal, pseudo-NaN/inf) -> IE + indefinite;
+# tininess BEFORE rounding; UE = tiny && inexact; NaN with two NaNs: larger significand (tie -> A); denormal at input -> DE.
 from fractions import Fraction as F
 BIAS = 16383; EMIN = -16382; EMAX = 16383
 M64 = (1 << 64) - 1
@@ -95,7 +95,7 @@ def round_to(sign, v, rc, p, emin, emax, fmt):
 def pcbits(pc): return {0: 24, 2: 53}.get(pc, 64)
 
 def nan_pick(ca, cb, A, B):
-    """Retorna NaN resultado (quieto) e flag IE."""
+    """Returns NaN result (quiet) and the IE flag."""
     ie = 0
     cands = []
     for c, X in ((ca, A), (cb, B)):

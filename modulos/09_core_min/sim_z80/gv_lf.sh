@@ -1,6 +1,6 @@
 #!/bin/bash
-# Gera programas aleatorios e roda o teste do nucleo em modo Z80 (Linux/WSL: gcc, python3, iverilog).
-# uso: ./gerar_vetores.sh <paginas> <N> <semente> [semente...]     paginas: 1 CB + 2 DD/FD + 4 ED (7 = tudo) ; N = instrucoes por programa
+# Generates random programs and runs the core test in Z80 mode (Linux/WSL: gcc, python3, iverilog).
+# usage: ./gerar_vetores.sh <pages> <N> <seed> [seed...]     pages: 1 CB + 2 DD/FD + 4 ED (7 = all) ; N = instructions per program
 set -e
 cd "$(dirname "$0")"; S=../sim; R=../rtl; W=${TMPDIR:-/tmp}/z80core; mkdir -p $W
 PG=$1; N=$2; shift 2
@@ -11,5 +11,5 @@ iverilog -g2012 -o $W/z.vvp tb_z80core.v $R/r8064_core_min.v $R/r8064_decode.v $
 for s in "$@"; do
   python3 gen_z80_prog.py $s $W/p$s.bin $PG
   $W/z80trace $W/p$s.bin $N $PG > $W/t$s.txt
-  (cd $W && vvp -n z.vvp +hex=p$s.bin.hex +trace=t$s.txt +fim=p$s.bin.fim | grep -E "DIVERG|nucleo:|modelo:|MEMORIA|instrucoes|RESULTADO")
+  (cd $W && vvp -n z.vvp +hex=p$s.bin.hex +trace=t$s.txt +fim=p$s.bin.fim | grep -E "DIVERG|core:|model:|MEMORY|instructions|RESULT")
 done

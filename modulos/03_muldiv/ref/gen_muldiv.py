@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Modelo de referencia independente (inteiros do Python) e gerador de vetores para mul_unit e div_unit.
+# Independent reference model (Python integers) and vector generator for mul_unit and div_unit.
 import random, sys
 OUT = sys.argv[1]; rnd = random.Random(8064)
 BITS = {0: 8, 1: 16, 2: 32, 3: 64}
@@ -27,7 +27,7 @@ with open(OUT + '/mul_a.mem', 'w') as fa, open(OUT + '/mul_b.mem', 'w') as fb, o
         fa.write('%016x\n' % a); fb.write('%016x\n' % b); fc.write('%02x\n' % (sgn * 4 + sz)); fe.write('%032x\n' % mul_exp(a, b, sz, sgn))
 # ---- divisor
 div = []
-def add(N, d, sz, sgn):   # N = dividendo (inteiro, sinal conforme sgn), d = divisor
+def add(N, d, sz, sgn):   # N = dividend (integer, signed according to sgn), d = divisor
     n = BITS[sz]
     div.append((N & ((1 << (2 * n)) - 1), d & ((1 << n) - 1), sz, sgn))
 for sz in range(4):
@@ -75,4 +75,4 @@ with open(OUT + '/div_h.mem', 'w') as fh, open(OUT + '/div_l.mem', 'w') as fl, o
         fh.write('%016x\n' % ((N2 >> n) & M)); fl.write('%016x\n' % (N2 & M)); fd.write('%016x\n' % d); fc.write('%02x\n' % (sgn * 4 + sz))
         fq.write('%016x\n' % q); fr.write('%016x\n' % r); fe.write('%x\n' % e)
 open(OUT + '/nvec.txt', 'w').write('%d %d\n' % (len(mul), len(div)))
-print('mul', len(mul), 'div', len(div), 'div com erro', sum(div_exp(*x)[2] for x in div))
+print('mul', len(mul), 'div', len(div), 'div with error', sum(div_exp(*x)[2] for x in div))

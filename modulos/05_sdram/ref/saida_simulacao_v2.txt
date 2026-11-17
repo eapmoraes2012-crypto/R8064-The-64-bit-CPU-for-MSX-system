@@ -1,12 +1,12 @@
-INIT concluida no ciclo 2025: refreshes de inicializacao=2 modo programado=1
-ACESSOS: 71434 | divergencias de dado=0 | violacoes do modelo=0 | refreshes=837, maior intervalo entre refreshes=708 clocks | comandos ACT=52359 RD=51829 WR=19605 PRE=50080
-LATENCIA (clocks do clock de aceitacao ate rvalid/wdone), sem refresh no meio:
-  pagina aberta (acerto) leitura  n= 10754 min= 5 media= 5.00 max=  5 (com refresh: 96)
-  pagina aberta (acerto) escrita  n=  8321 min= 1 media= 1.00 max=  1 (com refresh: 37)
-  banco fechado          leitura  n=  1747 min= 7 media= 7.00 max=  7 (com refresh: 0)
-  banco fechado          escrita  n=   539 min= 3 media= 3.00 max=  3 (com refresh: 0)
-  outra linha (conflito) leitura  n= 38668 min= 9 media= 9.00 max=  9 (com refresh: 564)
-  outra linha (conflito) escrita  n= 10576 min= 5 media= 5.00 max=  5 (com refresh: 132)
+INIT completed at cycle 2025: initialization refreshes=2 mode programmed=1
+ACCESSES: 71434 | data divergences=0 | model violations=0 | refreshes=837, longest interval between refreshes=708 clocks | commands ACT=52359 RD=51829 WR=19605 PRE=50080
+LATENCY (clocks from the acceptance clock to rvalid/wdone), with no refresh in between:
+  open page (hit)        read  n= 10754 min= 5 avg= 5.00 max=  5 (with refresh: 96)
+  open page (hit)        write n=  8321 min= 1 avg= 1.00 max=  1 (with refresh: 37)
+  closed bank            read  n=  1747 min= 7 avg= 7.00 max=  7 (with refresh: 0)
+  closed bank            write n=   539 min= 3 avg= 3.00 max=  3 (with refresh: 0)
+  other row (conflict)   read  n= 38668 min= 9 avg= 9.00 max=  9 (with refresh: 564)
+  other row (conflict)   write n= 10576 min= 5 avg= 5.00 max=  5 (with refresh: 132)
   pior latencia de um acesso atrasado por refresh: 13 clocks
 PASS
 tb_sdram.v:76: $finish called at 5867115000 (1ps)

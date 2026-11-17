@@ -1,4 +1,4 @@
-// alu_core.v - nucleo da ALU (estagio X). Semantica de flags: ver alu64.v/ref (premissas). Entradas ja preparadas por alu_prep.
+// alu_core.v - ALU core (X stage). Flag semantics: see alu64.v/ref (assumptions). Inputs already prepared by alu_prep.
 module alu_core(
     input  wire [63:0] xa,
     input  wire [63:0] yb,
@@ -31,7 +31,7 @@ module alu_core(
     wire        ovf = (xs == ys) && (rs != xs);
     wire        hc  = x[4] ^ bm[4] ^ sres[4];
 
-    // ---- caminho logico / deslocamento (em paralelo, fora da cadeia de vai-um)
+    // ---- logic / shift path (in parallel, outside the carry chain)
     wire        top = x[msb];
     wire        low = x[0];
     reg  [63:0] lr;
@@ -51,7 +51,7 @@ module alu_core(
     wire [63:0] r   = arith ? sres : lr;
     assign res = (undef ? 64'd0 : r) & m;
     wire par = ~^lr[7:0];
-    wire zl  = ((lr & m) == 64'd0);        // Z do caminho nao aritmetico
+    wire zl  = ((lr & m) == 64'd0);        // Z of the non-arithmetic path
     wire za  = (sres == 64'd0);            // Z do caminho aritmetico
     wire c_o = arith ? (keep_c ? fin[0] : (is_sub ? ~cout : cout)) : (is_shift ? sh_out : 1'b0);
     wire s_o = arith ? rs : lr[msb];

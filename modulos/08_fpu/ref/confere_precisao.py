@@ -1,4 +1,4 @@
-# confere_precisao.py - mede o erro das transcendentais (os passos de gen_fpu_prog.py executados com o fpref.py) contra referencias exatas em fracoes.
+# confere_precisao.py - measures the error of the transcendentals (the gen_fpu_prog.py steps executed with fpref.py) against exact references in fractions.
 import sys, math, random
 import os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import fpref, gen_fpu_prog as GP
@@ -52,4 +52,4 @@ for i in range(120):
         up('ln',ulps(val(run('fln',[P,0])[0]),l)); up('yl2x',ulps(val(run('fyl2x',[P,GP.ext(F(3))])[1]),3*l/GP.LN2))
     t=F(random.randrange(-2**40,2**40),2**40)*F(29,100); Tx=GP.ext(t); tv=val(Tx)
     if tv!=0: up('yl2p',ulps(val(run('fyl2p',[Tx,GP.ext(F(1))])[1]),ln_x(1+tv)/GP.LN2))
-print('erro maximo em unidades da ultima casa (significando de 64 bits):', {k:round(v,1) for k,v in w.items()})
+print('maximum error in units of the last place (64-bit significand):', {k:round(v,1) for k,v in w.items()})

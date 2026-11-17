@@ -1,18 +1,18 @@
-// timing_gov.v - governador de tempo do R8064 nos modos Z80 / R800 (ROM ou DRAM). Segura a EMISSAO da proxima instrucao ate que o
-// tempo original da anterior tenha passado. Unidades: clock do pipeline = 57,2727 MHz (3,579545 MHz x 16; REV23).
+// timing_gov.v - R8064 timing governor in the Z80 / R800 modes (ROM or DRAM). Holds the ISSUE of the next instruction until the
+// original time of the previous one has elapsed. Units: pipeline clock = 57.2727 MHz (3.579545 MHz x 16; REV23).
 //   Z80  : 1 T-state = CPT clocks   (16) -> 3,579545 MHz
-//   R800 : 1 ciclo   = CPT/2 clocks  (8) -> 7,15909 MHz
-// CPT = clocks do pipeline por T-state do Z80 (par). Outros clocks: 114,56 MHz -> 32 ; 85,92 MHz -> 24.
-// clk_sel (bits CLK da porta 3EH) ficou RESERVADO: com um unico clock de pipeline nao muda mais a escala.
-// Tempo de uma instrucao (unidades originais):
-//   Z80  : T-states da tabela + (M1 de 2 bytes ? 2 : 1) * M1_WAIT                    (igual em ROM e DRAM)
-//   R800 : ciclos totais DRAM da tabela + (modo ROM ? WAIT_ROM : 0) + c_xcyc (extra dinamico: quebra de pagina, memoria externa)
-//   caminho alternativo ("alt"): condicao falsa / ultima iteracao -> alt_ev encurta o tempo ja carregado
-// Extras do R800: refresh (REF_CYC ciclos a cada REF_PER ciclos) e pausa de 8 us entre acessos as portas 98H-9BH.
-// Modo nativo de 64 bits: go = 1 (sem governador).
+//   R800 : 1 cycle   = CPT/2 clocks  (8) -> 7.15909 MHz
+// CPT = pipeline clocks per Z80 T-state (even). Other clocks: 114.56 MHz -> 32 ; 85.92 MHz -> 24.
+// clk_sel (CLK bits of port 3EH) stayed RESERVED: with a single pipeline clock it no longer changes the scale.
+// Time of an instruction (original units):
+//   Z80  : table T-states + (2-byte M1 ? 2 : 1) * M1_WAIT                    (same in ROM and DRAM)
+//   R800 : total DRAM cycles of the table + (ROM mode ? WAIT_ROM : 0) + c_xcyc (dynamic extra: page break, external memory)
+//   alternative path ("alt"): false condition / last iteration -> alt_ev shortens the already loaded time
+// R800 extras: refresh (REF_CYC cycles every REF_PER cycles) and an 8 us pause between accesses to ports 98H-9BH.
+// Native 64-bit mode: go = 1 (no governor).
 module timing_gov #(
     parameter ROM_FILE = "gov_rom.mem",
-    parameter CPT      = 16,          // clocks do pipeline por T-state do Z80 (57,2727 MHz / 3,579545 MHz)
+    parameter CPT      = 16,          // pipeline clocks per Z80 T-state (57.2727 MHz / 3.579545 MHz)
     parameter M1_WAIT  = 1,
     parameter WAIT_ROM = 3,
     parameter REF_CYC  = 25,
@@ -20,17 +20,17 @@ module timing_gov #(
 )(
     input  wire        clk, rst,
     input  wire        native64, is_z80, is_rom, clk_sel,
-    // instrucao candidata (estavel antes do commit; a tabela e lida em 1 clock)
+    // candidate instruction (stable before commit; the table is read in 1 clock)
     input  wire [2:0]  c_page,        // 0 principal, 1 CB, 2 ED, 3 DD, 4 FD, 5 DDCB, 6 FDCB
     input  wire [7:0]  c_op,
-    input  wire [7:0]  c_port,        // porta de E/S da instrucao (IN/OUT)
-    input  wire [3:0]  c_xcyc,        // ciclos extras dinamicos da busca (unidades da CPU emulada): memoria externa, quebra de pagina
-    input  wire        c_romw,        // a busca e feita em ROM (no modo ROM aplica WAIT_ROM); sem classificador, ligar em 1
-    input  wire        add_ev,        // evento tardio: acesso de dados com ciclos extras
-    input  wire [4:0]  add_n,         // ciclos extras desse acesso
-    output wire        phase,         // paridade do ciclo R800 (alinhamento com o barramento externo de 3,58 MHz)
-    input  wire        cv,            // commit: a instrucao candidata foi emitida neste clock
-    input  wire        alt_ev,        // condicao falsa / fim de repeticao da instrucao em curso
+    input  wire [7:0]  c_port,        // I/O port of the instruction (IN/OUT)
+    input  wire [3:0]  c_xcyc,        // dynamic extra cycles of the fetch (emulated CPU units): external memory, page break
+    input  wire        c_romw,        // the fetch is made from ROM (in ROM mode applies WAIT_ROM); without a classifier, tie to 1
+    input  wire        add_ev,        // late event: data access with extra cycles
+    input  wire [4:0]  add_n,         // extra cycles of that access
+    output wire        phase,         // parity of the R800 cycle (alignment with the external 3.58 MHz bus)
+    input  wire        cv,            // commit: the candidate instruction was issued on this clock
+    input  wire        alt_ev,        // false condition / end of repeat of the instruction in progress
     output wire        go,            // 1 = pode emitir
     output wire [12:0] dbg_rem
 );
@@ -40,18 +40,18 @@ module timing_gov #(
     always @(posedge clk) rw <= rom[{c_page, c_op}];
     wire [5:0] z_t = rw[5:0], z_a = rw[11:6], r_t = rw[17:12], r_a = rw[23:18];
     wire m1x2 = rw[24], isio = rw[25];
-    // tempo em unidades originais
+    // time in original units
     wire [6:0] zadd = m1x2 ? (M1_WAIT * 2) : M1_WAIT;
     wire [6:0] radd = ((is_rom && c_romw) ? WAIT_ROM : 0) + {3'd0, c_xcyc};
     wire [6:0] n_p  = is_z80 ? ({1'b0, z_t} + zadd) : ({1'b0, r_t} + radd);
     wire [6:0] n_a  = is_z80 ? ((z_a == 0) ? n_p : ({1'b0, z_a} + zadd)) : ((r_a == 0) ? n_p : ({1'b0, r_a} + radd));
     wire [6:0] dlt_u = n_p - n_a;
-    localparam CPC = CPT / 2;                                  // clocks por ciclo do R800
+    localparam CPC = CPT / 2;                                  // clocks per R800 cycle
     function [12:0] scale(input [6:0] n, input z);             // n * (clocks por unidade)
         scale = z ? (n * CPT) : (n * CPC);
     endfunction
-    // 2o e 3o estagios de registro (cortam ROM -> somadores -> contador): n_p/dlt_u/flag de VDP, depois tempo em clocks.
-    // Latencia candidato -> go/commit: 3 clocks (o nucleo usa uma fase extra de decodificacao nos modos governados).
+    // 2nd and 3rd register stages (cut ROM -> adders -> counter): n_p/dlt_u/VDP flag, then time in clocks.
+    // Latency candidate -> go/commit: 3 clocks (the core uses an extra decode phase in the governed modes).
     reg [6:0] n_pq, dltq; reg zq;
     reg [12:0] n_clk, d_clk; reg vdp_port;
     always @(posedge clk) begin
@@ -60,17 +60,17 @@ module timing_gov #(
         n_clk <= scale(n_pq, zq);
         d_clk <= scale(dltq, zq);
     end
-    // pausa do VDP (so R800)
-    localparam VDP_CLK = (CPT * 229) / 8;    // 8 us: 458 clocks a 57,27 MHz (916 com CPT=32, 687 com CPT=24)
+    // VDP pause (R800 only)
+    localparam VDP_CLK = (CPT * 229) / 8;    // 8 us: 458 clocks at 57.27 MHz (916 with CPT=32, 687 with CPT=24)
     reg [10:0] vdp_cnt;
     wire vdp_blk  = !is_z80 && vdp_port && (vdp_cnt < VDP_CLK);
     reg [12:0] rem, dlt; reg [12:0] rfs, rfc; reg rf_pend;
-    wire [12:0] ref_per_clk = REF_PER * CPC;   // 210 ciclos = 1680 clocks
-    wire [12:0] ref_len_clk = REF_CYC * CPC;   // 25 ciclos = 200 clocks
-    // go registrado (tira a comparacao de rem/VDP do caminho de emissao do nucleo); a latencia de +1 clock e compensada nos contadores
-    reg av1, av2; reg [4:0] an1; reg [12:0] add_clk;   // evento de dados em 2 estagios: ..., depois soma ao tempo restante
+    wire [12:0] ref_per_clk = REF_PER * CPC;   // 210 cycles = 1680 clocks
+    wire [12:0] ref_len_clk = REF_CYC * CPC;   // 25 cycles = 200 clocks
+    // registered go (takes the rem/VDP comparison off the core issue path); the +1 clock latency is compensated in the counters
+    reg av1, av2; reg [4:0] an1; reg [12:0] add_clk;   // data event in 2 stages: ..., then added to the remaining time
     wire go_c = (rem == 0) && (rfs == 0) && !rf_pend && !vdp_blk && !av1 && !av2;
-    // fase do ciclo R800: toggle a cada 'unidade' (CPC clocks)
+    // R800 cycle phase: toggles every 'unit' (CPC clocks)
     reg [4:0] ph_cnt; reg ph;
     assign phase = ph;
     always @(posedge clk) begin
@@ -92,9 +92,9 @@ module timing_gov #(
                 if (rf_pend && rem == 0 && rfs == 0) begin rfs <= ref_len_clk; rf_pend <= 1'b0; rfc <= 0; end
             end else begin rfc <= 0; rf_pend <= 0; end
             if (rfs != 0) rfs <= rfs - 13'd1;
-            // evento de dados (2 estagios) -> add_clk
+            // data event (2 stages) -> add_clk
             av1 <= add_ev && !is_z80; an1 <= add_n; av2 <= av1; add_clk <= av1 ? scale({2'd0, an1}, 1'b0) : 13'd0;
-            // tempo da instrucao
+            // instruction time
             if (commit) begin
                 rem <= n_clk - 13'd2; dlt <= d_clk;
                 if (!is_z80 && vdp_port) vdp_cnt <= 11'd0;

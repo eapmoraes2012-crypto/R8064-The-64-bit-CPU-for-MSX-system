@@ -52,11 +52,11 @@ for v,rr in zip(vec,res):
     if m is not None: r=int(rr[1],16); rhi=int(rr[2],16)
     if m is None:
         ninv+=1
-        if not(inv==1 and fl==4): err+=1; print('INV esperado',v,rr) if err<8 else 0
+        if not(inv==1 and fl==4): err+=1; print('INV expected',v,rr) if err<8 else 0
     else:
         W=8<<v[1]; m2=(1<<(2*W))-1
         ok= inv==0 and (r&m2)==m[0] and rhi==(m[1]&((1<<64)-1)) and fl==m[2]
         if not ok:
             err+=1
-            if err<8: print('ERRO',v,'rtl',hex(r),hex(rhi),hex(fl),inv,'mod',hex(m[0]),hex(m[1]),hex(m[2]))
-print('vetores',N,'invalidos',ninv,'erros',err,[l for l in out if 'MAXCYC' in l])
+            if err<8: print('ERROR',v,'rtl',hex(r),hex(rhi),hex(fl),inv,'mod',hex(m[0]),hex(m[1]),hex(m[2]))
+print('vectors',N,'invalid',ninv,'errors',err,[l for l in out if 'MAXCYC' in l])

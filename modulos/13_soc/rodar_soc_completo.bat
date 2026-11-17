@@ -1,8 +1,8 @@
 @echo off
 
-rem Rode DENTRO do terminal do OSS CAD Suite. Regressao completa do SoC (REV43d): DMA (4 canais), MMU 8 MB, mapper/MegaRAM em R800, boot por DMA, janela do buffer.
+rem Run INSIDE the OSS CAD Suite terminal. Full SoC regression (REV43d): DMA (4 channels), 8 MB MMU, mapper/MegaRAM in R800, DMA boot, buffer window.
 
-rem Cada teste termina com uma linha RESULTADO: ... OK; o resumo no fim lista so essas linhas.
+rem Each test ends with a RESULT: ... OK line; the summary at the end lists only those lines.
 
 cd /d "%~dp0sim"
 
@@ -31,9 +31,9 @@ iverilog -g2012 -o dma.vvp tb_dma.v ..\rtl\r8064_dma.v ..\rtl\mem_arb5.v ..\rtl\
 iverilog -g2012 -o dwin.vvp tb_dma_win.v ..\rtl\r8064_dma.v ..\rtl\r8064_xbuf.v ..\rtl\r8064_slot_dec.v ..\rtl\mem_arb5.v ..\rtl\sdram_ctrl.v sdram_model.v %R%\r8064_fifo_if.v && vvp dwin.vvp >> ..\teste_regressao_soc.txt 2>&1
 
 iverilog -g2012 -o slotif.vvp tb_slot_if.v ..\rtl\r8064_slot_if.v ..\rtl\r8064_slot_dec.v %R%\r8064_fifo_if.v && vvp slotif.vvp >> ..\teste_regressao_soc.txt 2>&1
-rem topo de cartucho completo (precisa de -DSIM para o modelo do rPLL); parte 1 = PING/HELLO, parte 2 (+p2) = INT e /RESET do slot
+rem full cartridge top (needs -DSIM for the rPLL model); part 1 = PING/HELLO, part 2 (+p2) = INT and slot /RESET
 iverilog -g2012 -DSIM -o cart.vvp tb_cart_mon.v ..\rtl\r8064_cart_top.v ..\rtl\r8064_clkgen.v ..\rtl\r8064_slot_if.v ..\rtl\r8064_slot_dec.v %SOC% && (vvp cart.vvp & vvp cart.vvp +p2) >> ..\teste_regressao_soc.txt 2>&1
 echo ===== resumo =====
 
-findstr /i "RESULTADO ERRO" ..\teste_regressao_soc.txt
+findstr /i "RESULT ERROR" ..\teste_regressao_soc.txt
 

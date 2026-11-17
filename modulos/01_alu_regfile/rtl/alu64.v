@@ -1,5 +1,5 @@
-// alu64.v - ALU completa (prep + nucleo, combinacional): mesmo contrato da versao monolitica (ref/alu64_v1_monolitica.v).
-// F = {S,Z,Y,H,X,PV,N,C}. Premissas de flags: ver comentarios em ref/gen_vectors.py (modelo de referencia).
+// alu64.v - complete ALU (prep + core, combinational): same contract as the monolithic version (ref/alu64_v1_monolitica.v).
+// F = {S,Z,Y,H,X,PV,N,C}. Flag assumptions: see comments in ref/gen_vectors.py (reference model).
 module alu64(
     input  wire [63:0] a,
     input  wire [63:0] b,

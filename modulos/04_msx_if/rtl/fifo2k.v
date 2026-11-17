@@ -1,11 +1,11 @@
-// fifo2k.v - FIFO sincrono 2048 x 8 (BSRAM), palavra da frente (FWFT). Itens ficam visiveis 2 clocks apos a escrita; apos pop a nova cabeca vale no clock seguinte.
+// fifo2k.v - synchronous FIFO 2048 x 8 (BSRAM), first-word fall-through (FWFT). Items become visible 2 clocks after the write; after a pop the new head is valid on the next clock.
 module fifo2k #(parameter AW = 11)(
     input  wire       clk, rst, clr,
     input  wire       push, input wire [7:0] din,
     input  wire       pop,
     output wire [7:0] dout,
-    output wire       empty,      // nada visivel para leitura
-    output wire       full,       // sem espaco para escrever
+    output wire       empty,      // nothing visible to read
+    output wire       full,       // no space to write
     output wire [AW:0] level
 );
     reg [7:0] mem [0:(1<<AW)-1];

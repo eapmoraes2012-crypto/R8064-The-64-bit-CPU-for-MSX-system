@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# build_monitor.py - monta monitor.asm (zasm_mon.py) e gera monitor_l0..7.hex (8 raias, 2048 linhas) + monitor.bin + monitor.lst (mapa de rotulos)
+# build_monitor.py - assembles monitor.asm (zasm_mon.py) and generates monitor_l0..7.hex (8 lanes, 2048 lines) + monitor.bin + monitor.lst (label map)
 import os, sys
 os.environ['ZASM_ORG0'] = '1'
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -18,7 +18,7 @@ hi = '\n'.join('        db ' + ','.join('0%02Xh' % (T[i + j] >> 8) for j in rang
 src = src.replace(';@CRCTAB@', lo + '\n        org THI\n' + hi)
 a = zasm_mon.Asm(src); b = a.assemble()
 code_end = a.sym['codeend']
-assert code_end < 0x800, 'codigo invade a tabela do CRC'
+assert code_end < 0x800, 'code overruns the CRC table'
 img = bytearray(16384); img[:len(b)] = b
 open('monitor.bin', 'wb').write(img)
 for g in range(8):
@@ -26,4 +26,4 @@ for g in range(8):
         for k in range(2048): f.write('%02X\n' % img[8 * k + g])
 with open('monitor.lst', 'w') as f:
     for k, v in sorted(a.sym.items(), key=lambda x: x[1]): f.write('%04X %s\n' % (v, k))
-print('monitor: codigo ate %04X (%d bytes), tabelas CRC em 0800h/0900h, imagem 16384 bytes' % (code_end, code_end))
+print('monitor: code up to %04X (%d bytes), CRC tables at 0800h/0900h, image 16384 bytes' % (code_end, code_end))

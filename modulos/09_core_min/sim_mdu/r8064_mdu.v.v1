@@ -1,8 +1,8 @@
-// r8064_mdu.v - unidade iterativa de multiplicacao e divisao (MLTUx/MLTSx/DIVUx/DIVSx), 1 bit por clock, somador unico de 66 bits compartilhado.
-// Largura W = 8 << d_w (do ultimo ld_b). Multiplicacao: A (d_a) * B (b_q) -> produto de 2W bits.
-// Divisao: dividendo de 2W bits = {h_q, d_a} (so W = 16 e 64 usam h_q; W = 8: d_a[15:0]; W = 32: d_a[63:0]) / B -> quociente W bits em r[W-1:0], resto em r[2W-1:W].
-// inv = divisao por zero ou quociente fora da faixa (operandos devem ficar inalterados; o nucleo devolve o valor antigo do destino).
-// fl = {S,Z,Y,H,X,PV,N,C}; cada operacao dura aproximadamente W + 8 clocks.
+// r8064_mdu.v - iterative multiplication and division unit (MLTUx/MLTSx/DIVUx/DIVSx), 1 bit per clock, single shared 66-bit adder.
+// Width W = 8 << d_w (from the last ld_b). Multiplication: A (d_a) * B (b_q) -> 2W-bit product.
+// Division: 2W-bit dividend = {h_q, d_a} (only W = 16 and 64 use h_q; W = 8: d_a[15:0]; W = 32: d_a[63:0]) / B -> W-bit quotient in r[W-1:0], remainder in r[2W-1:W].
+// inv = division by zero or out-of-range quotient (operands must stay unchanged; the core returns the old value of the destination).
+// fl = {S,Z,Y,H,X,PV,N,C}; each operation lasts approximately W + 8 clocks.
 module r8064_mdu(
     input  wire clk, rst,
     input  wire ld_b, ld_h, input wire [63:0] d_ld, input wire [1:0] d_w,
@@ -40,12 +40,12 @@ module r8064_mdu(
             default: ;
         endcase
     end
-    // sinal e extensao
+    // sign and extension
     function [63:0] sx(input [63:0] x, input [6:0] w); sx = x[w-1] ? (x | ~mk(w)) : (x & mk(w)); endfunction
     wire [6:0]  Lw = (W <= 7'd16) ? 7'd16 : 7'd64;
     wire [63:0] hm = w_q[0] ? (h_q & mW) : 64'd0;
     wire [127:0] Dr = ({64'd0, hm} << Lw) | {64'd0, d_a & mk(Lw)};
-    wire [127:0] Ds = (op[0] && Dr[{W, 1'b0} - 7'd1]) ? (Dr | ~m2) : Dr;      // 2W-1: bit de sinal do dividendo (W = 64: bit 127)
+    wire [127:0] Ds = (op[0] && Dr[{W, 1'b0} - 7'd1]) ? (Dr | ~m2) : Dr;      // 2W-1: sign bit of the dividend (W = 64: bit 127)
     wire sa_m = d_a[W-1], sb = b_q[W-1];
     wire [127:0] Dsh = {rH, rA} >> W;
     wire [63:0] rem0 = Dsh[63:0] & mW;

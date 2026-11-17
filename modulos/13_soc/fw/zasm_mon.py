@@ -48,7 +48,7 @@ class Asm:
             else: out.append(t)
         return int(eval(' '.join(out).replace('/', '//')))
     def expand(self, src):
-        # expande macros; retorna lista de linhas
+        # expands macros; returns list of lines
         out = []; i = 0; defs = None; cnt = 0; lines = src
         res = []
         while i < len(lines):
@@ -152,9 +152,9 @@ class Asm:
             if d == 'sp' and s == 'hl': return [0xF9]
             if d == 'i' and s == 'a': return [0xED, 0x47]
             if d in RP and not ismem(o[1]): return [0x01 | (RP[d] << 4)] + imm16(o[1])
-        raise ValueError('instrucao nao suportada: %s %s' % (mn, ops))
+        raise ValueError('unsupported instruction: %s %s' % (mn, ops))
     def chkrel(self, t, pc):
-        if getattr(self, 'final', False) and not (-128 <= t - (pc + 2) <= 127): raise SystemExit('JR/DJNZ fora de alcance em %04X -> %04X' % (pc, t))
+        if getattr(self, 'final', False) and not (-128 <= t - (pc + 2) <= 127): raise SystemExit('JR/DJNZ out of range at %04X -> %04X' % (pc, t))
     def emit(self, pc, bs):
         for k, b in enumerate(bs): self.mem[pc + k] = b & 255
         self.lo = min(self.lo, pc); self.hi = max(self.hi, pc + len(bs))
@@ -165,7 +165,7 @@ class Asm:
             if not raw.strip() or raw.strip().startswith(';'): continue
             body = raw
             if ';' in raw:
-                # remove comentario fora de aspas
+                # removes comment outside quotes
                 q = None; cut = len(raw)
                 for k, ch in enumerate(raw):
                     if q:

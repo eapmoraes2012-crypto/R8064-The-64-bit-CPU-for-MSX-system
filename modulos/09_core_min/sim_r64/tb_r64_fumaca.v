@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// tb_r64_fumaca.v - teste de fumaca das instrucoes R8064 de 16/32/64 bits: roda r64_mem.hex e compara com r64_esperado.hex (gen_r64_fumaca.py)
+// tb_r64_fumaca.v - smoke test of the R8064 16/32/64-bit instructions: runs r64_mem.hex and compares with r64_esperado.hex (gen_r64_fumaca.py)
 module tb_r64_fumaca; reg clk=0,rst=1; always #5 clk=~clk;
  wire i_req,d_req,d_we; wire [63:0] i_addr,d_addr,d_wdata,dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f,d_be; wire dbg_sig; reg i_ack=0,d_ack=0; reg [63:0] i_rdata=0,d_rdata=0; reg [7:0] mem[0:65535]; integer k;
  r8064_core_min dut(.i_flt(1'b0),.d_flt(1'b0),.i_cs(3'd0),.d_cs(3'd0),.clk(clk),.rst(rst),.irq(1'b0),.i_req(i_req),.i_addr(i_addr),.i_ack(i_ack),.i_rdata(i_rdata),.d_req(d_req),.d_we(d_we),.d_addr(d_addr),.d_size(d_size),.d_wdata(d_wdata),.d_be(d_be),.d_ack(d_ack),.d_rdata(d_rdata),.dbg_pc(dbg_pc),.dbg_f(dbg_f),.dbg_sig(dbg_sig),.gov_go(1'b1),.gov_wait(1'b0),.port_c(8'd0),.io_rdata(8'hFF));
@@ -12,8 +12,8 @@ module tb_r64_fumaca; reg clk=0,rst=1; always #5 clk=~clk;
  initial begin $readmemh("r64_mem.hex",mem); $readmemh("r64_esperado.hex",e); repeat(4)@(posedge clk); rst=0; repeat(3000)@(posedge clk);
   g[0]=`R(0); g[1]=`R(1); g[2]=`R(2); g[3]=`R(3); g[4]=`R(9); g[5]=`R(10); g[6]=`R(11);
   for(k=0;k<8;k=k+1) begin g[7][8*k+:8]=mem[16'h9000+k[15:0]]; g[8][8*k+:8]=mem[16'h9008+k[15:0]]; end
-  for(k=0;k<9;k=k+1) if (g[k]!==e[k]) begin errs=errs+1; $display("ERRO item %0d (AX BC DE HL IX IY SP m9000 m9008): obtido %h esperado %h",k,g[k],e[k]); end
-  $display("pc=%h erros=%0d", dut.npc, errs);
-  if (errs==0) $display("RESULTADO: R8064 16/32/64 FUMACA OK"); else $display("RESULTADO: %0d ERROS", errs);
+  for(k=0;k<9;k=k+1) if (g[k]!==e[k]) begin errs=errs+1; $display("ERROR item %0d (AX BC DE HL IX IY SP m9000 m9008): got %h expected %h",k,g[k],e[k]); end
+  $display("pc=%h errors=%0d", dut.npc, errs);
+  if (errs==0) $display("RESULT: R8064 16/32/64 SMOKE OK"); else $display("RESULT: %0d ERRORS", errs);
   $finish; end
 endmodule

@@ -1,18 +1,18 @@
-// r8064_clkgen.v - gerador do clock do sistema (alvo 57,2727 MHz = 3,579545 MHz x 16) para a Tang Nano 20K (GW2AR-18).
-// Fontes (parametro SRC, escolhido na sintese):
-//   SRC=0  clk_in = cristal da placa, 27 MHz        -> rPLL 27 x 17 / 8       = 57,375 MHz   (erro +0,18 %; razao exata 70/33 inviavel: PFD < 3 MHz)
-//   SRC=1  clk_in = 3,579545 MHz (cristal/oscilador externo ou CLOCK do slot MSX) -> rPLL x 16 = 57,2727 MHz (exato, sincrono com o MSX)
-//   SRC=2  clk_in = oscilador ativo de 57,2727 MHz direto (sem PLL; locked = 1; clk_sdram = clk)
+// r8064_clkgen.v - system clock generator (target 57.2727 MHz = 3.579545 MHz x 16) for the Tang Nano 20K (GW2AR-18).
+// Sources (parameter SRC, chosen at synthesis):
+//   SRC=0  clk_in = board crystal, 27 MHz        -> rPLL 27 x 17 / 8       = 57.375 MHz   (error +0.18 %; exact ratio 70/33 infeasible: PFD < 3 MHz)
+//   SRC=1  clk_in = 3.579545 MHz (external crystal/oscillator or MSX slot CLOCK) -> rPLL x 16 = 57.2727 MHz (exact, synchronous with the MSX)
+//   SRC=2  clk_in = 57.2727 MHz active oscillator directly (no PLL; locked = 1; clk_sdram = clk)
 //   SRC=3  clk_in = 14,31818 MHz (4 x 3,579545; ex.: pino clk14m da placa de cartucho) -> rPLL x4 = 57,2727 MHz (exato)
-// Cristal "nu" de 3,579545 MHz precisa de um oscilador externo (ex.: Pierce com 74HC04, ou modulo oscilador); o FPGA recebe a onda ja quadrada em clk_in.
-// VCO (SRC=0): 27/8*17*16 = 918 MHz ; (SRC=1): 3,579545*16*16 = 916,4 MHz - ambos dentro de 500-1250 MHz do GW2A.
-// rst: ativo alto; fica em 1 ate o PLL travar + 16 ciclos do clock gerado (liberacao sincrona).
-// Simulacao (-DSIM): modelo comportamental que mede o periodo de clk_in e gera clk = clk_in * MUL / DIV.
-module r8064_clkgen #(parameter SRC = 1, parameter [3:0] SDR_PSDA = 4'd4)(   // SDR_PSDA: fase do clk_sdram em passos de 22,5 graus (4 = 90 graus); ajustar no hardware
+// A "bare" 3.579545 MHz crystal needs an external oscillator (e.g. Pierce with 74HC04, or an oscillator module); the FPGA receives the already-square wave on clk_in.
+// VCO (SRC=0): 27/8*17*16 = 918 MHz ; (SRC=1): 3.579545*16*16 = 916.4 MHz - both within the GW2A's 500-1250 MHz.
+// rst: active high; stays at 1 until the PLL locks + 16 cycles of the generated clock (synchronous release).
+// Simulation (-DSIM): behavioral model that measures the period of clk_in and generates clk = clk_in * MUL / DIV.
+module r8064_clkgen #(parameter SRC = 1, parameter [3:0] SDR_PSDA = 4'd4)(   // SDR_PSDA: phase of clk_sdram in 22.5-degree steps (4 = 90 degrees); adjust in hardware
     input  wire clk_in,
-    input  wire rst_in,      // reset assincrono externo (ativo alto), opcional (0 se nao usado)
+    input  wire rst_in,      // external asynchronous reset (active high), optional (0 if unused)
     output wire clk,
-    output wire clk_sdram,   // clock enviado a SDRAM (O_sdram_clk): CLKOUTP do PLL com defasagem SDR_PSDA
+    output wire clk_sdram,   // clock sent to the SDRAM (O_sdram_clk): CLKOUTP do PLL with SDR_PSDA phase shift
     output wire locked,
     output wire rst
 );
@@ -64,7 +64,7 @@ module r8064_clkgen #(parameter SRC = 1, parameter [3:0] SDR_PSDA = 4'd4)(   // 
     assign clk    = pll_clk;
     assign clk_sdram = pll_clkp;
     assign locked = pll_lock;
-    // liberacao sincrona do reset: so sai de reset 16 ciclos depois do lock
+    // synchronous reset release: only leaves reset 16 cycles after lock
     reg [4:0] cnt = 5'd0; reg rst_r = 1'b1;
     always @(posedge pll_clk or negedge pll_lock) begin
         if (!pll_lock) begin cnt <= 5'd0; rst_r <= 1'b1; end

@@ -1,25 +1,25 @@
-Resultados de simulacao e sintese do decodificador ED (rtl/r8064_decode.v)
+Simulation and synthesis results of the ED decoder (rtl/r8064_decode.v)
 Data: 02/11/2026. Ferramentas: OSS CAD Suite 20261102 (Icarus Verilog 14.0 devel, Verilator 5.055 devel, Yosys 0.70+290), em Ubuntu 22.04 (VM).
 
-1) Simulacao RTL do testbench exaustivo (tb_r8064_decode.v)
-   Icarus   : "Vetores (b2,b3): 65536 | erros de id: 0 | combinacoes com ciclos conferidos: 44549 | erros de ciclos: 0"  -> PASS
-   Verilator: mesma saida -> PASS (com avisos de estilo -Wall: WIDTHEXPAND 11, WIDTHTRUNC 6, UNUSEDSIGNAL 6, PROCASSINIT 1; nenhum erro)
+1) RTL simulation of the exhaustive testbench (tb_r8064_decode.v)
+   Icarus   : "Vectors (b2,b3): 65536 | id errors: 0 | combinations with cycles checked: 44549 | cycle errors: 0"  -> PASS
+   Verilator: same output -> PASS (with -Wall style warnings: WIDTHEXPAND 11, WIDTHTRUNC 6, UNUSEDSIGNAL 6, PROCASSINIT 1; no errors)
 
-2) Sintese Yosys (synth_gowin -top r8064_decode), apenas este modulo
-   303 celulas: 6 SPX9 (BSRAM), 164 LUT (31 LUT1, 18 LUT2, 38 LUT3, 77 LUT4), 71 MUX2_LUT5..8, 3 DFF + 1 DFFR (os demais registradores foram absorvidos na saida das BSRAM).
-   As ROMs foram inferidas como BSRAM a partir de $readmemh.
+2) Yosys synthesis (synth_gowin -top r8064_decode), this module only
+   303 cells: 6 SPX9 (BSRAM), 164 LUT (31 LUT1, 18 LUT2, 38 LUT3, 77 LUT4), 71 MUX2_LUT5..8, 3 DFF + 1 DFFR (the other registers were absorbed into the BSRAM output).
+   The ROMs were inferred as BSRAM from $readmemh.
 
-3) Simulacao da netlist sintetizada (portas logicas)
-   Com BSRAM: nao e possivel no Icarus. No cells_sim.v do Yosys os blocos SPX9 (BSRAM) sao caixas vazias (sem modelo de comportamento), por isso as saidas ficam X/z. Nao e defeito do projeto.
-   Sem BSRAM (synth_gowin -nobram, ROMs em LUT; 2055 celulas, ~1.050 LUT): "Vetores (b2,b3): 65536 | erros de id: 0 | ... | erros de ciclos: 0" -> PASS.
-   A versao com BSRAM so pode ser simulada com os modelos de primitivas da propria Gowin (nao usados aqui).
+3) Simulation of the synthesized netlist (logic gates)
+   With BSRAM: not possible in Icarus. In Yosys's cells_sim.v the SPX9 (BSRAM) blocks are empty boxes (no behavioral model), so the outputs are X/z. It is not a design defect.
+   Without BSRAM (synth_gowin -nobram, ROMs in LUT; 2055 cells, ~1,050 LUT): "Vectors (b2,b3): 65536 | id errors: 0 | ... | cycle errors: 0" -> PASS.
+   The BSRAM version can only be simulated with Gowin's own primitive models (not used here).
 
-4) Place-and-route (nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, familia GW2A-18C, meta 100 MHz) do decodificador dentro de um INVOLUCRO DE TESTE (pnr/pnr_top.v):
-   Utilizacao do conjunto (decodificador + invólucro): LUT4 196/20736 (<1 %), DFF 21, BSRAM 6/46 (13 %), IOB 3.
-   Frequencia maxima: 111,11 MHz apos o roteamento (119,36 MHz na etapa anterior): PASS a 100 MHz.
-   Caminho critico: saida da BSRAM (clk-to-q ~2,26 ns) + cadeia de LUT/MUX da ROM_B.
-   Bitstream gerado (gowin_pack): OK (arquivo de teste, nao e o projeto final).
-   AVISO: o nextpnr listou 36 violacoes de hold (10 piores mostradas). Nao analisei; o nextpnr nao corrige hold.
-   Limites: os pinos do invólucro (clk=4, din=88, dout=15) vieram dos esquematicos consultados; so o decodificador foi medido (nao ha ALU, FPU, MMU, SDRAM); o timing real depende do projeto completo.
+4) Place-and-route (nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, GW2A-18C family, 100 MHz goal) of the decoder inside a TEST WRAPPER (pnr/pnr_top.v):
+   Utilization of the set (decoder + wrapper): LUT4 196/20736 (<1 %), DFF 21, BSRAM 6/46 (13 %), IOB 3.
+   Maximum frequency: 111.11 MHz after routing (119.36 MHz in the previous stage): PASS at 100 MHz.
+   Critical path: BSRAM output (clk-to-q ~2.26 ns) + ROM_B LUT/MUX chain.
+   Bitstream generated (gowin_pack): OK (test file, not the final design).
+   WARNING: nextpnr listed 36 hold violations (10 worst shown). I did not analyze them; nextpnr does not fix hold.
+   Limits: the wrapper pins (clk=4, din=88, dout=15) came from the schematics consulted; only the decoder was measured (no ALU, FPU, MMU, SDRAM); real timing depends on the full design.
 
-5) Reproduzir: bash scripts/simular_e_sintetizar.sh (com o OSS CAD Suite no PATH).
+5) Reproduce: bash scripts/simular_e_sintetizar.sh (with the OSS CAD Suite on the PATH).

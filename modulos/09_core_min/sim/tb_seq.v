@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// teste do sequenciador de uops e de E/S: LD SP, PUSH, POP, CALL, RET, OUT (n),A, IN A,(n)
+// uop sequencer and I/O test: LD SP, PUSH, POP, CALL, RET, OUT (n),A, IN A,(n)
 module tb_seq;
     wire [7:0] d_be; reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -24,7 +24,7 @@ module tb_seq;
     end
     always @* io_rdata = (io_a == 8'h78) ? 8'h5A : 8'hFF;
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     initial begin
         repeat (4) @(posedge clk); rst = 0;
@@ -33,15 +33,15 @@ module tb_seq;
         chk("DE", dut.u_rf1.mem_a[2], 64'h22);
         chk("HL (POP HL)", dut.u_rf1.mem_a[3], 64'h22);
         chk("AX (IN A,(78h))", dut.u_rf1.mem_a[0], 64'h5A);
-        chk("SP final (apos RET)", dut.u_rf1.mem_a[11], 64'h0F00);
-        chk("pilha EFE = endereco de retorno", {mem[12'hEFF], mem[12'hEFE]}, 64'h0008);
-        chk("pilha EFC = DE", {mem[12'hEFD], mem[12'hEFC]}, 64'h0022);
-        chk("pilha EFA = HL", {mem[12'hEFB], mem[12'hEFA]}, 64'h0033);
+        chk("final SP (after RET)", dut.u_rf1.mem_a[11], 64'h0F00);
+        chk("stack EFE = return address", {mem[12'hEFF], mem[12'hEFE]}, 64'h0008);
+        chk("stack EFC = DE", {mem[12'hEFD], mem[12'hEFC]}, 64'h0022);
+        chk("stack EFA = HL", {mem[12'hEFB], mem[12'hEFA]}, 64'h0033);
         chk("OUT: porta", last_ow_a, 64'h77); chk("OUT: dado", last_ow_d, 64'h41);
-        chk("OUT: 1 escrita", n_ow, 1); chk("IN: 1 leitura", n_ir, 1);
-        chk("PC no laco final (8 ou 0A conforme a fase)", (dbg_pc == 64'h08) ? 64'h0A : dbg_pc, 64'h0A);
-        $display("pc=%h escritas E/S=%0d leituras E/S=%0d erros=%0d", dbg_pc, n_ow, n_ir, errs);
-        if (errs == 0) $display("RESULTADO: SEQUENCIADOR OK"); else $display("RESULTADO: %0d ERROS", errs);
+        chk("OUT: 1 write", n_ow, 1); chk("IN: 1 read", n_ir, 1);
+        chk("PC in the final loop (8 or 0A depending on the phase)", (dbg_pc == 64'h08) ? 64'h0A : dbg_pc, 64'h0A);
+        $display("pc=%h I/O writes=%0d I/O reads=%0d errors=%0d", dbg_pc, n_ow, n_ir, errs);
+        if (errs == 0) $display("RESULT: SEQUENCER OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

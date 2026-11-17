@@ -3,7 +3,7 @@ module pnr_mem_top(input wire clk, input wire din, output wire dout);
     always @(posedge clk) begin if (rc != 15) rc <= rc + 1; l <= {l[254:0], l[255]^l[253]^l[250]^l[245]^din}; end
     wire c_i_ack, c_d_ack, fbi, fbd, i_fault, d_fault, init_done; wire [63:0] c_i_rd, c_d_rd; wire [2:0] ic, dc;
     wire s_cke, s_cs_n, s_ras_n, s_cas_n, s_we_n, s_dq_oe; wire [3:0] s_dqm; wire [1:0] s_ba; wire [10:0] s_a; wire [31:0] s_dq_o;
-    // pedidos do nucleo: a requisicao so e mantida ate o ack (como o nucleo faz)
+    // core requests: the request is only held until the ack (as the core does)
     reg ireq = 0, dreq = 0;
     always @(posedge clk) begin ireq <= c_i_ack ? 1'b0 : (ireq | l[3]); dreq <= c_d_ack ? 1'b0 : (dreq | l[5]); end
     r8064_memsys u(.clk(clk), .rst(rstw),

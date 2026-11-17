@@ -1,8 +1,8 @@
-// msx_mem.v - memoria mapeada MSX (portas FC..FF, paginas de 16 KB) + MegaRAM ASCII8 (paginas de 8 KB) + registrador de slot primario (A8h).
-// Uma instancia por nucleo (R8064 em modo compatibilidade Z80 e Z80 classico). Traduz endereco de 16 bits do Z80 em endereco fisico (SDRAM) e diz
-// se o bloco responde ("hit"). A memoria fisica e compartilhada por fora (arbitro do modulo 05); aqui so ha registradores e combinacional.
-// SUPOSICOES a confirmar: (1) portas FC,FD,FE,FF = paginas 0..3 (o pedido dizia "FC, FC, FE, FF"); (2) MegaRAM: IN 8Eh liga modo de escrita na RAM,
-// OUT 8Eh volta ao modo ASCII8 (bancos); em modo de escrita o byte vai a RAM e tambem atualiza o registrador de banco se o endereco for 6000-7FFF.
+// msx_mem.v - MSX mapped memory (ports FC..FF, 16 KB pages) + MegaRAM ASCII8 (8 KB pages) + primary slot register (A8h).
+// One instance per core (R8064 in Z80 compatibility mode and classic Z80). Translates the Z80 16-bit address into a physical address (SDRAM) and says
+// whether the block answers ("hit"). The physical memory is shared outside (module 05 arbiter); here there are only registers and combinational logic.
+// ASSUMPTIONS to confirm: (1) ports FC,FD,FE,FF = pages 0..3 (the request said "FC, FC, FE, FF"); (2) MegaRAM: IN 8Eh turns on RAM write mode,
+// OUT 8Eh goes back to ASCII8 mode (banks); in write mode the byte goes to RAM and also updates the bank register if the address is 6000-7FFF.
 module msx_mem #(
     parameter MAP_BITS  = 6,            // segmentos do mapper = 2**MAP_BITS (6 -> 1 MB, max 8 -> 4 MB)
     parameter MEGA_BITS = 7,            // bancos de 8 KB = 2**MEGA_BITS (7 -> 1 MB, max 8 -> 2 MB)
@@ -13,25 +13,25 @@ module msx_mem #(
 )(
     input  wire        clk, rst,
     input  wire        en,              // 1 = modo compatibilidade 16 bits (no R8064: MMU desligada)
-    // barramento de E/S
+    // I/O bus
     input  wire        io_wr, io_rd,
     input  wire [7:0]  io_addr, io_wdata,
     output reg  [7:0]  io_rdata,
-    output reg         io_hit,          // este bloco responde a leitura de E/S
-    // barramento de memoria do nucleo
+    output reg         io_hit,          // this block answers the I/O read
+    // core memory bus
     input  wire        mem_rd, mem_wr,
     input  wire [15:0] mem_addr,
     input  wire [7:0]  mem_wdata,
-    output reg         hit,             // endereco cai neste bloco
+    output reg         hit,             // address falls in this block
     output reg  [23:0] phys_addr,
-    output wire [7:0]  a8_o,            // slot primario atual (para o classificador de memoria)
-    output reg         wr_ok            // escrita permitida (RAM do mapper sempre; MegaRAM so em modo de escrita)
+    output wire [7:0]  a8_o,            // current primary slot (for the memory classifier)
+    output reg         wr_ok            // write allowed (mapper RAM always; MegaRAM only in write mode)
 );
     reg [7:0] a8;
-    assign a8_o = a8;                        // slots primarios das 4 paginas
-    reg [7:0] mreg [0:3];                // mapper: segmento de cada pagina de 16 KB
-    reg [7:0] breg [0:3];                // MegaRAM: banco de 8 KB para 4000,6000,8000,A000
-    reg       wmode;                     // MegaRAM em modo de escrita
+    assign a8_o = a8;                        // primary slots of the 4 pages
+    reg [7:0] mreg [0:3];                // mapper: segment of each 16 KB page
+    reg [7:0] breg [0:3];                // MegaRAM: 8 KB bank for 4000,6000,8000,A000
+    reg       wmode;                     // MegaRAM in write mode
     integer i;
     wire [7:0] mapmask  = (MAP_BITS >= 8) ? 8'hFF : ((8'd1 << MAP_BITS) - 8'd1);
     wire [7:0] megamask = (MEGA_BITS >= 8) ? 8'hFF : ((8'd1 << MEGA_BITS) - 8'd1);

@@ -1,17 +1,17 @@
-// alu_prep.v - logica do estagio R: seleciona operandos e decodifica o controle da ALU (registrar a saida antes do estagio X).
+// alu_prep.v - R-stage logic: selects operands and decodes the ALU control (register the output before the X stage).
 // ctl: [0] inv  [1] cin1  [2] cin0  [3] is_sub  [4] keep_c  [5] arith  [6] and  [7] or  [8] xor  [9] cpl
 //      [10] shl [11] shr  [12] sar  [13] rol    [14] ror   [15] cp     [16] undef
-// ci (no nucleo) = cin1 ? (fin[0] ^ cin0) : cin0
+// ci (in the core) = cin1 ? (fin[0] ^ cin0) : cin0
 module alu_prep(
     input  wire [63:0] a,
     input  wire [63:0] b,
     input  wire [4:0]  op,
     input  wire [1:0]  sz,
     input  wire [7:0]  fin,
-    output wire [63:0] xa,     // operando X ja mascarado pelo tamanho
-    output wire [63:0] yb,     // operando B mascarado (sem inversao)
-    output wire [63:0] yy,     // operando Y do somador (mascarado, com inversao)
-    output wire        ci,     // vai-um de entrada ja resolvido
+    output wire [63:0] xa,     // X operand already masked by size
+    output wire [63:0] yb,     // operand B masked (without inversion)
+    output wire [63:0] yy,     // adder operand Y (masked, with inversion)
+    output wire        ci,     // carry-in already resolved
     output reg  [16:0] ctl
 );
     reg [63:0] xr, br_;

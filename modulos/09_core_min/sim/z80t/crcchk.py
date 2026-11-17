@@ -50,7 +50,7 @@ for i in range(16): img[0x400+i]=(i*7+3)&255
 init=dict(r=dict(a=0,b=0,c=0,d=0,e=0,h=0,l=0,f=0),sp=0xC00)
 z,n=zr.expected(img,init,end)
 R,mem=zr.run_rtl(img,init,200*n+2000)
-print('modelo HL=%04x mem=%02x%02x | rtl HL=%x mem=%02x%02x  n=%d'%(z.pr('hl'),z.m[0xE01],z.m[0xE00],R['R3'],mem[0xE01],mem[0xE00],n))
+print('model HL=%04x mem=%02x%02x | rtl HL=%x mem=%02x%02x  n=%d'%(z.pr('hl'),z.m[0xE01],z.m[0xE00],R['R3'],mem[0xE01],mem[0xE00],n))
 c=0xFFFF
 for i in range(16):
     x=c^(((i*7+3)&255)<<8)

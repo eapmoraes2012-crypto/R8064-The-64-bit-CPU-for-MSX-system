@@ -1,4 +1,4 @@
-// z80_top.v - Z80 independente: clock-enable (normal/turbo) + nucleo. Sinais de barramento ativos em nivel baixo (convencao Z80).
+// z80_top.v - independent Z80: clock-enable (normal/turbo) + core. Bus signals active low (Z80 convention).
 module z80_top #(parameter [31:0] STEP_BASE = 32'd268435456)(
   input  wire        clk,
   input  wire        rst_n,

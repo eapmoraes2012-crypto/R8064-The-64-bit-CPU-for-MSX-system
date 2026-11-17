@@ -1,6 +1,6 @@
 
-== Configuracao A: sem wait, D=1 (ideal) {'WRD': 0, 'WWR': 0, 'WIO': 0, 'DEC_D': 1, 'LEN_LAT': 0, 'SERIAL': 0}
-programa                 instr  pipeline  planilha     dif    dif% CPI pipe CPI plan chk_err wp_fetch
+== Configuration A: no wait, D=1 (ideal) {'WRD': 0, 'WWR': 0, 'WIO': 0, 'DEC_D': 1, 'LEN_LAT': 0, 'SERIAL': 0}
+program                  instr  pipeline     sheet    diff   diff% CPI pipe CPI sheet chk_err wp_fetch
 p00_um_ADDQ                  1         7         7       0     0.0     7.00     7.00       0        0
 p01_100_ADDQ               100       106       106       0     0.0     1.06     1.06       0        0
 p02_100_LDQ_ler            100       202       206      -4    -1.9     2.02     2.06       0        0
@@ -13,8 +13,8 @@ p08_ES                      60        82        82       0     0.0     1.37     
 p09_mistura_alu_mem        300       730       732      -2    -0.3     2.43     2.44       0        0
 p10_aleatorio_210          500      3686      3803    -117    -3.1     7.37     7.61       0      206
 
-== Configuracao B: wait da planilha, D=1 {'WRD': 4, 'WWR': 2, 'WIO': 1, 'DEC_D': 1, 'LEN_LAT': 0, 'SERIAL': 0}
-programa                 instr  pipeline  planilha     dif    dif% CPI pipe CPI plan chk_err wp_fetch
+== Configuration B: spreadsheet wait, D=1 {'WRD': 4, 'WWR': 2, 'WIO': 1, 'DEC_D': 1, 'LEN_LAT': 0, 'SERIAL': 0}
+program                  instr  pipeline     sheet    diff   diff% CPI pipe CPI sheet chk_err wp_fetch
 p00_um_ADDQ                  1        11        11       0     0.0    11.00    11.00       0        0
 p01_100_ADDQ               100       506       506       0     0.0     5.06     5.06       0        0
 p02_100_LDQ_ler            100      1005      1006      -1    -0.1    10.05    10.06       0        0
@@ -27,8 +27,8 @@ p08_ES                      60       377       436     -59   -13.5     6.28     
 p09_mistura_alu_mem        300      3065      3066      -1    -0.0    10.22    10.22       0        0
 p10_aleatorio_210          500      6281      6993    -712   -10.2    12.56    13.99       0      135
 
-== Configuracao C: wait, D=2 (decodificador real) {'WRD': 4, 'WWR': 2, 'WIO': 1, 'DEC_D': 2, 'LEN_LAT': 0, 'SERIAL': 0}
-programa                 instr  pipeline  planilha     dif    dif% CPI pipe CPI plan chk_err wp_fetch
+== Configuration C: wait, D=2 (real decoder) {'WRD': 4, 'WWR': 2, 'WIO': 1, 'DEC_D': 2, 'LEN_LAT': 0, 'SERIAL': 0}
+program                  instr  pipeline     sheet    diff   diff% CPI pipe CPI sheet chk_err wp_fetch
 p00_um_ADDQ                  1        12        11       1     9.1    12.00    11.00       0        0
 p01_100_ADDQ               100       507       506       1     0.2     5.07     5.06       0        0
 p02_100_LDQ_ler            100      1006      1006       0     0.0    10.06    10.06       0        0
@@ -41,8 +41,8 @@ p08_ES                      60       378       436     -58   -13.3     6.30     
 p09_mistura_alu_mem        300      3066      3066       0     0.0    10.22    10.22       0        0
 p10_aleatorio_210          500      6368      6993    -625    -8.9    12.74    13.99       0      136
 
-== Configuracao D: wait, D=2, busca serial (len em 2) {'WRD': 4, 'WWR': 2, 'WIO': 1, 'DEC_D': 2, 'LEN_LAT': 2, 'SERIAL': 1}
-programa                 instr  pipeline  planilha     dif    dif% CPI pipe CPI plan chk_err wp_fetch
+== Configuration D: wait, D=2, serial fetch (len at 2) {'WRD': 4, 'WWR': 2, 'WIO': 1, 'DEC_D': 2, 'LEN_LAT': 2, 'SERIAL': 1}
+program                  instr  pipeline     sheet    diff   diff% CPI pipe CPI sheet chk_err wp_fetch
 p00_um_ADDQ                  1        12        11       1     9.1    12.00    11.00       0        0
 p01_100_ADDQ               100       804       506     298    58.9     8.04     5.06       0        0
 p02_100_LDQ_ler            100      1303      1006     297    29.5    13.03    10.06       0        0

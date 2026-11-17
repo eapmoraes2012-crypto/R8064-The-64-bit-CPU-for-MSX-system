@@ -1,50 +1,50 @@
-﻿id;mnemonico;hex;origem;bytes;acessos_busca;leituras;escritas;es;ocupacao_X;ciclos_clock;ciclos_wait_tipico;ciclos_wait_pior;penalidade_desvio;total_tipico;total_pior;latencia_pipeline;clock_cond_falsa;wait_cond_falsa;classe
-1;ADCW HL, rr;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-2;ADCL EA, rr;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-3;ADCQ QA, rr;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-4;ADDW rr, rr’;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-5;ADDL rr, rr’;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-6;ADDQ rr, rr’;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-7;DECW rr;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-8;DECL rr;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-9;DECQ rr;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-10;DIVSB AX, t;ED 3D --;R8064;3;1;0;0;0;15;15;4;8;0;19;23;21;;;Divisor iterativo 1 bit/ciclo
-11;DIVSW DX:AX, rr;ED 3D --;R8064;3;1;0;0;0;23;23;4;8;0;27;31;29;;;Divisor iterativo 1 bit/ciclo
-12;DIVSL QA, rr;ED 3D --;R8064;3;1;0;0;0;39;39;4;8;0;43;47;45;;;Divisor iterativo 1 bit/ciclo
-13;DIVSQ QDE:QA, rr;ED 3D --;R8064;3;1;0;0;0;71;71;4;8;0;75;79;77;;;Divisor iterativo 1 bit/ciclo
-14;DIVUB AX, t;ED 3C --;R8064;3;1;0;0;0;10;10;4;8;0;14;18;16;;;Divisor iterativo 1 bit/ciclo
-15;DIVUW DX:AX, rr;ED 3C --;R8064;3;1;0;0;0;18;18;4;8;0;22;26;24;;;Divisor iterativo 1 bit/ciclo
-16;DIVUL QA, rr;ED 3C --;R8064;3;1;0;0;0;34;34;4;8;0;38;42;40;;;Divisor iterativo 1 bit/ciclo
-17;DIVUQ QDE:QA, rr;ED 3C --;R8064;3;1;0;0;0;66;66;4;8;0;70;74;72;;;Divisor iterativo 1 bit/ciclo
-18;INCW rr;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-19;INCL rr;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-20;INCQ rr;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-21;MLTSB AL, u;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplicador em DSP 18x18
-22;MLTSW HL,rr;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplicador em DSP 18x18
-23;MLTSL QA, rr;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplicador em DSP 18x18
-24;MLTSQ QDE:QA, rr;ED 3F --;R8064;3;1;0;0;0;4;4;4;8;0;8;12;10;;;Multiplicador em DSP 18x18
-25;MLTUB HL, u;ED --;R8064;2;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplicador em DSP 18x18
-26;MLTUW HL, BC;ED C3;R8064;2;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplicador em DSP 18x18
-27;MLTUW HL, SP;ED F3;R8064;2;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplicador em DSP 18x18
-28;MLTUW HL, rr;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplicador em DSP 18x18
-29;MLTUL EA, rr;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplicador em DSP 18x18
-30;MLTUQ QA, rr;ED 3E --;R8064;3;1;0;0;0;4;4;4;8;0;8;12;10;;;Multiplicador em DSP 18x18
-31;SUBCW rr, rr’;ED 3D --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-32;SUBCL rr, rr’;ED 3D --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-33;SUBCQ rr, rr’;ED 3D --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-34;SUBW rr, rr’;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-35;SUBL rr, rr’;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-36;SUBQ rr, rr’;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-37;CPW rr, rr’;ED 02 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-38;CPL rr, rr’;ED 02 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-39;CPQ rr, rr’;ED 02 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
+﻿id;mnemonic;hex;origin;bytes;fetch_accesses;reads;writes;io;x_occupancy;clock_cycles;typical_wait_cycles;worst_wait_cycles;branch_penalty;typical_total;worst_total;pipeline_latency;false_cond_clock;false_cond_wait;class
+1;ADCW HL, rr;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+2;ADCL EA, rr;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+3;ADCQ QA, rr;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+4;ADDW rr, rr’;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+5;ADDL rr, rr’;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+6;ADDQ rr, rr’;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+7;DECW rr;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+8;DECL rr;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+9;DECQ rr;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+10;DIVSB AX, t;ED 3D --;R8064;3;1;0;0;0;15;15;4;8;0;19;23;21;;;Iterative divider 1 bit/cycle
+11;DIVSW DX:AX, rr;ED 3D --;R8064;3;1;0;0;0;23;23;4;8;0;27;31;29;;;Iterative divider 1 bit/cycle
+12;DIVSL QA, rr;ED 3D --;R8064;3;1;0;0;0;39;39;4;8;0;43;47;45;;;Iterative divider 1 bit/cycle
+13;DIVSQ QDE:QA, rr;ED 3D --;R8064;3;1;0;0;0;71;71;4;8;0;75;79;77;;;Iterative divider 1 bit/cycle
+14;DIVUB AX, t;ED 3C --;R8064;3;1;0;0;0;10;10;4;8;0;14;18;16;;;Iterative divider 1 bit/cycle
+15;DIVUW DX:AX, rr;ED 3C --;R8064;3;1;0;0;0;18;18;4;8;0;22;26;24;;;Iterative divider 1 bit/cycle
+16;DIVUL QA, rr;ED 3C --;R8064;3;1;0;0;0;34;34;4;8;0;38;42;40;;;Iterative divider 1 bit/cycle
+17;DIVUQ QDE:QA, rr;ED 3C --;R8064;3;1;0;0;0;66;66;4;8;0;70;74;72;;;Iterative divider 1 bit/cycle
+18;INCW rr;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+19;INCL rr;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+20;INCQ rr;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+21;MLTSB AL, u;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplier in DSP 18x18
+22;MLTSW HL,rr;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplier in DSP 18x18
+23;MLTSL QA, rr;ED 3F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplier in DSP 18x18
+24;MLTSQ QDE:QA, rr;ED 3F --;R8064;3;1;0;0;0;4;4;4;8;0;8;12;10;;;Multiplier in DSP 18x18
+25;MLTUB HL, u;ED --;R8064;2;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplier in DSP 18x18
+26;MLTUW HL, BC;ED C3;R8064;2;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplier in DSP 18x18
+27;MLTUW HL, SP;ED F3;R8064;2;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplier in DSP 18x18
+28;MLTUW HL, rr;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplier in DSP 18x18
+29;MLTUL EA, rr;ED 3E --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Multiplier in DSP 18x18
+30;MLTUQ QA, rr;ED 3E --;R8064;3;1;0;0;0;4;4;4;8;0;8;12;10;;;Multiplier in DSP 18x18
+31;SUBCW rr, rr’;ED 3D --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+32;SUBCL rr, rr’;ED 3D --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+33;SUBCQ rr, rr’;ED 3D --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+34;SUBW rr, rr’;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+35;SUBL rr, rr’;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+36;SUBQ rr, rr’;ED 3C --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+37;CPW rr, rr’;ED 02 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+38;CPL rr, rr’;ED 02 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+39;CPQ rr, rr’;ED 02 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
 40;FCOPP ST0, ST1;ED 80;R8064;2;1;0;0;0;3;3;4;8;0;7;11;9;;;FPU 80 bits
 41;FCOS ST0;ED 81;R8064;2;1;0;0;0;70;70;4;8;0;74;78;76;;;FPU 80 bits
 42;FDIV ST0, STn;ED 88~8F;R8064;2;1;0;0;0;68;68;4;8;0;72;76;74;;;FPU 80 bits
 43;FINIT;ED 82;R8064;2;1;0;0;0;4;4;4;8;0;8;12;10;;;FPU 80 bits
-44;FIST;ED 83;R8064;2;1;0;2;0;4;4;8;20;0;12;24;10;;;FPU 80 bits (memória)
-45;FISTP;ED 84;R8064;2;1;0;2;0;4;4;8;20;0;12;24;10;;;FPU 80 bits (memória)
-46;FLD80 (QHL);ED 85;R8064;2;1;2;0;0;1;3;12;24;0;15;27;9;;;FPU 80 bits (memória)
+44;FIST;ED 83;R8064;2;1;0;2;0;4;4;8;20;0;12;24;10;;;FPU 80-bit (memory)
+45;FISTP;ED 84;R8064;2;1;0;2;0;4;4;8;20;0;12;24;10;;;FPU 80-bit (memory)
+46;FLD80 (QHL);ED 85;R8064;2;1;2;0;0;1;3;12;24;0;15;27;9;;;FPU 80-bit (memory)
 47;FLDL2;ED 86;R8064;2;1;0;0;0;2;2;4;8;0;6;10;8;;;FPU 80 bits
 48;FLDLG;ED 87;R8064;2;1;0;0;0;2;2;4;8;0;6;10;8;;;FPU 80 bits
 49;FLDLN;ED 90;R8064;2;1;0;0;0;2;2;4;8;0;6;10;8;;;FPU 80 bits
@@ -58,8 +58,8 @@
 57;FSIN ST0;ED 97;R8064;2;1;0;0;0;70;70;4;8;0;74;78;76;;;FPU 80 bits
 58;FSINC ST0;ED 10;R8064;2;1;0;0;0;70;70;4;8;0;74;78;76;;;FPU 80 bits
 59;FSQRT ST0;ED 11;R8064;2;1;0;0;0;68;68;4;8;0;72;76;74;;;FPU 80 bits
-60;FST80 (QHL);ED 12;R8064;2;1;0;2;0;1;3;8;20;0;11;23;9;;;FPU 80 bits (memória)
-61;FSTP8 (QHL);ED 13;R8064;2;1;0;2;0;1;3;8;20;0;11;23;9;;;FPU 80 bits (memória)
+60;FST80 (QHL);ED 12;R8064;2;1;0;2;0;1;3;8;20;0;11;23;9;;;FPU 80-bit (memory)
+61;FSTP8 (QHL);ED 13;R8064;2;1;0;2;0;1;3;8;20;0;11;23;9;;;FPU 80-bit (memory)
 62;FSTSW;ED 14;R8064;2;1;0;0;0;1;1;4;8;0;5;9;7;;;FPU 80 bits
 63;FSUB ST0, STn;ED 18~1F;R8064;2;1;0;0;0;6;6;4;8;0;10;14;12;;;FPU 80 bits
 64;FTAN ST0;ED 15;R8064;2;1;0;0;0;138;138;4;8;0;142;146;144;;;FPU 80 bits
@@ -74,8 +74,8 @@
 73;LDW rr, (QIX+dd);ED DD -- -- --;R8064;5;1;1;0;0;1;2;8;16;0;10;18;8;;;Load
 74;LDW rr, (QIY+dd);ED FD -- -- --;R8064;5;1;1;0;0;1;2;8;16;0;10;18;8;;;Load
 75;LDW rr, (rr’);ED 3B --;R8064;3;1;1;0;0;1;2;8;16;0;10;18;8;;;Load
-76;LDW rr, nn;ED 3B -- -- --;R8064;5;1;0;0;0;1;1;4;8;0;5;9;7;;;Registrador/imediato
-77;LDW rr, rr’;ED 3B --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Registrador/imediato
+76;LDW rr, nn;ED 3B -- -- --;R8064;5;1;0;0;0;1;1;4;8;0;5;9;7;;;Register/immediate
+77;LDW rr, rr’;ED 3B --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Register/immediate
 78;LDW rr, (nnnnnnnn);ED 3B -- -- : --;R8064;11;2;1;0;0;1;3;12;24;0;15;27;9;;;Load
 79;LDL (nnnnnnnn), rr;ED 3A -- -- : --;R8064;11;2;0;1;0;1;3;10;22;0;13;25;9;;;Store
 80;LDL (QIX+dd), rr;ED DD -- -- --;R8064;5;1;0;1;0;1;2;6;14;0;8;16;8;;;Store
@@ -86,8 +86,8 @@
 85;LDL rr, (QIX+dd);ED DD -- -- --;R8064;5;1;1;0;0;1;2;8;16;0;10;18;8;;;Load
 86;LDL rr, (QIY+dd);ED FD -- -- --;R8064;5;1;1;0;0;1;2;8;16;0;10;18;8;;;Load
 87;LDL rr, (rr’);ED 3A --;R8064;3;1;1;0;0;1;2;8;16;0;10;18;8;;;Load
-88;LDL rr, nnnn;ED 3A -- -- : --;R8064;7;1;0;0;0;1;1;4;8;0;5;9;7;;;Registrador/imediato
-89;LDL rr, rr’;ED 3A --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Registrador/imediato
+88;LDL rr, nnnn;ED 3A -- -- : --;R8064;7;1;0;0;0;1;1;4;8;0;5;9;7;;;Register/immediate
+89;LDL rr, rr’;ED 3A --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Register/immediate
 90;LDL rr, (nnnnnnnn);ED 3A -- -- : --;R8064;11;2;1;0;0;1;3;12;24;0;15;27;9;;;Load
 91;LDQ (nnnnnnnn), rr;ED 39 -- -- : --;R8064;11;2;0;1;0;1;3;10;22;0;13;25;9;;;Store
 92;LDQ (QIX+dd), rr;ED DD -- -- --;R8064;5;1;0;1;0;1;2;6;14;0;8;16;8;;;Store
@@ -98,22 +98,22 @@
 97;LDQ rr, (QIX+dd);ED DD -- -- --;R8064;5;1;1;0;0;1;2;8;16;0;10;18;8;;;Load
 98;LDQ rr, (QIY+dd);ED FD -- -- --;R8064;5;1;1;0;0;1;2;8;16;0;10;18;8;;;Load
 99;LDQ rr, (rr’);ED 39 --;R8064;3;1;1;0;0;1;2;8;16;0;10;18;8;;;Load
-100;LDQ rr, nnnnnnnn;ED 39 -- -- : --;R8064;11;2;0;0;0;1;2;8;16;0;10;18;8;;;Registrador/imediato
-101;LDQ rr, rr’;ED 39 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Registrador/imediato
+100;LDQ rr, nnnnnnnn;ED 39 -- -- : --;R8064;11;2;0;0;0;1;2;8;16;0;10;18;8;;;Register/immediate
+101;LDQ rr, rr’;ED 39 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Register/immediate
 102;LDQ rr, (nnnnnnnn);ED 39 -- -- : --;R8064;11;2;1;0;0;1;3;12;24;0;15;27;9;;;Load
 103;POPL rr;ED 38 --;R8064;3;1;1;0;0;1;2;8;16;0;10;18;8;;;Pop
 104;POPQ rr;ED 38 --;R8064;3;1;1;0;0;1;2;8;16;0;10;18;8;;;Pop
 105;PUSHL rr;ED 38 --;R8064;3;1;0;1;0;1;2;6;14;0;8;16;8;;;Push
 106;PUSHQ rr;ED 38 --;R8064;3;1;0;1;0;1;2;6;14;0;8;16;8;;;Push
-107;ANDW rr, rr’;ED 38 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-108;ANDL rr, rr’;ED 38 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-109;ANDQ rr, rr’;ED 38 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-110;ORW rr, rr’;ED 37 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-111;ORL rr, rr’;ED 37 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-112;ORQ rr, rr’;ED 37 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-113;XORW rr, rr’;ED 36 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-114;XORL rr, rr’;ED 36 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-115;XORQ rr, rr’;ED 36 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
+107;ANDW rr, rr’;ED 38 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+108;ANDL rr, rr’;ED 38 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+109;ANDQ rr, rr’;ED 38 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+110;ORW rr, rr’;ED 37 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+111;ORL rr, rr’;ED 37 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+112;ORQ rr, rr’;ED 37 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+113;XORW rr, rr’;ED 36 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+114;XORL rr, rr’;ED 36 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+115;XORQ rr, rr’;ED 36 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
 116;CALLL (rr);ED 37 --;R8064;3;1;0;1;0;1;2;6;14;4;12;20;8;;;Call
 117;CALLL cc,(rr);ED 37 --;R8064;3;1;0;1;0;1;2;6;14;4;12;20;8;1;4;Call
 118;CALLL nnnn;ED 35 -- -- --;R8064;6;1;0;1;0;1;2;6;14;2;10;18;8;;;Call
@@ -124,75 +124,75 @@
 123;RETQ cc;ED 03 --;R8064;3;1;1;0;0;1;2;8;16;5;15;23;8;1;4;Return
 124;RETL;ED 04;R8064;2;1;1;0;0;1;2;8;16;5;15;23;8;;;Return
 125;RETQ;ED 05;R8064;2;1;1;0;0;1;2;8;16;5;15;23;8;;;Return
-126;BITW bbbb, tt;ED 30 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 ciclo)
-127;BITL bbbbb, tt;ED 33 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 ciclo)
-128;RESW bbbb, tt;ED 30 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 ciclo)
-129;RESL bbbbb, tt;ED 32 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 ciclo)
-130;SETW bbbb, tt;ED 2F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 ciclo)
-131;SETL bbbbb, tt;ED 31 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 ciclo)
-132;DJNZW nn;ED 2E -- --;R8064;4;1;0;0;0;1;1;4;8;4;9;13;7;1;4;Desvio
-133;JRW cc, nn;ED 2A -- -- --;R8064;5;1;0;0;0;1;1;4;8;4;9;13;7;1;4;Desvio
-134;JRW nn;ED 2D -- --;R8064;4;1;0;0;0;1;1;4;8;2;7;11;7;;;Desvio
-135;JPL (vv);ED 2A --;R8064;3;1;0;0;0;1;1;4;8;4;9;13;7;;;Desvio
-136;JPL cc, (vv);ED 2A --;R8064;3;1;0;0;0;1;1;4;8;4;9;13;7;1;4;Desvio
-137;JPL cc, nnnn;ED 2A -- -- : --;R8064;7;1;0;0;0;1;1;4;8;4;9;13;7;1;4;Desvio
-138;JPL nnnn;ED 2C -- : --;R8064;6;1;0;0;0;1;1;4;8;2;7;11;7;;;Desvio
-139;JPQ (vv);ED 2A --;R8064;3;1;0;0;0;1;1;4;8;4;9;13;7;;;Desvio
-140;JPQ cc, (vv);ED 2A --;R8064;3;1;0;0;0;1;1;4;8;4;9;13;7;1;4;Desvio
-141;JPQ cc, nnnnnnnn;ED 2A -- -- : --;R8064;11;2;0;0;0;1;2;8;16;4;14;22;8;2;8;Desvio
-142;JPQ nnnnnnnn;ED 2B -- : --;R8064;10;2;0;0;0;1;2;8;16;2;12;20;8;;;Desvio
-143;SARB u;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-144;SARW rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-145;SARL rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-146;SARQ rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-147;SHLB u;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-148;SHLW rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-149;SHLL rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-150;SHLQ rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-151;SHRB u;ED 28 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-152;SHRW rr;ED 28 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-153;SHRL rr;ED 28 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-154;SHRQ rr;ED 28 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-155;(removida: igual a RLC r);ED 06 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-156;RLCW rr;ED 06 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-157;RLCL rr;ED 06 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-158;RLCQ rr;ED 06 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-159;(removida: igual a RRC r);ED 07 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-160;RRCW rr;ED 07 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-161;RRCL rr;ED 07 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-162;RRCQ rr;ED 07 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-163;INW rr, (C);ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;E/S
-164;INL rr, (C);ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;E/S
-165;INQ rr, (C);ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;E/S
-166;OUTW (C), rr;ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;E/S
-167;OUTL (C), rr;ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;E/S
-168;OUTQ (C), rr;ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;E/S
-169;CPLW rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-170;CPLL rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-171;CPLQ rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-172;NEGW rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-173;NEGL rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-174;NEGQ rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64 bits (1 ciclo)
-175;JP USER, (uu);ED 08~0F;R8064;2;1;0;0;0;2;2;4;8;4;10;14;8;;;Sistema/privilegiada
-176;PROT;ED 00~01;R8064;2;1;0;0;0;2;2;4;8;4;10;14;8;;;Sistema/privilegiada
-177;RESET;ED 25;R8064;2;1;0;0;0;8;8;4;8;4;16;20;14;;;Sistema/privilegiada
-178;STDBY;ED 24;R8064;2;1;0;0;0;1;1;4;8;0;5;9;7;;;Sistema/privilegiada
-179;WAKE;ED 23;R8064;2;1;0;0;0;2;2;4;8;0;6;10;8;;;Sistema/privilegiada
-180;LDCR kk, rr;ED 20 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Controle (CR)
-181;STCR rr, kk;ED 21 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Controle (CR)
-182;SCALL n;ED 22 -- --;R8064;3;1;0;0;0;2;2;4;8;4;10;14;8;;;Sistema/exceção
-183;SYSRT;ED A4;R8064;2;1;0;0;0;2;2;4;8;4;10;14;8;;;Sistema/exceção
-184;FENCE;ED A5;R8064;2;1;0;0;0;4;4;4;8;0;8;12;10;;;Barreira
-185;ISYNC;ED A6;R8064;2;1;0;0;0;1;1;4;8;4;9;13;7;;;Barreira
+126;BITW bbbb, tt;ED 30 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 cycle)
+127;BITL bbbbb, tt;ED 33 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 cycle)
+128;RESW bbbb, tt;ED 30 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 cycle)
+129;RESL bbbbb, tt;ED 32 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 cycle)
+130;SETW bbbb, tt;ED 2F --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 cycle)
+131;SETL bbbbb, tt;ED 31 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU/bit (1 cycle)
+132;DJNZW nn;ED 2E -- --;R8064;4;1;0;0;0;1;1;4;8;4;9;13;7;1;4;Branch
+133;JRW cc, nn;ED 2A -- -- --;R8064;5;1;0;0;0;1;1;4;8;4;9;13;7;1;4;Branch
+134;JRW nn;ED 2D -- --;R8064;4;1;0;0;0;1;1;4;8;2;7;11;7;;;Branch
+135;JPL (vv);ED 2A --;R8064;3;1;0;0;0;1;1;4;8;4;9;13;7;;;Branch
+136;JPL cc, (vv);ED 2A --;R8064;3;1;0;0;0;1;1;4;8;4;9;13;7;1;4;Branch
+137;JPL cc, nnnn;ED 2A -- -- : --;R8064;7;1;0;0;0;1;1;4;8;4;9;13;7;1;4;Branch
+138;JPL nnnn;ED 2C -- : --;R8064;6;1;0;0;0;1;1;4;8;2;7;11;7;;;Branch
+139;JPQ (vv);ED 2A --;R8064;3;1;0;0;0;1;1;4;8;4;9;13;7;;;Branch
+140;JPQ cc, (vv);ED 2A --;R8064;3;1;0;0;0;1;1;4;8;4;9;13;7;1;4;Branch
+141;JPQ cc, nnnnnnnn;ED 2A -- -- : --;R8064;11;2;0;0;0;1;2;8;16;4;14;22;8;2;8;Branch
+142;JPQ nnnnnnnn;ED 2B -- : --;R8064;10;2;0;0;0;1;2;8;16;2;12;20;8;;;Branch
+143;SARB u;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+144;SARW rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+145;SARL rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+146;SARQ rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+147;SHLB u;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+148;SHLW rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+149;SHLL rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+150;SHLQ rr;ED 29 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+151;SHRB u;ED 28 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+152;SHRW rr;ED 28 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+153;SHRL rr;ED 28 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+154;SHRQ rr;ED 28 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+155;(removida: igual a RLC r);ED 06 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+156;RLCW rr;ED 06 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+157;RLCL rr;ED 06 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+158;RLCQ rr;ED 06 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+159;(removida: igual a RRC r);ED 07 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+160;RRCW rr;ED 07 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+161;RRCL rr;ED 07 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+162;RRCQ rr;ED 07 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+163;INW rr, (C);ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;I/O
+164;INL rr, (C);ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;I/O
+165;INQ rr, (C);ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;I/O
+166;OUTW (C), rr;ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;I/O
+167;OUTL (C), rr;ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;I/O
+168;OUTQ (C), rr;ED 27 --;R8064;3;1;0;0;1;1;1;5;9;0;6;10;7;;;I/O
+169;CPLW rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+170;CPLL rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+171;CPLQ rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+172;NEGW rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+173;NEGL rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+174;NEGQ rr;ED 26 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;ALU 64-bit (1 cycle)
+175;JP USER, (uu);ED 08~0F;R8064;2;1;0;0;0;2;2;4;8;4;10;14;8;;;System/privileged
+176;PROT;ED 00~01;R8064;2;1;0;0;0;2;2;4;8;4;10;14;8;;;System/privileged
+177;RESET;ED 25;R8064;2;1;0;0;0;8;8;4;8;4;16;20;14;;;System/privileged
+178;STDBY;ED 24;R8064;2;1;0;0;0;1;1;4;8;0;5;9;7;;;System/privileged
+179;WAKE;ED 23;R8064;2;1;0;0;0;2;2;4;8;0;6;10;8;;;System/privileged
+180;LDCR kk, rr;ED 20 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Control (CR)
+181;STCR rr, kk;ED 21 --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;Control (CR)
+182;SCALL n;ED 22 -- --;R8064;3;1;0;0;0;2;2;4;8;4;10;14;8;;;System/exception
+183;SYSRT;ED A4;R8064;2;1;0;0;0;2;2;4;8;4;10;14;8;;;System/exception
+184;FENCE;ED A5;R8064;2;1;0;0;0;4;4;4;8;0;8;12;10;;;Barrier
+185;ISYNC;ED A6;R8064;2;1;0;0;0;1;1;4;8;4;9;13;7;;;Barrier
 186;PGINV (uu);ED C4~FC;R8064;2;1;0;0;0;2;2;4;8;0;6;10;8;;;MMU
-187;XCHGL rr, (rr’);ED AC --;R8064;3;1;1;1;0;3;3;10;22;0;13;25;9;;;Atômica
-188;XCHGQ rr, (rr’);ED AC --;R8064;3;1;1;1;0;3;3;10;22;0;13;25;9;;;Atômica
-189;CASL (rr’), rr;ED AD --;R8064;3;1;1;1;0;3;3;10;22;0;13;25;9;;;Atômica
-190;CASQ (rr’), rr;ED AD --;R8064;3;1;1;1;0;3;3;10;22;0;13;25;9;;;Atômica
-191;SVCTX (uu);ED AE --;R8064;3;1;0;16;0;1;17;36;104;0;53;121;23;;;Contexto
-192;LDCTX (uu);ED AE --;R8064;3;1;16;0;0;1;17;68;136;4;89;157;23;;;Contexto
-193;FSAVE (uu);ED AF --;R8064;3;1;0;17;0;1;18;38;110;0;56;128;24;;;FPU 80 bits (memória)
-194;FRSTR (uu);ED AF --;R8064;3;1;17;0;0;1;18;72;144;0;90;162;24;;;FPU 80 bits (memória)
+187;XCHGL rr, (rr’);ED AC --;R8064;3;1;1;1;0;3;3;10;22;0;13;25;9;;;Atomic
+188;XCHGQ rr, (rr’);ED AC --;R8064;3;1;1;1;0;3;3;10;22;0;13;25;9;;;Atomic
+189;CASL (rr’), rr;ED AD --;R8064;3;1;1;1;0;3;3;10;22;0;13;25;9;;;Atomic
+190;CASQ (rr’), rr;ED AD --;R8064;3;1;1;1;0;3;3;10;22;0;13;25;9;;;Atomic
+191;SVCTX (uu);ED AE --;R8064;3;1;0;16;0;1;17;36;104;0;53;121;23;;;Context
+192;LDCTX (uu);ED AE --;R8064;3;1;16;0;0;1;17;68;136;4;89;157;23;;;Context
+193;FSAVE (uu);ED AF --;R8064;3;1;0;17;0;1;18;38;110;0;56;128;24;;;FPU 80-bit (memory)
+194;FRSTR (uu);ED AF --;R8064;3;1;17;0;0;1;18;72;144;0;90;162;24;;;FPU 80-bit (memory)
 195;FADD ST0, STn;ED BC --;R8064;3;1;0;0;0;6;6;4;8;0;10;14;12;;;FPU 80 bits
 196;FXCH STn;ED BC --;R8064;3;1;0;0;0;2;2;4;8;0;6;10;8;;;FPU 80 bits
 197;FLD STn;ED BC --;R8064;3;1;0;0;0;2;2;4;8;0;6;10;8;;;FPU 80 bits
@@ -202,13 +202,13 @@
 201;FABS;ED BC --;R8064;3;1;0;0;0;1;1;4;8;0;5;9;7;;;FPU 80 bits
 202;FLD1;ED BC --;R8064;3;1;0;0;0;2;2;4;8;0;6;10;8;;;FPU 80 bits
 203;FRINT;ED BC --;R8064;3;1;0;0;0;4;4;4;8;0;8;12;10;;;FPU 80 bits
-204;FILD (QHL);ED BC --;R8064;3;1;1;0;0;4;4;8;16;0;12;20;10;;;FPU 80 bits (memória)
-205;FLD32 (QHL);ED BC --;R8064;3;1;1;0;0;4;4;8;16;0;12;20;10;;;FPU 80 bits (memória)
-206;FLD64 (QHL);ED BC --;R8064;3;1;1;0;0;4;4;8;16;0;12;20;10;;;FPU 80 bits (memória)
-207;FST32 (QHL);ED BC --;R8064;3;1;0;1;0;4;4;6;14;0;10;18;10;;;FPU 80 bits (memória)
-208;FSP32 (QHL);ED BC --;R8064;3;1;0;1;0;4;4;6;14;0;10;18;10;;;FPU 80 bits (memória)
-209;FST64 (QHL);ED BC --;R8064;3;1;0;1;0;4;4;6;14;0;10;18;10;;;FPU 80 bits (memória)
-210;FSP64 (QHL);ED BC --;R8064;3;1;0;1;0;4;4;6;14;0;10;18;10;;;FPU 80 bits (memória)
+204;FILD (QHL);ED BC --;R8064;3;1;1;0;0;4;4;8;16;0;12;20;10;;;FPU 80-bit (memory)
+205;FLD32 (QHL);ED BC --;R8064;3;1;1;0;0;4;4;8;16;0;12;20;10;;;FPU 80-bit (memory)
+206;FLD64 (QHL);ED BC --;R8064;3;1;1;0;0;4;4;8;16;0;12;20;10;;;FPU 80-bit (memory)
+207;FST32 (QHL);ED BC --;R8064;3;1;0;1;0;4;4;6;14;0;10;18;10;;;FPU 80-bit (memory)
+208;FSP32 (QHL);ED BC --;R8064;3;1;0;1;0;4;4;6;14;0;10;18;10;;;FPU 80-bit (memory)
+209;FST64 (QHL);ED BC --;R8064;3;1;0;1;0;4;4;6;14;0;10;18;10;;;FPU 80-bit (memory)
+210;FSP64 (QHL);ED BC --;R8064;3;1;0;1;0;4;4;6;14;0;10;18;10;;;FPU 80-bit (memory)
 211;IN B,(C);ED 40;Z80 (ED);2;1;0;0;1;1;1;5;9;0;6;;;;;Z80 em modo R8064
 212;OUT (C),B;ED 41;Z80 (ED);2;1;0;0;1;1;1;5;9;0;6;;;;;Z80 em modo R8064
 213;SBC HL,BC;ED 42;Z80 (ED);2;1;0;0;0;1;1;4;8;0;5;;;;;Z80 em modo R8064

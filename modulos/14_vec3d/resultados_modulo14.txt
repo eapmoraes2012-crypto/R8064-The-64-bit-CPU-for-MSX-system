@@ -1,49 +1,49 @@
-MODULO 14 - vec3d_unit (manipulacao 3D, prototipo de medicao) - 09/11/2026
+MODULE 14 - vec3d_unit (3D manipulation, measurement prototype) - 09/11/2026
 =======================================================================
-FORMATO: vetor = 4 lanes int16 (x,y,z,w) em um registrador de 64 bits; ponto fixo com deslocamento de saida sh (0-31) e arredondamento ao mais proximo.
+FORMAT: vector = 4 int16 lanes (x,y,z,w) in a 64-bit register; fixed point with output shift sh (0-31) and rounding to nearest.
 OPERACOES (11): VMUL, VDOT4, VDOT3, VCROSS3, VADD, VSUB, VMIN, VMAX, VSHUF (swizzle por imm8), VNEG, VABS. VMUL/VCROSS3/VADD/VSUB/VNEG saturam em int16;
-  VDOT4/VDOT3 devolvem escalar de 64 bits (soma de produtos de 32 bits, sem estouro) deslocado por sh. 1 operacao por clock, latencia 5.
-VERIFICADO (simulacao, Icarus): 30.000 vetores aleatorios+cantos (op, sh 0-16, imm), modelo de referencia em inteiros do Python (semente 8064), 0 erros, saidas 1 por clock.
-MEDIDO (Yosys synth_gowin, unidade isolada):
+  VDOT4/VDOT3 return a 64-bit scalar (sum of 32-bit products, no overflow) shifted by sh. 1 operation per clock, latency 5.
+VERIFIED (simulation, Icarus): 30,000 random+corner vectors (op, sh 0-16, imm), Python integer reference model (seed 8064), 0 errors, outputs 1 per clock.
+MEASURED (Yosys synth_gowin, isolated unit):
   completa (LANE_ALU=1): 863 LUT4 + 452 ALU (= 1.315 LUT4 eq.), 935 FF, 6 MULT18X18, 0 BSRAM
-  minima   (LANE_ALU=0, sem VADD/VSUB/VMIN/VMAX/VNEG/VABS): 762 LUT4 + 309 ALU (= 1.071), 855 FF, 6 MULT18X18
-MEDIDO (nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, invólucro LFSR, alvo 100 MHz): 100,75 / 88,61 MHz (sementes 1/2) -> PASSA a 57,28 MHz com folga.
-  Historico: v1 (somadores e comparadores separados por op, saturacao por comparador) 4.436 LUT4 + 922 ALU; v2/v3 (somador compartilhado, saturacao por extensao de sinal) 894+442 a 67 MHz (FALHA 100);
-  versao final (S4 dividido em deslocamento | soma+saturacao): 863+452 a 89-101 MHz. Versoes antigas em rtl/*_v?.v.
-NAO FEITO: integracao no nucleo (decodificacao, leitura de 2 registradores 64 b, escrita, hazards, precisao de excecoes), reciproco/raiz recíproca (rsqrt) por tabela em BSRAM,
-  MATVEC4 microcodificado com acumulador interno, lanes de 32 bits (Q16.16), PnR dentro do SoC.
-IMPACTO NO ORCAMENTO (rev20: total 16.330 LUT4 eq. = 78,8 %; meta 85 % = 17.600; folga 1.270): +1.315 -> 17.645 (85,1 %) ; versao minima +1.071 -> 17.401 (83,9 %). A linha 11 da planilha
-  (Midia nivel 1: SIMD, mult 4x16, recip/rsqrt, ~960 LUT4, adiada) e substituida por esta unidade (+ ~100-150 LUT4 e 1-2 BSRAM do rsqrt). DSP: 6 de 48 (mul/div usa 4: sobram 38).
-  O SoC medido hoje (board top: 10.982 LUT4 + 1.064 ALU = 12.046 = 58 %) ainda nao inclui o mul/div, a FPU residual nem perifericos.
+  minimal   (LANE_ALU=0, without VADD/VSUB/VMIN/VMAX/VNEG/VABS): 762 LUT4 + 309 ALU (= 1.071), 855 FF, 6 MULT18X18
+MEASURED (nextpnr-himbaechel, GW2AR-LV18QN88C8/I7, LFSR wrapper, target 100 MHz): 100.75 / 88.61 MHz (seeds 1/2) -> PASSES at 57.28 MHz with margin.
+  History: v1 (separate adders and comparators per op, saturation by comparator) 4,436 LUT4 + 922 ALU; v2/v3 (shared adder, saturation by sign extension) 894+442 at 67 MHz (FAILS 100);
+  final version (S4 split into shift | add+saturation): 863+452 at 89-101 MHz. Old versions in rtl/*_v?.v.
+NOT DONE: integration into the core (decoding, reading 2 64-bit registers, writing, hazards, exception precision), reciprocal/reciprocal square root (rsqrt) by table in BSRAM,
+  microcoded MATVEC4 with an internal accumulator, 32-bit lanes (Q16.16), PnR inside the SoC.
+BUDGET IMPACT (rev20: total 16,330 LUT4 eq. = 78.8 %; target 85 % = 17,600; margin 1,270): +1,315 -> 17,645 (85.1 %) ; minimal version +1,071 -> 17,401 (83.9 %). Row 11 of the spreadsheet
+  (Multimedia level 1: SIMD, 4x16 mult, recip/rsqrt, ~960 LUT4, postponed) and is replaced by this unit (+ ~100-150 LUT4 and 1-2 BSRAM for the rsqrt). DSP: 6 of 48 (mul/div uses 4: 38 left).
+  The SoC measured today (board top: 10,982 LUT4 + 1,064 ALU = 12,046 = 58 %) does not yet include mul/div, the residual FPU or peripherals.
 
 
-===== REVISAO 10/11/2026: CORRECAO DA MEDIDA DE AREA + INTEGRACAO + OTIMIZACAO =====
-ERRO NA MEDIDA ANTERIOR: acima, "LUT4" era so a celula LUT4 do Yosys. O nextpnr conta como LUT4 TODAS as LUT (LUT1+LUT2+LUT3+LUT4) e os MUX2_LUT5..8; a ALU e a parte.
-Medida correta da v5 (completa): LUT1-4 2.064 + MUX2_LUT 311 + ALU 452 = ~2.830 LUT4-eq (nextpnr, com o invólucro de teste: LUT4 2.638 + ALU 512).
-  (os "1.315" e "1.071" dados antes estavam ERRADOS por subestimar ~2x; a versao minima tambem.)
-INTEGRADA ao nucleo (ver ISA_3D.txt): uop[80]=vec (uop de 81 bits, continua em 9 BSRAM), ED F8/FA/FB (ids 294-296), regressao antiga identica (21 testes), SoC e excecoes OK,
-  tb_vec (09_core_min/sim): programas aleatorios de ~3.000 operacoes 3D com/sem prefixos de banco, 0 erros.
-OTIMIZADA (v6, sem perda de funcao; verificada com os mesmos 30.000 vetores): 
-  (1) VNEG/VABS passam a usar os multiplicadores (a*-1, a*sinal(a)) - some a troca de operandos do somador de lanes;
-  (2) VCROSS3 com 6 multiplicadores proprios (10 DSP no total): some o multiplexador de entrada dos DSP;
-  (3) DOT3 zera a lane w na entrada do multiplicador (uma arvore de soma em vez de duas); (4) sh de 4 bits (ISA: 0..15), larguras exatas (34/33 bits),
-  (5) entradas direto nos DSP (latencia 5 -> 4, 128 FF a menos).
-  Resultado: Yosys LUT1-4 1.659 + MUX2 267 + ALU 409 = ~2.335 LUT4-eq (-17%); nextpnr isolado 2.080 LUT4 + 466 ALU (-19% vs 3.150), 10 DSP, Fmax 114,9 MHz (alvo 70).
-  Variante sem VADD/VSUB/VMIN/VMAX (LANE_ALU=0): -250 LUT4-eq (nao adotada: perde funcao).
-  No SoC (board top, ROMs aleatorias, Yosys): +1.419 LUT(1-4+MUX2) +441 ALU = ~+1.860 LUT4-eq, +10 DSP, BSRAM igual (referencia sem a unidade: 11.807 LUT + 919 ALU).
+===== REVISION 10/11/2026: AREA MEASUREMENT CORRECTION + INTEGRATION + OPTIMIZATION =====
+ERROR IN THE PREVIOUS MEASUREMENT: above, "LUT4" was only the Yosys LUT4 cell. nextpnr counts as LUT4 ALL the LUTs (LUT1+LUT2+LUT3+LUT4) and the MUX2_LUT5..8; the ALU is separate.
+Correct measurement of v5 (complete): LUT1-4 2,064 + MUX2_LUT 311 + ALU 452 = ~2,830 LUT4-eq (nextpnr, with the test wrapper: LUT4 2,638 + ALU 512).
+  (the "1,315" and "1,071" given before were WRONG by underestimating ~2x; the minimal version too.)
+INTEGRATED into the core (see ISA_3D.txt): uop[80]=vec (81-bit uop, still 9 BSRAM), ED F8/FA/FB (ids 294-296), old regression identical (21 tests), SoC and exceptions OK,
+  tb_vec (09_core_min/sim): random programs of ~3,000 3D operations with/without bank prefixes, 0 errors.
+OPTIMIZED (v6, no loss of function; verified with the same 30,000 vectors): 
+  (1) VNEG/VABS now use the multipliers (a*-1, a*sign(a)) - the operand swap of the lane adder disappears;
+  (2) VCROSS3 with 6 dedicated multipliers (10 DSP in total): the DSP input multiplexer disappears;
+  (3) DOT3 zeroes the w lane at the multiplier input (one sum tree instead of two); (4) 4-bit sh (ISA: 0..15), exact widths (34/33 bits),
+  (5) inputs directly into the DSPs (latency 5 -> 4, 128 FF fewer).
+  Result: Yosys LUT1-4 1,659 + MUX2 267 + ALU 409 = ~2,335 LUT4-eq (-17%); isolated nextpnr 2,080 LUT4 + 466 ALU (-19% vs 3,150), 10 DSP, Fmax 114.9 MHz (target 70).
+  Variant without VADD/VSUB/VMIN/VMAX (LANE_ALU=0): -250 LUT4-eq (not adopted: loses function).
+  In the SoC (board top, random ROMs, Yosys): +1,419 LUT(1-4+MUX2) +441 ALU = ~+1,860 LUT4-eq, +10 DSP, BSRAM the same (reference without the unit: 11,807 LUT + 919 ALU).
 CUSTO POR FUNCAO na v6 (experimentos de eliminacao, LUT4-eq): deslocador+arredondamento 676 | VSHUF 228 | VDOT 237 | VCROSS3 166 | VADD/VSUB 174 | VMIN/VMAX 109.
-TENTADO E DESCARTADO: v7 (deslocador de janela de 16 bits + teste de saturacao por termometro nas lanes 1-3): +120..+180 (o ABC ja otimiza melhor a versao ingenua).
-NAO FEITO (ideias com estimativa, nao medidas): DOT/CROSS nos blocos MULTADDALU18X18 do DSP (~-200 ALU, requer primitivas Gowin + modelo de simulacao);
-  unidade multiciclo (1-2 lanes/clock: ~-180..-300 LUT4-eq, vazao 1 op por 2-4 clocks; o front-end atual so emite 1 instrucao a cada >=6 clocks).
-ORCAMENTO: rev20 16.330 (78,8 %) + ~1.860..2.335 = ~18.200..18.700 (87,7..90 %) - ACIMA da meta de 85 % (17.600). Medido no board top (nextpnr, sem a unidade): 12.046 (58 %).
-RISCO DE FMAX: o 'hold' do nucleo ganhou o termo (vec_m && !vo_valid); precisa de PnR do board top (rodar_pnr_board.bat, 4 sementes) para confirmar 57,28 MHz.
+TRIED AND DISCARDED: v7 (16-bit window shifter + thermometer saturation test on lanes 1-3): +120..+180 (ABC already optimizes the naive version better).
+NOT DONE (ideas with estimates, not measured): DOT/CROSS in the MULTADDALU18X18 blocks of the DSP (~-200 ALU, requires Gowin primitives + simulation model);
+  multicycle unit (1-2 lanes/clock: ~-180..-300 LUT4-eq, throughput 1 op per 2-4 clocks; the current front-end only issues 1 instruction every >=6 clocks).
+BUDGET: rev20 16,330 (78.8 %) + ~1,860..2,335 = ~18,200..18,700 (87.7..90 %) - ABOVE the 85 % target (17,600). Measured on the board top (nextpnr, without the unit): 12,046 (58 %).
+FMAX RISK: the core's 'hold' gained the term (vec_m && !vo_valid); it needs PnR of the board top (rodar_pnr_board.bat, 4 seeds) to confirm 57.28 MHz.
 
-===== 10/11/2026 (2): UNIDADE MULTICICLO TESTADA E DESCARTADA =====
-v8: S3/S4 compartilhados por pares de lanes (2 passadas, 1 operacao a cada >= 2 clocks, latencia 5), verificada (30.000 vetores, intervalos de 2 e 3 clocks; tb_vec3d.v tem o parametro GAP).
-Yosys: LUT1-4 1.669 + MUX2 443 + ALU 341 = 2.453 LUT4-eq contra 2.335 da v6: PIOR (os multiplexadores de entrada/saida das fendas custam mais que os dois deslocadores economizados).
-Mantida a v6. Resta, sem estar testado, usar blocos MULTADDALU18X18 para DOT/CROSS (~-200 ALU, requer primitivas Gowin).
+===== 10/11/2026 (2): MULTICYCLE UNIT TESTED AND DISCARDED =====
+v8: S3/S4 shared by pairs of lanes (2 passes, 1 operation every >= 2 clocks, latency 5), verified (30,000 vectors, intervals of 2 and 3 clocks; tb_vec3d.v has the parameter GAP).
+Yosys: LUT1-4 1,669 + MUX2 443 + ALU 341 = 2,453 LUT4-eq against 2,335 for v6: WORSE (the input/output multiplexers of the slots cost more than the two shifters saved).
+v6 kept. What remains, untested, is using MULTADDALU18X18 blocks for DOT/CROSS (~-200 ALU, requires Gowin primitives).
 
-===== 10/11/2026 (3): VERSAO MINIMA ADOTADA NO NUCLEO =====
-r8064_core_min: parametro VEC_LANE_ALU (padrao 0) -> vec3d_unit sem VADD/VSUB/VMIN/VMAX. Verificada: tb_vec (programas aleatorios so com OP 0-3, FA, FB) OK; regressao de 21 testes identica; tb_soc e tb_soc_exc OK.
-Area: unidade isolada v6 minima = LUT1-4 1.540 + ALU 274 (completa 1.659 + 409): -250 LUT4-eq. No board top (Yosys, ROMs aleatorias) a diferenca NAO apareceu: completa 13.226 LUT+MUX2 / 1.360 ALU,
-minima 13.514 / 1.225 (soma +153, dentro do ruido do ABC ~300). O valor real so sai do nextpnr no seu PC (rodar_pnr_board.bat).
+===== 10/11/2026 (3): MINIMAL VERSION ADOPTED IN THE CORE =====
+r8064_core_min: parameter VEC_LANE_ALU (default 0) -> vec3d_unit without VADD/VSUB/VMIN/VMAX. Verified: tb_vec (random programs with only OP 0-3, FA, FB) OK; regression of 21 tests identical; tb_soc and tb_soc_exc OK.
+Area: isolated minimal v6 unit = LUT1-4 1,540 + ALU 274 (complete 1,659 + 409): -250 LUT4-eq. On the board top (Yosys, random ROMs) the difference did NOT show up: complete 13,226 LUT+MUX2 / 1,360 ALU,
+minimal 13,514 / 1,225 (sum +153, within the ABC noise of ~300). The real value only comes from nextpnr on your PC (rodar_pnr_board.bat).

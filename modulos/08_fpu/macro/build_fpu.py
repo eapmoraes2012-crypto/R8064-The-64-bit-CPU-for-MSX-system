@@ -1,4 +1,4 @@
-# build_fpu.py - gera 08_fpu/rtl/fpu_top.v (com as ROMs do firmware) e reincorpora os modulos da FPU no arquivo do nucleo
+# build_fpu.py - generates 08_fpu/rtl/fpu_top.v (with the firmware ROMs) and reincorporates the FPU modules into the core file
 import os, subprocess, shutil
 H = os.path.dirname(os.path.abspath(__file__)); M = os.path.join(H, '..', '..')
 import fpu_macro

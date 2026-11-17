@@ -1,14 +1,14 @@
-// msx_if.v - interface slot MSX <-> R8064 (opcao A: 4 portas de E/S) - registradores, 2 FIFOs de 2 KB, sincronizadores, controle do buffer de dados.
-// Lado MSX (sinais ja convertidos para 3,3 V pelos 74LVC245): iorq_n, rd_n, wr_n, m1_n, reset_n, a[7:0], d_in[7:0]; saidas: d_out[7:0], u3_oe_n, u3_dir,
-//   wait_buf/int_buf/busdir_buf (entradas dos buffers de coletor aberto: 0 = puxa a linha para baixo, 1 = alta impedancia).
-// Lado R8064 (portas de E/S de 8 bits; acesso de 1 clock, sem espera): r_port, r_rd, r_wr, r_wdata, r_rdata.
-//   F0 DATA (le: FIFO MSX->R8064; escreve: FIFO R8064->MSX) | F1 FILAS (le: b0 ha dado a ler, b1 ha espaco para escrever) | F2/F3 LEN_L/LEN_H (le: len do MSX; escreve: len do resultado)
-//   F4 FLAGS (le: b0 INICIAR recebido, b1 ocupado; escreve: b0=1 reconhece INICIAR, b2=1 CONCLUIDO)
+// msx_if.v - MSX slot <-> R8064 interface (option A: 4 I/O ports) - registers, 2 FIFOs of 2 KB, synchronizers, data buffer control.
+// MSX side (signals already converted to 3.3 V by the 74LVC245): iorq_n, rd_n, wr_n, m1_n, reset_n, a[7:0], d_in[7:0]; outputs: d_out[7:0], u3_oe_n, u3_dir,
+//   wait_buf/int_buf/busdir_buf (inputs of the open-collector buffers: 0 = pulls the line low, 1 = high impedance).
+// R8064 side (8-bit I/O ports; 1-clock access, no wait): r_port, r_rd, r_wr, r_wdata, r_rdata.
+//   F0 DATA (read: MSX->R8064 FIFO; write: R8064->MSX FIFO) | F1 QUEUES (read: b0 has data to read, b1 has space to write) | F2/F3 LEN_L/LEN_H (read: MSX len; write: result len)
+//   F4 FLAGS (read: b0 START received, b1 busy; write: b0=1 acknowledges START, b2=1 DONE)
 // MSX (base+0..3): DATA, STATUS/CMD, LEN_L, LEN_H.
-//   STATUS: b0 ha dado para ler, b1 ha espaco para escrever, b2 R8064 ocupado, b3 CONCLUIDO, b4 IRQ pendente, b5 estouro (MSX escreveu com FIFO cheio), b6 sub-fluxo (MSX leu FIFO vazio)
-//   CMD:    b0 INICIAR, b1 limpa FIFOs e erros, b2 habilita IRQ, b3 reinicia o R8064 (pulso), b7 limpa CONCLUIDO/IRQ
-// Escrita do MSX: o dado e confirmado quando o ciclo (IORQ, WR, endereco) fica estavel por 3 amostras de 100 MHz (nao espera a subida de WR).
-// Leitura do MSX: dado apresentado enquanto IORQ+RD+endereco estaveis; o pop ocorre quando RD termina.
+//   STATUS: b0 has data to read, b1 has space to write, b2 R8064 busy, b3 DONE, b4 IRQ pending, b5 overflow (MSX wrote with FIFO full), b6 underflow (MSX read empty FIFO)
+//   CMD:    b0 START, b1 clears FIFOs and errors, b2 enables IRQ, b3 restarts the R8064 (pulse), b7 clears DONE/IRQ
+// MSX write: the data is confirmed when the cycle (IORQ, WR, address) stays stable for 3 samples of 100 MHz (it does not wait for WR to rise).
+// MSX read: data presented while IORQ+RD+address are stable; the pop occurs when RD ends.
 module msx_if #(parameter [7:0] BASE = 8'h40, parameter PORT_BASE = 8'hF0)(
     input  wire       clk, rst_n,
     input  wire       iorq_n, rd_n, wr_n, m1_n, reset_n,
@@ -19,14 +19,14 @@ module msx_if #(parameter [7:0] BASE = 8'h40, parameter PORT_BASE = 8'hF0)(
     input  wire [7:0] r_port, input wire r_rd, r_wr, input wire [7:0] r_wdata, output reg [7:0] r_rdata,
     output reg        r_reset
 );
-    // ---- sincronizadores (2 FF) + amostra de dados
+    // ---- synchronizers (2 FF) + data sample
     reg [1:0] s_iorq = 2'b11, s_rd = 2'b11, s_wr = 2'b11, s_m1 = 2'b11, s_rst = 2'b00;
     reg [7:0] s_a0, s_a1, s_d0, s_d1;
     always @(posedge clk) begin
         s_iorq <= {s_iorq[0], iorq_n}; s_rd <= {s_rd[0], rd_n}; s_wr <= {s_wr[0], wr_n}; s_m1 <= {s_m1[0], m1_n}; s_rst <= {s_rst[0], reset_n};
         s_a0 <= a; s_a1 <= s_a0; s_d0 <= d_in; s_d1 <= s_d0;
     end
-    wire io_cycle = !s_iorq[1] && s_m1[1];                       // E/S (M1 ativo + IORQ = ack de interrupcao: ignorado)
+    wire io_cycle = !s_iorq[1] && s_m1[1];                       // I/O (M1 active + IORQ = interrupt ack: ignored)
     wire match    = (s_a1[7:2] == BASE[7:2]);
     wire [1:0] reg_sel = s_a1[1:0];
     wire rd_raw = io_cycle && match && !s_rd[1];
@@ -37,10 +37,10 @@ module msx_if #(parameter [7:0] BASE = 8'h40, parameter PORT_BASE = 8'hF0)(
         wr_cnt <= wr_raw ? (wr_cnt == 2'd3 ? 2'd3 : wr_cnt + 1) : 2'd0;
         rd_q <= (rd_cnt == 2'd3); wr_q <= (wr_cnt == 2'd3);
     end
-    wire rd_ok = (rd_cnt == 2'd3);                                // leitura estavel
-    wire wr_commit = (wr_cnt == 2'd3) && !wr_q;                   // 1 pulso por ciclo de escrita
-    wire rd_end = rd_q && !rd_ok;                                 // fim da leitura -> pop
-    reg [1:0] sel_l;                                               // registrador do ciclo de leitura em curso (congelado)
+    wire rd_ok = (rd_cnt == 2'd3);                                // stable read
+    wire wr_commit = (wr_cnt == 2'd3) && !wr_q;                   // 1 pulse per write cycle
+    wire rd_end = rd_q && !rd_ok;                                 // end of read -> pop
+    reg [1:0] sel_l;                                               // register of the read cycle in progress (frozen)
     always @(posedge clk) if (rd_raw && rd_cnt < 2'd3) sel_l <= reg_sel;
 
     // ---- FIFOs
@@ -95,7 +95,7 @@ module msx_if #(parameter [7:0] BASE = 8'h40, parameter PORT_BASE = 8'hF0)(
             default: r_rdata = 8'h00;
         endcase
     end
-    // ---- dado para o MSX (nunca dirigido fora de leitura estavel)
+    // ---- data to the MSX (never driven outside a stable read)
     always @* begin
         case (sel_l)
             2'd0: d_out = fo_empty ? 8'h00 : fo_q;
@@ -106,7 +106,7 @@ module msx_if #(parameter [7:0] BASE = 8'h40, parameter PORT_BASE = 8'hF0)(
     end
     assign u3_oe_n    = !rd_ok;
     assign u3_dir     = rd_ok;                 // 1 = FPGA -> MSX
-    assign busdir_buf = !rd_ok;                // 0 = puxa BUSDIR para baixo so ao entregar dado
+    assign busdir_buf = !rd_ok;                // 0 = pulls BUSDIR low only when delivering data
     assign int_buf    = !(irq_p && irq_en);
-    assign wait_buf   = 1'b1;                  // WAIT nao usado (alta impedancia)
+    assign wait_buf   = 1'b1;                  // WAIT not used (high impedance)
 endmodule

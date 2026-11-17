@@ -1,4 +1,4 @@
-// Invólucro SÓ para medir area/timing da interface MSX (entradas por LFSR, saidas reduzidas a 1 bit). Nao e o projeto final.
+// Wrapper ONLY to measure area/timing of the MSX interface (LFSR inputs, outputs reduced to 1 bit). Not the final design.
 module pnr_msx_top(input clk, input din, output dout);
     reg [63:0] l = 64'h1357_9BDF_0246_8ACE; always @(posedge clk) l <= {l[62:0], l[63] ^ l[62] ^ l[60] ^ l[59] ^ din};
     wire [7:0] d_out; wire u3_oe_n, u3_dir, wait_buf, int_buf, busdir_buf, r_reset; wire [7:0] r_rdata;

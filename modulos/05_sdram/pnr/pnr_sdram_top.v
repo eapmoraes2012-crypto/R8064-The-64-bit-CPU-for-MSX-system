@@ -1,4 +1,4 @@
-// Invólucro SÓ para medir area/timing do controlador de SDRAM (entradas por LFSR, saidas reduzidas a 1 bit). Nao e o projeto final.
+// Wrapper ONLY to measure area/timing of the SDRAM controller (LFSR inputs, outputs reduced to 1 bit). Not the final design.
 module pnr_sdram_top(input clk, input din, output dout);
     reg [127:0] l = 128'h1357_9BDF_0246_8ACE_FEDC_BA98_7654_3211; always @(posedge clk) l <= {l[126:0], l[127] ^ l[126] ^ l[125] ^ l[120] ^ din};
     wire ready, rvalid, wdone, init_done, s_cke, s_cs_n, s_ras_n, s_cas_n, s_we_n, s_dq_oe; wire [63:0] rdata; wire [3:0] s_dqm; wire [1:0] s_ba; wire [10:0] s_a; wire [31:0] s_dq_o;

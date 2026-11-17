@@ -1,9 +1,9 @@
-// div_unit.v - divisor iterativo de 1 bit por clock (restaurador), sem sinal e com sinal.
-//   Dividendo de 2*sz bits = {hi,lo}, divisor d de sz bits; sz: 0=8,1=16,2=32,3=64. Quociente e resto de sz bits.
-//   Sem sinal: ocupa sz+2 clocks (LOAD + sz iteracoes + DONE). Com sinal: sz+7 (PRE, PRE2, PRE3 + LOAD + sz + POST, POST2 + DONE):
-//   REV44: UM unico negador de 64 bits (antes eram 5) serve as 3 negacoes de entrada e as 2 de saida, uma por clock (+3 clocks so na divisao com sinal).
-//   err = 1 em divisao por zero ou quociente fora da faixa (estouro). Em erro, termina mais cedo.
-//   Com sinal: quociente truncado para zero; resto com o sinal do dividendo.
+// div_unit.v - iterative divider, 1 bit per clock (restoring), unsigned and signed.
+//   Dividend of 2*sz bits = {hi,lo}, divisor d of sz bits; sz: 0=8,1=16,2=32,3=64. Quotient and remainder of sz bits.
+//   Unsigned: takes sz+2 clocks (LOAD + sz iterations + DONE). Signed: sz+7 (PRE, PRE2, PRE3 + LOAD + sz + POST, POST2 + DONE):
+//   REV44: ONE single 64-bit negator (before there were 5) serves the 3 input negations and the 2 output ones, one per clock (+3 clocks only on signed division).
+//   err = 1 on divide by zero or quotient out of range (overflow). On error, it finishes earlier.
+//   Signed: quotient truncated toward zero; remainder with the sign of the dividend.
 module div_unit(
     input  wire        clk, rst,
     input  wire        start,
@@ -25,15 +25,15 @@ module div_unit(
     wire [63:0] M = mask(s);
     wire        msb_lo = (s == 2'd0) ? ql[7] : (s == 2'd1) ? ql[15] : (s == 2'd2) ? ql[31] : ql[63];
     wire [64:0] nr   = {rem[63:0], msb_lo};
-    // REV44: um unico subtrator de 66 bits serve a iteracao e a checagem de estouro do LOAD (rh >= rd); antes eram 2 comparadores + 1 subtrator
+    // REV44: a single 66-bit subtractor serves the iteration and the LOAD overflow check (rh >= rd); before there were 2 comparators + 1 subtractor
     wire [65:0] dif  = ((st == LOAD) ? {2'b00, rh} : {1'b0, nr}) - {2'b00, rd};
     wire        ge   = ~dif[65];
     wire [64:0] rem_n = ge ? dif[64:0] : nr;
     wire [63:0] ql_n  = ((ql << 1) | {63'd0, ge}) & M;
-    // PRE: valor absoluto
+    // PRE: absolute value
     wire        top_hi = (s == 2'd0) ? rh[7] : (s == 2'd1) ? rh[15] : (s == 2'd2) ? rh[31] : rh[63];
     wire        top_d  = (s == 2'd0) ? rd[7] : (s == 2'd1) ? rd[15] : (s == 2'd2) ? rd[31] : rd[63];
-    // negador unico: complemento de 2 de nin (com carry-in cin; o alto do dividendo usa rlz = "baixo era zero")
+    // single negator: 2's complement of nin (with carry-in cin; the dividend high part uses rlz = "low was zero")
     wire [63:0] nin  = (st == PRE) ? rl : (st == PRE2) ? rh : (st == PRE3) ? rd : (st == POST) ? ql : rem[63:0];
     wire        ncin = (st == PRE2) ? rlz : 1'b1;
     wire [63:0] nout = (~nin + {63'd0, ncin}) & M;
@@ -41,7 +41,7 @@ module div_unit(
     wire        qneg = sd ^ sv;
     wire [63:0] half = (s == 2'd0) ? 64'h80 : (s == 2'd1) ? 64'h8000 : (s == 2'd2) ? 64'h8000_0000 : 64'h8000_0000_0000_0000;
     wire        qtop = (s == 2'd0) ? ql[7] : (s == 2'd1) ? ql[15] : (s == 2'd2) ? ql[31] : ql[63];   // ql >= half  <=>  bit alto do tamanho
-    wire        qlow = |(ql & (M >> 1));                                                            // ql >  half  <=>  bit alto e algum bit abaixo
+    wire        qlow = |(ql & (M >> 1));                                                            // ql >  half  <=>  high bit and some bit below
     wire        qbad = qtop & (qneg ? qlow : 1'b1);
     always @(posedge clk) begin
         if (rst) begin st <= IDLE; err <= 0; q <= 0; r <= 0; end
@@ -52,7 +52,7 @@ module div_unit(
                     st <= sgn ? PRE : LOAD;
                 end else st <= IDLE;
             end
-            PRE: begin                       // sinais + nega o baixo do dividendo
+            PRE: begin                       // signs + negates the low part of the dividend
                 sd <= top_hi; sv <= top_d;
                 if (top_hi) rl <= nout;
                 st <= PRE2;

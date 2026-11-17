@@ -1,7 +1,7 @@
-# gera gov_rom.mem (2048 x 32): tabela de tempo por (pagina, opcode) para o governador de tempo do R8064
-# uso: python3 gen_gov_rom.py <ref/z80_classico_tstates.csv>   (grava gov_rom.mem na pasta atual)
-# indice = pagina*256 + opcode ; pagina: 0 principal, 1 CB, 2 ED, 3 DD, 4 FD, 5 DDCB, 6 FDCB, 7 aceitacao de interrupcao
-# palavra: [5:0] Z80 T-states | [11:6] Z80 T alt | [17:12] R800 ciclos (total DRAM) | [23:18] R800 alt | [24] 2 ciclos M1 | [25] E/S
+# generates gov_rom.mem (2048 x 32): timing table by (page, opcode) for the R8064 timing governor
+# usage: python3 gen_gov_rom.py <ref/z80_classico_tstates.csv>   (writes gov_rom.mem in the current folder)
+# index = page*256 + opcode ; page: 0 main, 1 CB, 2 ED, 3 DD, 4 FD, 5 DDCB, 6 FDCB, 7 interrupt acceptance
+# word: [5:0] Z80 T-states | [11:6] Z80 alt T | [17:12] R800 cycles (total DRAM) | [23:18] R800 alt | [24] 2 M1 cycles | [25] I/O
 import re,sys,csv
 from r800cls import classify
 src=sys.argv[1]
@@ -33,19 +33,19 @@ rom=[0]*(7*256)
 for p in range(7):
     for o in range(256):
         if (p,o) in tab: z,za,rt,ra,m1,io=tab[(p,o)]
-        elif p in (3,4):   # DD/FD sem IX/IY: prefixo (4 T / 1 ciclo R800) + instrucao da pagina principal
+        elif p in (3,4):   # DD/FD without IX/IY: prefix (4 T / 1 R800 cycle) + main page instruction
             z,za,rt,ra,m1,io=tab[(0,o)] if (0,o) in tab else (4,0,1,0,0,0)
             z+=4; za=za+4 if za else 0; rt+=1; ra=ra+1 if ra else 0; m1=1
         elif p==2: z,za,rt,ra,m1,io=8,0,(14 if MUL.get(o)=='MULUB' else 36 if MUL.get(o)=='MULUW' else 2),0,1,0   # ED indefinido = NOP de 2 bytes (R800: MULUB/MULUW)
-        elif p==0: z,za,rt,ra,m1,io=4,0,1,0,0,0     # (nao deve ocorrer)
+        elif p==0: z,za,rt,ra,m1,io=4,0,1,0,0,0     # (should not occur)
         else: z,za,rt,ra,m1,io=8,0,2,0,1,0
         assert z<64 and za<64 and rt<64 and ra<64,(p,o,z,za,rt,ra)
         rom[p*256+o]=z|za<<6|rt<<12|ra<<18|m1<<24|io<<25
-# pagina 7 (aceitacao de interrupcao; antes acrescentada a parte por gov_irq_page.py): Z80 = 13 T (INTA com 2 waits automaticos; o M1_WAIT
-# do MSX soma +1 no governador), R800 = tempo do RST 38h (a confirmar). As 256 entradas sao iguais (o nucleo usa op 0).
+# page 7 (interrupt acceptance; before added separately by gov_irq_page.py): Z80 = 13 T (INTA with 2 automatic waits; the MSX M1_WAIT
+# adds +1 in the governor), R800 = RST 38h timing (to be confirmed). The 256 entries are equal (the core uses op 0).
 rst=rom[0*256+0xFF]
 e=13 | 0<<6 | (rst>>12&63)<<12 | (rst>>12&63)<<18 | 0<<24
 rom+=[e]*256
 assert len(rom)==2048
 open('gov_rom.mem','w').write('\n'.join('%08x'%w for w in rom)+'\n')
-print('entradas',len(tab),'sem classe R800:',len(miss),miss[:5])
+print('entries',len(tab),'without R800 class:',len(miss),miss[:5])

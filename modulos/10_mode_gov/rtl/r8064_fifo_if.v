@@ -1,40 +1,40 @@
-// r8064_fifo_if.v - interface de FIFOs MSX <-> R8064 por registradores de E/S (protocolo da aba "Pinagem MSX", secao 3).
+// r8064_fifo_if.v - MSX <-> R8064 FIFO interface through I/O registers (protocol of the "MSX Pinout" tab, section 3).
 //
-// Lado R8064 (portas BASE..BASE+4, padrao BASE = E8h; as portas antigas F0h-F4h colidiam com F3h = modo de tela do MSX2+ e F4h = flag de inicializacao):
-//   BASE+0 DATA     : IN = proximo byte do FIFO MSX->R8064 | OUT = empilha no FIFO R8064->MSX
-//   BASE+1 STATUS   : IN: b0 ha dado para ler (FIFO MSX->R8064 nao vazio), b1 ha espaco para escrever (FIFO R8064->MSX nao cheio)
-//   BASE+2 LEN_L    : comprimento do bloco, byte baixo (compartilhado com o MSX)
-//   BASE+3 LEN_H    : byte alto
-//   BASE+4 FLAGS    : IN: b0 INICIAR recebido, b1 ocupado, b2 CONCLUIDO, b3 JANELA (1 = o buffer de 16 KB e do MSX) | OUT: b0=1 limpa INICIAR; b1 = valor de "ocupado"; b2=1 marca CONCLUIDO (e devolve a janela ao MSX)
-// Lado MSX (offset 0..3 = DATA, STATUS/CMD, LEN_L, LEN_H; a base no slot do MSX e escolhida fora, na decodificacao da porta):
-//   DATA   : IN = proximo byte do FIFO R8064->MSX | OUT = empilha no FIFO MSX->R8064
-//   STATUS : IN: b0 ha dado para ler, b1 ha espaco para escrever, b2 R8064 ocupado, b3 CONCLUIDO, b4 IRQ pendente, b5 JANELA (do MSX), b6 ERRO (estouro/esvaziamento de FIFO; limpo por CMD.b1), b7 = 0
-//   CMD    : OUT: b0 INICIAR (no mesmo ciclo: ocupado = 1, CONCLUIDO = 0, JANELA = 0), b1 limpa os FIFOs e o ERRO, b2 habilita IRQ, b3 reinicia o R8064 (pulso; devolve a janela), b7 limpa CONCLUIDO/IRQ
-// JANELA (REV46): registrador de posse do buffer de 16 KB (r8064_xbuf). Reset = 1 (MSX). INICIAR zera; CONCLUIDO do R8064 ou reinicio do R8064 devolvem 1.
-// Porta de dispositivo do DMA (REV43): d_pop/d_push/d_wd/a_avail/a_q/b_space usam os mesmos FIFOs (modos 1 e 2 do r8064_dma).
-// As portas de entrada devem ser lidas na MESMA fase do pulso *_re (dado combinacional); cada FIFO tem 2048 bytes (1 BSRAM cada).
+// R8064 side (ports BASE..BASE+4, default BASE = E8h; the old ports F0h-F4h collided with F3h = MSX2+ screen mode and F4h = initialization flag):
+//   BASE+0 DATA     : IN = next byte of the MSX->R8064 FIFO | OUT = pushes into the R8064->MSX FIFO
+//   BASE+1 STATUS   : IN: b0 has data to read (MSX->R8064 FIFO not empty), b1 has space to write (R8064->MSX FIFO not full)
+//   BASE+2 LEN_L    : block length, low byte (shared with the MSX)
+//   BASE+3 LEN_H    : high byte
+//   BASE+4 FLAGS    : IN: b0 START received, b1 busy, b2 DONE, b3 WINDOW (1 = the 16 KB buffer belongs to the MSX) | OUT: b0=1 clears START; b1 = value of "busy"; b2=1 marks DONE (and returns the window to the MSX)
+// MSX side (offset 0..3 = DATA, STATUS/CMD, LEN_L, LEN_H; the base in the MSX slot is chosen outside, in the port decoding):
+//   DATA   : IN = next byte of the R8064->MSX FIFO | OUT = pushes into the MSX->R8064 FIFO
+//   STATUS : IN: b0 has data to read, b1 has space to write, b2 R8064 busy, b3 DONE, b4 IRQ pending, b5 WINDOW (MSX's), b6 ERROR (FIFO overflow/underflow; cleared by CMD.b1), b7 = 0
+//   CMD    : OUT: b0 START (in the same cycle: busy = 1, DONE = 0, WINDOW = 0), b1 clears the FIFOs and the ERROR, b2 enables IRQ, b3 resets the R8064 (pulse; returns the window), b7 clears DONE/IRQ
+// WINDOW (REV46): ownership register of the 16 KB buffer (r8064_xbuf). Reset = 1 (MSX). START clears it; the R8064's DONE or R8064 reset return it to 1.
+// DMA device port (REV43): d_pop/d_push/d_wd/a_avail/a_q/b_space use the same FIFOs (modes 1 and 2 of r8064_dma).
+// The input ports must be read in the SAME phase as the *_re pulse (combinational data); each FIFO has 2048 bytes (1 BSRAM each).
 module r8064_fifo_if #(parameter BASE = 8'hE8, parameter AW = 11)(
     input  wire       clk, rst,
-    // lado R8064 (barramento de E/S do sistema)
+    // R8064 side (system I/O bus)
     input  wire       r_we, r_re, input wire [7:0] r_a, r_wd, output reg [7:0] r_rd, output wire r_hit,
     // lado MSX (slot, ja sincronizado ao clk)
     input  wire       m_we, m_re, input wire [1:0] m_a, input wire [7:0] m_wd, output reg [7:0] m_rd,
-    output wire       m_irq,        // linha INT do slot (coletor aberto fora)
-    output reg        r8064_rst,    // pulso de reinicio do R8064 (CMD.b3)
-    output wire       win,          // 1 = o buffer de 16 KB pertence ao MSX (JANELA)
-    // porta de dispositivo do DMA (os mesmos FIFOs; o DMA so pede d_pop com a_avail e d_push com b_space)
+    output wire       m_irq,        // slot INT line (open collector outside)
+    output reg        r8064_rst,    // R8064 restart pulse (CMD.b3)
+    output wire       win,          // 1 = the 16 KB buffer belongs to the MSX (WINDOW)
+    // DMA device port (the same FIFOs; the DMA only requests d_pop with a_avail and d_push with b_space)
     input  wire       d_pop, d_push, input wire [7:0] d_wd, output wire a_avail, output wire [7:0] a_q, output wire b_space
 );
     localparam DEPTH = 1 << AW;
-    // BASE deve ser multiplo de 8 (E8h, F0h...): decodificacao por comparacao de 5 bits + 3 bits (sem subtrator)
+    // BASE must be a multiple of 8 (E8h, F0h...): decoding by 5-bit + 3-bit comparison (no subtractor)
     wire [2:0] off3 = r_a[2:0];
     wire sel = (r_a[7:3] == BASE[7:3]);
     assign r_hit = sel && (off3 < 3'd5);
     wire off0 = sel && off3 == 3'd0, off1 = sel && off3 == 3'd1, off2 = sel && off3 == 3'd2, off3_ = sel && off3 == 3'd3, off4 = sel && off3 == 3'd4;
-    // ---- FIFO A: MSX -> R8064 | FIFO B: R8064 -> MSX ----  (ocupacao mantida por ponteiros incrementais; flags cheio/nao-vazio registrados)
+    // ---- FIFO A: MSX -> R8064 | FIFO B: R8064 -> MSX ----  (occupancy kept by incremental pointers; full/non-empty flags registered)
     reg [7:0] ma [0:DEPTH-1]; reg [7:0] mb [0:DEPTH-1];
-    reg [AW:0] wa, ra, wb, rb;     // ponteiros com bit extra: vazio = iguais; cheio = iguais exceto o bit extra
-    reg full_a, nz_a, nz_a_d, full_b, nz_b, nz_b_d;      // *_d: atrasado de 1 clock (a memoria le com 1 clock de latencia)
+    reg [AW:0] wa, ra, wb, rb;     // pointers with an extra bit: empty = equal; full = equal except the extra bit
+    reg full_a, nz_a, nz_a_d, full_b, nz_b, nz_b_d;      // *_d: delayed by 1 clock (the memory reads with 1 clock of latency)
     reg [7:0] qa, qb;
     wire clr = m_we && m_a == 2'd1 && m_wd[1];
     wire avail_a = nz_a && nz_a_d;
@@ -88,7 +88,7 @@ module r8064_fifo_if #(parameter BASE = 8'hE8, parameter AW = 11)(
             end
         end
     end
-    // ERRO: estouro (escrita com FIFO cheio) ou esvaziamento (leitura com FIFO vazio); so o CMD.b1 (limpa FIFOs) o apaga
+    // ERROR: overflow (write with FIFO full) or underflow (read with FIFO empty); only CMD.b1 (clears FIFOs) erases it
     wire ovf_a = m_we && m_a == 2'd0 && full_a, ovf_b = r_we && off0 && full_b;
     wire und_a = r_re && off0 && !avail_a, und_b = m_re && m_a == 2'd0 && !avail_b;
     always @(posedge clk) begin
@@ -97,7 +97,7 @@ module r8064_fifo_if #(parameter BASE = 8'hE8, parameter AW = 11)(
     end
     assign win = wnd;
     assign m_irq = irq_pend;
-    // ---- leituras (combinacionais) ----
+    // ---- reads (combinational) ----
     always @* begin
         case (off3)
             3'd0: r_rd = avail_a ? qa : 8'h00;

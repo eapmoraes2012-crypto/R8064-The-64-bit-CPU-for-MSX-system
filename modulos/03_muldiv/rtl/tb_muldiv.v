@@ -35,12 +35,12 @@ module tb_muldiv;
             while (!m_ov && lat < 40) begin @(posedge clk); #1 lat = lat + 1; end
             if ((m_p & mk(mc[i][1:0])) !== (me[i] & mk(mc[i][1:0]))) begin
                 errs_m = errs_m + 1;
-                if (errs_m <= 5) $display("ERRO mul i=%0d sz=%0d sgn=%0d a=%h b=%h obtido=%h esperado=%h", i, mc[i][1:0], mc[i][2], ma[i], mb[i], m_p & mk(mc[i][1:0]), me[i] & mk(mc[i][1:0]));
+                if (errs_m <= 5) $display("ERROR mul i=%0d sz=%0d sgn=%0d a=%h b=%h got=%h expected=%h", i, mc[i][1:0], mc[i][2], ma[i], mb[i], m_p & mk(mc[i][1:0]), me[i] & mk(mc[i][1:0]));
             end
             if (lat < lmin[mc[i][1:0]]) lmin[mc[i][1:0]] = lat; if (lat > lmax[mc[i][1:0]]) lmax[mc[i][1:0]] = lat;
             repeat (2) @(posedge clk);
         end
-        // ================= multiplicador: fluxo de operacoes pequenas a cada clock
+        // ================= multiplier: stream of small operations every clock
         ns = 0; for (i = 0; i < NM; i = i + 1) if (mc[i][1:0] != 3) begin sidx[ns] = i; ns = ns + 1; end
         issued = 0; got = 0;
         fork
@@ -61,9 +61,9 @@ module tb_muldiv;
                 end
             end
         join
-        $display("MUL fluxo: %0d operacoes pequenas emitidas 1 por clock, %0d recebidas, erros %0d", ns, got, errs_s);
+        $display("MUL stream: %0d small operations issued 1 per clock, %0d received, errors %0d", ns, got, errs_s);
         repeat (4) @(posedge clk);
-        // ================= multiplicador de 64 bits em sequencia (ready)
+        // ================= 64-bit multiplier in sequence (ready)
         nb = 0; issued = 0; got = 0;
         for (i = 0; i < NM; i = i + 1) if (mc[i][1:0] == 3) begin sidx[nb] = i; nb = nb + 1; end
         t = 0;
@@ -88,29 +88,29 @@ module tb_muldiv;
                 while (got < nb) begin @(posedge clk); t = t + 1; end
             end
         join
-        $display("MUL 64 bits em sequencia: %0d operacoes em %0d clocks (%0.2f clocks/op), erros %0d", nb, t, t * 1.0 / nb, errs_b);
+        $display("MUL 64 bits in sequence: %0d operations in %0d clocks (%0.2f clocks/op), errors %0d", nb, t, t * 1.0 / nb, errs_b);
         // ================= divisor
         for (i = 0; i < ND; i = i + 1) begin
             #1 d_h = dh[i]; d_l = dl[i]; d_d = dd[i]; d_sz = dc[i][1:0]; d_sgn = dc[i][2]; d_st = 1;
             @(posedge clk); #1 d_st = 0; lat = 0;
             while (!d_done && lat < 200) begin @(posedge clk); #1 lat = lat + 1; end
-            // lat = clocks ocupados (busy) ate o DONE inclusive
+            // lat = clocks busy until DONE inclusive
             lat = lat + 1;
             if (d_err !== de[i] || (!de[i] && (d_q !== dq[i] || d_r !== dr[i]))) begin
                 errs_d = errs_d + 1;
-                if (errs_d <= 5) $display("ERRO div i=%0d sz=%0d sgn=%0d h=%h l=%h d=%h q=%h/%h r=%h/%h e=%b/%b", i, dc[i][1:0], dc[i][2], dh[i], dl[i], dd[i], d_q, dq[i], d_r, dr[i], d_err, de[i]);
+                if (errs_d <= 5) $display("ERROR div i=%0d sz=%0d sgn=%0d h=%h l=%h d=%h q=%h/%h r=%h/%h e=%b/%b", i, dc[i][1:0], dc[i][2], dh[i], dl[i], dd[i], d_q, dq[i], d_r, dr[i], d_err, de[i]);
             end
             if (!de[i]) begin
-                expn = (dc[i][1:0] == 0 ? 8 : dc[i][1:0] == 1 ? 16 : dc[i][1:0] == 2 ? 32 : 64) + (dc[i][2] ? 7 : 2);   // REV44: com sinal = sz+7 (negador unico)
+                expn = (dc[i][1:0] == 0 ? 8 : dc[i][1:0] == 1 ? 16 : dc[i][1:0] == 2 ? 32 : 64) + (dc[i][2] ? 7 : 2);   // REV44: signed = sz+7 (single negator)
                 if (lat !== expn) errs_c = errs_c + 1;
                 sel = dc[i][2] * 4 + dc[i][1:0];
                 if (lat < cmin[sel]) cmin[sel] = lat; if (lat > cmax[sel]) cmax[sel] = lat;
             end
             @(posedge clk);
         end
-        $display("MUL: %0d vetores sequenciais, erros %0d | latencia (ciclo da aceitacao ate out_valid): 8b %0d..%0d, 16b %0d..%0d, 32b %0d..%0d, 64b %0d..%0d", NM, errs_m, lmin[0], lmax[0], lmin[1], lmax[1], lmin[2], lmax[2], lmin[3], lmax[3]);
-        $display("DIV: %0d vetores, erros de resultado %0d, erros de ciclos (sem estouro) %0d", ND, errs_d, errs_c);
-        $display("DIV ciclos ocupados (sem sinal) 8b %0d 16b %0d 32b %0d 64b %0d | (com sinal) 8b %0d 16b %0d 32b %0d 64b %0d", cmax[0], cmax[1], cmax[2], cmax[3], cmax[4], cmax[5], cmax[6], cmax[7]);
+        $display("MUL: %0d sequential vectors, errors %0d | latency (cycle of acceptance until out_valid): 8b %0d..%0d, 16b %0d..%0d, 32b %0d..%0d, 64b %0d..%0d", NM, errs_m, lmin[0], lmax[0], lmin[1], lmax[1], lmin[2], lmax[2], lmin[3], lmax[3]);
+        $display("DIV: %0d vectors, result errors %0d, cycle errors (no overflow) %0d", ND, errs_d, errs_c);
+        $display("DIV busy cycles (unsigned) 8b %0d 16b %0d 32b %0d 64b %0d | (signed) 8b %0d 16b %0d 32b %0d 64b %0d", cmax[0], cmax[1], cmax[2], cmax[3], cmax[4], cmax[5], cmax[6], cmax[7]);
         if (errs_m + errs_s + errs_b + errs_d + errs_c == 0) $display("PASS"); else $display("FAIL");
         $finish;
     end

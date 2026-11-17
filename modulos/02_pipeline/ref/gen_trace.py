@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Gera tracos de programa (b2,b3 por instrucao executada) e o total esperado pelo modelo da planilha.
+# Generates program traces (b2,b3 per executed instruction) and the total expected by the spreadsheet model.
 import csv, random, sys, json
 P = sys.argv[1]            # pasta do pacote R8064_rtl_pack
 OUT = sys.argv[2]
@@ -10,15 +10,15 @@ for i, v in enumerate(ids):
 rows = {}
 for r in csv.DictReader(open(P + '/ref/expected_cycles.csv', encoding='utf-8-sig'), delimiter=';'):
     rows[int(r['id'])] = r
-def mn(i): return rows[i]['mnemonico']
+def mn(i): return rows[i]['mnemonic']
 byname = {}
-for i, r in rows.items(): byname.setdefault(r['mnemonico'], []).append(i)
-r8064 = [i for i, r in rows.items() if r['origem'] == 'R8064']
-ex_big = [i for i in r8064 if int(rows[i]['ocupacao_X']) >= 8]
-io = [i for i in rows if int(rows[i]['es']) > 0]
-loads = [i for i in r8064 if int(rows[i]['leituras']) > 0 and int(rows[i]['penalidade_desvio']) == 0 and int(rows[i]['ocupacao_X']) == 1]
-stores = [i for i in r8064 if int(rows[i]['escritas']) > 0 and int(rows[i]['penalidade_desvio']) == 0 and int(rows[i]['ocupacao_X']) == 1]
-alu = [i for i in r8064 if rows[i]['classe'].startswith('ALU 64')]
+for i, r in rows.items(): byname.setdefault(r['mnemonic'], []).append(i)
+r8064 = [i for i, r in rows.items() if r['origin'] == 'R8064']
+ex_big = [i for i in r8064 if int(rows[i]['x_occupancy']) >= 8]
+io = [i for i in rows if int(rows[i]['io']) > 0]
+loads = [i for i in r8064 if int(rows[i]['reads']) > 0 and int(rows[i]['branch_penalty']) == 0 and int(rows[i]['x_occupancy']) == 1]
+stores = [i for i in r8064 if int(rows[i]['writes']) > 0 and int(rows[i]['branch_penalty']) == 0 and int(rows[i]['x_occupancy']) == 1]
+alu = [i for i in r8064 if rows[i]['class'].startswith('ALU 64-bit')]
 def pick(name): return byname[name][0]
 ADDQ, INCQ, LDQ_L, LDQ_S = pick('ADDQ rr, rr’'), pick('INCQ rr'), pick('LDQ rr, (rr’)'), pick('LDQ (rr), rr’')
 JPQ, DJNZ, RETQ, CALLQ = pick('JPQ nnnnnnnnn'[:-1]) if 'JPQ nnnnnnnnn' in byname else pick('JPQ nnnnnnnn'), pick('DJNZW nn'), pick('RETQ'), pick('CALLQ nnnnnnnn')
@@ -42,7 +42,7 @@ for n, lst in progs.items():
         for i in lst: f.write('%02x%02x\n' % enc[i])
     meta[n] = {'n': len(lst), 'ids': lst}
 json.dump(meta, open(f'{OUT}/programs.json', 'w'))
-# tabela por id para o modelo da planilha
-tab = {i: dict(b=int(r['acessos_busca']), nr=int(r['leituras']), nw=int(r['escritas']), nio=int(r['es']), ex=int(r['ocupacao_X']), pen=int(r['penalidade_desvio'])) for i, r in rows.items()}
+# per-id table for the spreadsheet model
+tab = {i: dict(b=int(r['fetch_accesses']), nr=int(r['reads']), nw=int(r['writes']), nio=int(r['io']), ex=int(r['x_occupancy']), pen=int(r['branch_penalty'])) for i, r in rows.items()}
 json.dump(tab, open(f'{OUT}/idtab.json', 'w'))
 print({n: (m['n']) for n, m in meta.items()}, 'ex_big', len(ex_big), 'io', len(io))

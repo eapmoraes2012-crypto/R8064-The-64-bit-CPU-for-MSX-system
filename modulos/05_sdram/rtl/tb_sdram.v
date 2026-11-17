@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// Testbench do controlador de SDRAM: gerador de trafego (escrita/leitura de 64 bits com byte-enable) + modelo de SDRAM com verificador de protocolo + memoria sombra.
+// SDRAM controller testbench: traffic generator (64-bit write/read with byte-enable) + SDRAM model with protocol checker + shadow memory.
 module tb_sdram;
     parameter INIT_CYC = 2000, REF_INT = 700;
     reg clk = 0, rst = 1; always #5 clk = ~clk;
@@ -12,7 +12,7 @@ module tb_sdram;
     sdram_model mdl(.clk(clk), .cke(s_cke), .cs_n(s_cs_n), .ras_n(s_ras_n), .cas_n(s_cas_n), .we_n(s_we_n), .dqm(s_dqm), .ba(s_ba), .a(s_a), .dq_i(dq), .dq_oe(s_dq_oe), .dq_o(mdq));
     reg acc = 0; always @(posedge clk) acc <= req && ready;
     reg [63:0] shadow [0:524287]; integer mism = 0, nops = 0;
-    // estatistica: [categoria 0=acerto,1=banco fechado,2=conflito][0=leitura,1=escrita]
+    // statistics: [category 0=hit,1=closed bank,2=conflict][0=read,1=write]
     integer sum [0:5], mn [0:5], mx [0:5], cnt [0:5], refl [0:5];
     integer ii;
     initial for (ii = 0; ii < 6; ii = ii + 1) begin sum[ii] = 0; mn[ii] = 9999; mx[ii] = 0; cnt[ii] = 0; refl[ii] = 0; end
@@ -24,13 +24,13 @@ module tb_sdram;
             nref0 = mdl.nref;
             @(negedge clk); req = 1; we = w; addr = ad; wdata = wd; be = bev; lat = 0;
             @(negedge clk); lat = 1; while (!acc) begin @(negedge clk); lat = lat + 1; end
-            req = 0;   // aceito no posedge anterior; lat conta a partir dele
+            req = 0;   // accepted on the previous posedge; lat counts from it
             lat = 1;
             if (w) begin while (!wdone) begin @(negedge clk); lat = lat + 1; end end
             else begin while (!rvalid) begin @(negedge clk); lat = lat + 1; end rd_v = rdata; end
             if (w) begin
                 for (k = 0; k < 8; k = k + 1) if (bev[k]) shadow[ad][k*8 +: 8] = wd[k*8 +: 8];
-            end else if (rd_v !== shadow[ad]) begin mism = mism + 1; if (mism <= 5) $display("ERRO leitura ad=%h obtido=%h esperado=%h", ad, rd_v, shadow[ad]); end
+            end else if (rd_v !== shadow[ad]) begin mism = mism + 1; if (mism <= 5) $display("ERROR read ad=%h got=%h expected=%h", ad, rd_v, shadow[ad]); end
             nops = nops + 1;
             if (mdl.nref == nref0) begin
                 sum[cat*2 + w] = sum[cat*2 + w] + lat; cnt[cat*2 + w] = cnt[cat*2 + w] + 1;
@@ -44,33 +44,33 @@ module tb_sdram;
         for (ii = 0; ii < 524288; ii = ii + 1) shadow[ii] = 64'd0;
         repeat (5) @(posedge clk); #1 rst = 0;
         wait (init_done); repeat (3) @(posedge clk);
-        $display("INIT concluida no ciclo %0d: refreshes de inicializacao=%0d modo programado=%0d", mdl.cyc, mdl.refs_init, mdl.mode_set);
-        // A) sequencial: escrever e ler 8192 palavras de 64 bits
+        $display("INIT completed at cycle %0d: initialization refreshes=%0d mode programmed=%0d", mdl.cyc, mdl.refs_init, mdl.mode_set);
+        // A) sequential: write and read 8192 64-bit words
         for (i = 0; i < 8192; i = i + 1) access(1, i, pat(i, 1), 8'hFF);
         for (i = 0; i < 8192; i = i + 1) access(0, i, 0, 8'hFF);
         // B) byte-enable
         for (i = 0; i < 2000; i = i + 1) begin ad = $urandom % 4096; access(1, ad, {$urandom, $urandom}, $urandom); access(0, ad, 0, 8'hFF); end
-        // C) conflito de linha no mesmo banco (alterna 2 linhas do banco 0)
+        // C) row conflict in the same bank (alternates 2 rows of bank 0)
         for (i = 0; i < 300; i = i + 1) begin access(1, (i[0] ? 19'h200 : 19'h000) + (i % 8), pat(i, 2), 8'hFF); access(0, (i[0] ? 19'h200 : 19'h000) + (i % 8), 0, 8'hFF); end
-        // D) 4 bancos intercalados (cada um com sua linha aberta)
+        // D) 4 interleaved banks (each with its row open)
         for (i = 0; i < 400; i = i + 1) begin access(0, (i % 4) * 128 + 19'h1000 + (i / 4) % 100, 0, 8'hFF); end
-        // E) aleatorio em 4 MB, 70% leitura (so le o que ja foi escrito ou zero)
+        // E) random in 4 MB, 70% read (only reads what was already written or zero)
         for (i = 0; i < 30000; i = i + 1) begin
             ad = $urandom % 524288;
             if (($urandom % 100) < 30) access(1, ad, {$urandom, $urandom}, ($urandom % 3 == 0) ? 8'hFF : $urandom);
             else access(0, ad, 0, 8'hFF);
         end
-        // F) ocioso por 40 us e depois acessos (o refresh deve ter ocorrido sozinho)
+        // F) idle for 40 us and then accesses (the refresh must have happened by itself)
         repeat (4000) @(posedge clk);
         for (i = 0; i < 50; i = i + 1) access(0, i * 977, 0, 8'hFF);
-        // G) varredura final de verificacao: 20000 palavras aleatorias
+        // G) final verification sweep: 20000 random words
         for (i = 0; i < 20000; i = i + 1) begin ad = $urandom % 524288; access(0, ad, 0, 8'hFF); end
         repeat (20) @(posedge clk);
-        $display("ACESSOS: %0d | divergencias de dado=%0d | violacoes do modelo=%0d | refreshes=%0d, maior intervalo entre refreshes=%0d clocks | comandos ACT=%0d RD=%0d WR=%0d PRE=%0d",
+        $display("ACCESSES: %0d | data divergences=%0d | model violations=%0d | refreshes=%0d, longest interval between refreshes=%0d clocks | commands ACT=%0d RD=%0d WR=%0d PRE=%0d",
             nops, mism, mdl.viol, mdl.nref, mdl.max_gap, mdl.nact, mdl.nrd, mdl.nwr, mdl.npre);
-        $display("LATENCIA (clocks do clock de aceitacao ate rvalid/wdone), sem refresh no meio:");
+        $display("LATENCY (clocks from the acceptance clock to rvalid/wdone), with no refresh in between:");
         for (i = 0; i < 6; i = i + 1)
-            if (cnt[i] > 0) $display("  %-22s %-8s n=%6d min=%2d media=%5.2f max=%3d (com refresh: %0d)", (i/2 == 0) ? "pagina aberta (acerto)" : (i/2 == 1) ? "banco fechado" : "outra linha (conflito)", (i % 2) ? "escrita" : "leitura", cnt[i], mn[i], sum[i] * 1.0 / cnt[i], mx[i], refl[i]);
+            if (cnt[i] > 0) $display("  %-22s %-8s n=%6d min=%2d avg=%5.2f max=%3d (with refresh: %0d)", (i/2 == 0) ? "open page (hit)" : (i/2 == 1) ? "closed bank" : "other row (conflict)", (i % 2) ? "write" : "read", cnt[i], mn[i], sum[i] * 1.0 / cnt[i], mx[i], refl[i]);
         $display("  pior latencia de um acesso atrasado por refresh: %0d clocks", mxref);
         if (mism == 0 && mdl.viol == 0 && mdl.max_gap <= 800 && mdl.refs_init == 2) $display("PASS"); else $display("FAIL");
         $finish;

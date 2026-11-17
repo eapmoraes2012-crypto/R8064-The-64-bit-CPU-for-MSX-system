@@ -1,4 +1,4 @@
-// Invólucro de P&R do nucleo minimo: entradas por LFSR, saida = paridade registrada (nao e o projeto final).
+// P&R wrapper of the minimal core: inputs from LFSR, output = registered parity (not the final design).
 module pnr_core_top(input wire clk, input wire din, output wire dout);
     reg [127:0] l = 128'h1; reg [3:0] rc = 0; wire rstw = (rc != 15);
     always @(posedge clk) begin if (rc != 15) rc <= rc + 1; l <= {l[126:0], l[127]^l[126]^l[125]^l[120]^din}; end

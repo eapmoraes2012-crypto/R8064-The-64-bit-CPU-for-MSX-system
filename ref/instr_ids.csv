@@ -1,5 +1,5 @@
-﻿id;mnemonico;hex
-0;(ilegal);
+﻿id;mnemonic;hex
+0;(illegal);
 1;ADCW HL, rr;ED 3F --
 2;ADCL EA, rr;ED 3F --
 3;ADCQ QA, rr;ED 3F --
@@ -154,11 +154,11 @@
 152;SHRW rr;ED 28 --
 153;SHRL rr;ED 28 --
 154;SHRQ rr;ED 28 --
-155;(removida: igual a RLC r);ED 06 --
+155;(removed: same as RLC r);ED 06 --
 156;RLCW rr;ED 06 --
 157;RLCL rr;ED 06 --
 158;RLCQ rr;ED 06 --
-159;(removida: igual a RRC r);ED 07 --
+159;(removed: same as RRC r);ED 07 --
 160;RRCW rr;ED 07 --
 161;RRCL rr;ED 07 --
 162;RRCQ rr;ED 07 --

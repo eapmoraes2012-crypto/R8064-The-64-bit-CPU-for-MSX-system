@@ -1,45 +1,45 @@
 --- r01 
-PASS: 20000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 1363380000 (1ps)
 --- r02 
-PASS: 20000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 1586370000 (1ps)
 --- r03 
-PASS: 20000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 1133400000 (1ps)
 --- r04 
-PASS: 20000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 1438950000 (1ps)
 --- r05 
-PASS: 20000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 1599370000 (1ps)
 --- r06 
-PASS: 84 instrucoes identicas ao modelo (fim do traco: HALT no modelo)
+PASS: 84 instructions identical to the model (end of trace: HALT in the model)
 tb_z80.v:49: $finish called at 5860000 (1ps)
 --- r07 
-PASS: 20000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 3300190000 (1ps)
 --- r08 
-PASS: 20000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 1416220000 (1ps)
 --- r09 
-PASS: 20000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 1245870000 (1ps)
 --- r10 
-PASS: 20000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 1813140000 (1ps)
 --- r11 
-PASS: 20000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 1268250000 (1ps)
 --- r12 
-PASS: 160 instrucoes identicas ao modelo (fim do traco: HALT no modelo)
+PASS: 160 instructions identical to the model (end of trace: HALT in the model)
 tb_z80.v:49: $finish called at 10860000 (1ps)
 --- zex 
-PASS: 150000 instrucoes identicas ao modelo (T-states     comparados)
+PASS: 150000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 12083120000 (1ps)
 --- wait=1 r01 
-PASS: 20000 instrucoes identicas ao modelo (T-states nao comparados)
+PASS: 20000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 6822290000 (1ps)
 --- wait=1 zex 
-PASS: 60000 instrucoes identicas ao modelo (T-states nao comparados)
+PASS: 60000 instructions identical to the model (T-states not compared)
 tb_z80.v:66: $finish called at 24493160000 (1ps)

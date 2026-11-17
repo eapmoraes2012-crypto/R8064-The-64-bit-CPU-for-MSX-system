@@ -1,4 +1,4 @@
-# test_macro.py - precisao dos programas de macro (modelo Python) contra verdade em alta precisao
+# test_macro.py - accuracy of the macro programs (Python model) against high-precision ground truth
 import random, sys
 import fpu_macro as M, fpref
 from fractions import Fraction as F
@@ -57,7 +57,7 @@ for _ in range(N):
     pv = M.pk(p)
     fp = newfp(); push(fp, yv); push(fp, pv); M.run(fp, M.ENTRY['FYL2P'])
     if p > -1 and p != 0: rec('FYL2P', ulps(fp['st'][fp['top']], val(yv) * (tln(1 + val(pv)) / LN2)))
-for k, v in sorted(worst.items()): print('%-10s erro max %.2f ulp' % (k, v))
+for k, v in sorted(worst.items()): print('%-10s max error %.2f ulp' % (k, v))
 # FREM exato
 bad = 0
 for _ in range(400):
@@ -73,5 +73,5 @@ for _ in range(400):
         if r < 0: sg = 1 - (1 if a < 0 else 0)
         else: sg = 1 if a < 0 else 0
         exp = fpref.pack80(sg, abs(r)) if r != 0 else (1 if a < 0 else 0) << 79
-        if res != exp or (q != n % 8): bad += 1; print('FREM erro', near, hex(xa), hex(yb), hex(res), hex(exp), q, n % 8)
-print('FREM/FREM1: %d erros em 800' % bad)
+        if res != exp or (q != n % 8): bad += 1; print('FREM error', near, hex(xa), hex(yb), hex(res), hex(exp), q, n % 8)
+print('FREM/FREM1: %d errors in 800' % bad)

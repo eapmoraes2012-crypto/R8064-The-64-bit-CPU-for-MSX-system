@@ -1,7 +1,7 @@
-; monitor.asm - monitor do R8064 (v1, modo Z80). Roda a partir da SDRAM 0 (copiado do buffer no boot).
-; Usa so instrucoes que o nucleo REV48 ja executa (sem CB, HALT, RST, DAA, ADD HL,rr, PUSH/POP AF).
-; Protocolo MSX<->R8064: ver datasheet (formato: OP, SEQ, parametros / resposta: OP|80, SEQ, ST, dados).
-; ST: 00 ok | 01 OP desconhecida | 02 parametro invalido | 03 endereco desalinhado / nao suportado | 04 erro do DMA | 05 modo de EXEC nao suportado
+; monitor.asm - R8064 monitor (v1, Z80 mode). Runs from SDRAM 0 (copied from the buffer at boot).
+; Uses only instructions that the REV48 core already executes (no CB, HALT, RST, DAA, ADD HL,rr, PUSH/POP AF).
+; MSX<->R8064 protocol: see the datasheet (format: OP, SEQ, parameters / response: OP|80, SEQ, ST, data).
+; ST: 00 ok | 01 unknown OP | 02 invalid parameter | 03 misaligned / unsupported address | 04 DMA error | 05 unsupported EXEC mode
 FDATA  equ 0E8h
 FSTAT  equ 0E9h
 FLENL  equ 0EAh
@@ -10,7 +10,7 @@ FFLG   equ 0ECh
 DSTAT  equ 0EEh
 SCR_S  equ 2100h      ; 8 bytes alinhados: origem fisica do DMA (bytes 4..7 = 0)
 SCR_D  equ 2108h      ; destino fisico do DMA
-SCR_C  equ 2110h      ; CTRL do DMA: [0..1] = palavras, [3] = 80h (START), resto 0
+SCR_C  equ 2110h      ; DMA CTRL: [0..1] = words, [3] = 80h (START), rest 0
 V_ADDR equ 2120h      ; 4 bytes
 V_REM  equ 2124h      ; 4 bytes
 V_CRC  equ 2128h
@@ -21,16 +21,16 @@ V_SIZE equ 2130h
 V_LEN  equ 2132h
 V_TMP  equ 2134h
 V_EXIT equ 2138h      ; 8 bytes alinhados
-MSGB   equ 2200h      ; mensagem recebida (ate 2048 bytes)
+MSGB   equ 2200h      ; received message (up to 2048 bytes)
 STG    equ 3000h      ; area de passagem do DMA (2 KB)
 STACK  equ 2FF0h
-TLO    equ 0800h      ; tabela do CRC, byte baixo (alinhada a 256)
-THI    equ 0900h      ; tabela do CRC, byte alto
+TLO    equ 0800h      ; CRC table, low byte (256-aligned)
+THI    equ 0900h      ; CRC table, high byte
 
         org 0
 start:  ld sp,STACK
         ld a,04h
-        call setmode          ; monitor em NATIVE64 (sem governador de tempo do Z80)
+        call setmode          ; monitor in NATIVE64 (no Z80 timing governor)
         ld hl,SCR_S
         ld b,40h
         xor a
@@ -63,7 +63,7 @@ rd:     ld a,b
         dec bc
         jr rd
 rdone:  ld a,03h
-        out (FFLG),a          ; limpa START (busy continua 1)
+        out (FFLG),a          ; clears START (busy stays 1)
         ld a,(V_LEN+1)
         or a
         jp nz,haveop
@@ -76,7 +76,7 @@ haveop: ld a,(MSGB)
         cp 01h
         jp z,op_hello
         cp 02h
-        jp z,op_ping          ; RESET: o estado e todo recriado a cada mensagem
+        jp z,op_ping          ; RESET: the state is fully recreated on every message
         cp 10h
         jp z,op_wput
         cp 11h
@@ -88,7 +88,7 @@ haveop: ld a,(MSGB)
         cp 20h
         jp z,op_exec
         cp 21h
-        jp z,err_al           ; STOP: sem programa em execucao a ouvir mensagens (v1)
+        jp z,err_al           ; STOP: no running program listening to messages (v1)
         cp 30h
         jp z,op_crc
         ld a,01h
@@ -106,7 +106,7 @@ reply_st: call rsph
         ld bc,3
 fin:    call finr
         jp main
-rsph:   ld c,a                ; A = ST: escreve OP|80, SEQ, ST no FIFO R8064->MSX
+rsph:   ld c,a                ; A = ST: writes OP|80, SEQ, ST into the R8064->MSX FIFO
         ld a,(MSGB)
         or 80h
         out (FDATA),a
@@ -115,7 +115,7 @@ rsph:   ld c,a                ; A = ST: escreve OP|80, SEQ, ST no FIFO R8064->MS
         ld a,c
         out (FDATA),a
         ret
-finr:   ld a,c                ; BC = tamanho total: LEN e CONCLUIDO (devolve a janela ao MSX)
+finr:   ld a,c                ; BC = total size: LEN and DONE (returns the window to the MSX)
         out (FLENL),a
         ld a,b
         out (FLENH),a
@@ -134,9 +134,9 @@ hl1:    ld a,(hl)
         ld bc,14
         jp fin
 hello_d: db 'R8064'
-        db 01h,00h,08h,00h,40h,07h   ; versao 1, msg max 2048, bloco 16384, recursos: janela|EXEC|CRC
+        db 01h,00h,08h,00h,40h,07h   ; version 1, max msg 2048, block 16384, features: window|EXEC|CRC
 ; ---------------------------------------------------------------- utilitarios
-chka:   inc hl                ; HL -> 4 bytes de endereco fisico; Z = valido (8 MB: byte3 = 0, bit 23 = 0)
+chka:   inc hl                ; HL -> 4 bytes of physical address; Z = valid (8 MB: byte3 = 0, bit 23 = 0)
         inc hl
         ld a,(hl)
         and 80h
@@ -166,7 +166,7 @@ c8e:    ld a,l
         inc de
 c8f:    ex de,hl
         ret
-dmarun: ld a,l                ; HL = palavras; SCR_S/SCR_D ja preenchidos. NZ no retorno = erro
+dmarun: ld a,l                ; HL = words; SCR_S/SCR_D already filled. NZ on return = error
         ld (SCR_C),a
         ld a,h
         ld (SCR_C+1),a
@@ -200,7 +200,7 @@ dwait:  in a,(DSTAT)
         ld a,c
         and 04h
         ret
-crcrng: ld hl,0FFFFh          ; CRC-16 CCITT-FALSE de V_REM bytes a partir do endereco fisico V_ADDR (alinhado a 8). Resultado em V_CRC; NZ = erro
+crcrng: ld hl,0FFFFh          ; CRC-16 CCITT-FALSE of V_REM bytes starting at the physical address V_ADDR (aligned to 8). Result in V_CRC; NZ = error
         ld (V_CRC),hl
 cr_l:   ld hl,V_REM
         ld a,(hl)
@@ -304,7 +304,7 @@ cr_end: xor a
 cr_err: ld a,01h
         or a
         ret
-sendcrc: xor a                ; resposta com ST=0 + CRC (V_CRC)
+sendcrc: xor a                ; reply with ST=0 + CRC (V_CRC)
         call rsph
         ld a,(V_CRC)
         out (FDATA),a
@@ -312,7 +312,7 @@ sendcrc: xor a                ; resposta com ST=0 + CRC (V_CRC)
         out (FDATA),a
         ld bc,5
         jp fin
-; ---------------------------------------------------------------- WIN_PUT / WIN_GET (10h / 11h): endereco fisico (4), tamanho (2; 0 = 16384)
+; ---------------------------------------------------------------- WIN_PUT / WIN_GET (10h / 11h): physical address (4), size (2; 0 = 16384)
 op_wput: ld hl,MSGB+2
         ld de,SCR_D
         ld a,80h
@@ -379,7 +379,7 @@ wp2:    ld (V_SIZE),hl
         call crcrng
         jp nz,err_dma
         jp sendcrc
-; ---------------------------------------------------------------- CRC (30h): endereco (4, alinhado a 8), tamanho (4)
+; ---------------------------------------------------------------- CRC (30h): address (4, 8-aligned), size (4)
 op_crc: ld a,(V_LEN+1)
         or a
         jp nz,err_par
@@ -408,7 +408,7 @@ op_crc: ld a,(V_LEN+1)
         jp nz,err_dma
         jp sendcrc
 ; ---------------------------------------------------------------- POKE (12h) / PEEK (13h)
-stage:  ld a,(MSGB+2)         ; le para STG a regiao alinhada que cobre [endereco, endereco + V_SIZE). Z = ok
+stage:  ld a,(MSGB+2)         ; reads into STG the aligned region that covers [address, address + V_SIZE). Z = ok
         and 07h
         ld (V_OFF),a
         ld c,a
@@ -529,7 +529,7 @@ pe_l:   ld a,(hl)
         ld b,h
         ld c,l
         jp fin
-; ---------------------------------------------------------------- EXEC (20h): entrada (8), modo (1), argumento (8)
+; ---------------------------------------------------------------- EXEC (20h): entry (8), mode (1), argument (8)
 op_exec: ld a,(V_LEN+1)
         or a
         jp nz,err_par
@@ -545,7 +545,7 @@ op_exec: ld a,(V_LEN+1)
 ex1:    or (hl)
         inc hl
         djnz ex1
-        jp nz,err_par         ; v1: entrada < 10000h
+        jp nz,err_par         ; v1: entry < 10000h
         ld hl,(MSGB+2)
         ld (V_TMP),hl
         xor a
@@ -562,23 +562,23 @@ ex1:    or (hl)
         cp 04h
         jr z,ex64
         ld hl,(MSGB+11)       ; argumento (16 bits)
-        ret                   ; "chama" a entrada; o programa volta em ret_a
+        ret                   ; "calls" the entry; the program returns at ret_a
 ex64:   ld de,MSGB+11
-        db 0EDh,39h,22h       ; LDQ HL,(DE): argumento de 64 bits
+        db 0EDh,39h,22h       ; LDQ HL,(DE): 64-bit argument
         ret
 ret_a:  ld de,V_EXIT
-        db 0EDh,39h,0D4h      ; LDQ (DE),HL: codigo de saida (HL)
+        db 0EDh,39h,0D4h      ; LDQ (DE),HL: exit code (HL)
         ld a,04h
         call setmode
 ew:     in a,(FFLG)
         and 04h
-        jr nz,ew              ; espera o MSX ler a resposta anterior (CONCLUIDO = 0)
+        jr nz,ew              ; waits for the MSX to read the previous response (DONE = 0)
         ld a,0F0h
         out (FDATA),a
         xor a
         out (FDATA),a
         ld a,01h
-        out (FDATA),a         ; EVT 01: programa terminou
+        out (FDATA),a         ; EVT 01: program finished
         ld a,(V_EXIT)
         out (FDATA),a
         ld a,(V_EXIT+1)
@@ -589,7 +589,7 @@ ew:     in a,(FFLG)
         out (FDATA),a
         ld bc,7
         jp fin
-setmode: cp 04h               ; A = modo (00h Z80 ROM, 01h Z80 DRAM, 02h R800 ROM, 03h R800 DRAM, 04h nativo) -> S1990 reg 6 e NATIVE64
+setmode: cp 04h               ; A = mode (00h Z80 ROM, 01h Z80 DRAM, 02h R800 ROM, 03h R800 DRAM, 04h native) -> S1990 reg 6 e NATIVE64
         jr z,sm_n
         or a
         ld c,60h

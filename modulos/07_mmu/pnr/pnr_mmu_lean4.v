@@ -1,4 +1,4 @@
-// Wrapper de P&R da MMU: entradas por LFSR, saida = paridade (nao e o projeto final).
+// MMU P&R wrapper: inputs from LFSR, output = parity (not the final design).
 module pnr_mmu_top(input wire clk, input wire din, output wire dout);
     reg [63:0] l = 64'h1, m = 64'hACE1; reg [3:0] rc = 0; wire rstw = (rc != 15);
     always @(posedge clk) begin if (rc != 15) rc <= rc + 1; l <= {l[62:0], l[63]^l[62]^l[60]^l[59]^din}; m <= {m[62:0], m[63]^m[61]^m[60]^m[58]}; end

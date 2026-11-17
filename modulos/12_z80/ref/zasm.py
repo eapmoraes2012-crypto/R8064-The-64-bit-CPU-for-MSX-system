@@ -1,4 +1,4 @@
-# zasm.py - montador minimo (subconjunto do Z80 usado por zexdoc.z80 + macros) -> .com. Uso: python3 zasm.py zexdoc.z80 zexdoc.com
+# zasm.py - minimal assembler (subset of the Z80 used by zexdoc.z80 + macros) -> .com. Usage: python3 zasm.py zexdoc.z80 zexdoc.com
 import re, sys
 R8 = {'b': 0, 'c': 1, 'd': 2, 'e': 3, 'h': 4, 'l': 5, '(hl)': 6, 'a': 7}
 RP = {'bc': 0, 'de': 1, 'hl': 2, 'sp': 3}; RP2 = {'bc': 0, 'de': 1, 'hl': 2, 'af': 3}
@@ -48,7 +48,7 @@ class Asm:
             else: out.append(t)
         return int(eval(' '.join(out).replace('/', '//')))
     def expand(self, src):
-        # expande macros; retorna lista de linhas
+        # expands macros; returns list of lines
         out = []; i = 0; defs = None; cnt = 0; lines = src
         res = []
         while i < len(lines):
@@ -152,7 +152,7 @@ class Asm:
             if d == 'sp' and s == 'hl': return [0xF9]
             if d == 'i' and s == 'a': return [0xED, 0x47]
             if d in RP and not ismem(o[1]): return [0x01 | (RP[d] << 4)] + imm16(o[1])
-        raise ValueError('instrucao nao suportada: %s %s' % (mn, ops))
+        raise ValueError('unsupported instruction: %s %s' % (mn, ops))
     def emit(self, pc, bs):
         for k, b in enumerate(bs): self.mem[pc + k] = b & 255
         self.lo = min(self.lo, pc); self.hi = max(self.hi, pc + len(bs))
@@ -163,7 +163,7 @@ class Asm:
             if not raw.strip() or raw.strip().startswith(';'): continue
             body = raw
             if ';' in raw:
-                # remove comentario fora de aspas
+                # removes comment outside quotes
                 q = None; cut = len(raw)
                 for k, ch in enumerate(raw):
                     if q:

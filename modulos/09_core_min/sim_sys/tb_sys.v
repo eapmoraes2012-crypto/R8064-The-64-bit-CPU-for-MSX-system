@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// tb_sys.v - teste dirigido do grupo de sistema (modo usuario, JP USER, SCALL, instrucao privilegiada, SYSRT): executa livre e imprime registradores / CRs
+// tb_sys.v - directed test of the system group (user mode, JP USER, SCALL, privileged instruction, SYSRT): runs free and prints registers / CRs
 module tb_sys;
     reg clk = 0, rst = 1; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f, d_be; wire dbg_sig;

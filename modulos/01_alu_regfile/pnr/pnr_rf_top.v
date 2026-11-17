@@ -1,4 +1,4 @@
-// Invólucro SÓ para medir o banco de registradores (enderecos/dados por LFSR). Nao e o projeto final.
+// Wrapper ONLY to measure the register file (addresses/data from an LFSR). Not the final design.
 module pnr_rf_top(input clk, input din, output dout);
     function [63:0] xs(input [63:0] x); reg [63:0] t; begin t = x ^ (x << 13); t = t ^ (t >> 7); xs = t ^ (t << 17); end endfunction
     reg [63:0] l = 64'h0BAD_C0DE_1234_5678; reg we = 0; reg [5:0] wa = 0, ra = 0, rb = 0; reg [63:0] wd = 0;

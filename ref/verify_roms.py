@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Confere as ROMs (.mem) contra expected_id.mem e as palavras de controle contra expected_*.mem.
+"""Checks the ROMs (.mem) against expected_id.mem and the control words against expected_*.mem.
 Uso: python3 ref/verify_roms.py   (a partir da pasta R8064_rtl_pack)"""
 import sys
 rd=lambda p:[int(x,16) for x in open(p).read().split()]
@@ -16,4 +16,4 @@ for i in sorted(set(G)-{0}):
     w=C[i]; ln=w&15; nr=w>>4&31; nw=w>>9&31; nio=w>>14&3; ex=w>>16&255; pc=w>>24&3
     nf=(ln+7)//8; clk=max(1,nf+nr+nw,nio,ex); wt=(nf+nr)*W_RD+nw*W_WR+nio*W_IO; pen=[0,BRD,BRX,BRM][pc]
     cb+=(clk,wt,pen)!=(EC[i],EW[i],EP[i])
-print('divergencias de id:',bad,'| divergencias de ciclos:',cb); sys.exit(1 if bad or cb else 0)
+print('id divergences:',bad,'| cycle divergences:',cb); sys.exit(1 if bad or cb else 0)

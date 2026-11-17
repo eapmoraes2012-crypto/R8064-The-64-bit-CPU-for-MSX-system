@@ -1,5 +1,5 @@
-// Invólucro SÓ para medir timing do decodificador na Tang Nano 20K (nao e o projeto final).
-// Entradas serializadas (16 bits) e saidas reduzidas a 1 bit de paridade.
+// Wrapper ONLY to measure the decoder timing on the Tang Nano 20K (not the final design).
+// Serialized inputs (16 bits) and outputs reduced to 1 parity bit.
 module pnr_top(input clk, input din, output dout);
     reg [15:0] sh = 16'd0;
     always @(posedge clk) sh <= {sh[14:0], din};

@@ -1,4 +1,4 @@
-// z80_msx_top.v - Z80 + MSX mem + adaptador de bytes + controlador SDRAM (pinos da SDRAM embutida). Z80 fica em reset ate init_done da SDRAM.
+// z80_msx_top.v - Z80 + MSX mem + byte adapter + SDRAM controller (embedded SDRAM pins). Z80 stays in reset until the SDRAM init_done.
 module z80_msx_top #(
     parameter [31:0] STEP_BASE = 32'd268435456,
     parameter INIT_CYC = 20000, REF_INT = 400,

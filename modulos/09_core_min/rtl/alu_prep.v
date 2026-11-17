@@ -1,22 +1,22 @@
-// alu_prep.v - logica do estagio R: seleciona operandos e decodifica o controle da ALU (registrar a saida antes do estagio X).
+// alu_prep.v - R-stage logic: selects operands and decodes the ALU control (register the output before the X stage).
 // ctl: [0] inv  [1] cin1  [2] cin0  [3] is_sub  [4] keep_c  [5] arith  [6] and  [7] or  [8] xor  [9] cpl
 //      [10] shl [11] shr  [12] sar  [13] rol    [14] ror   [15] cp     [16] undef
-//      [17] insc (SHL/SHR inserem o C antigo: RL/RR)  [18] ins1 (SHL insere 1: SLL)  [19] daa (ajuste decimal de 8 bits)
-//      [20] shl4 / [21] shr4 (deslocamento de 4 bits sem flags: RLD/RRD)
-// ci (no nucleo) = cin1 ? (fin[0] ^ cin0) : cin0
+//      [17] insc (SHL/SHR insert the old C: RL/RR)  [18] ins1 (SHL inserts 1: SLL)  [19] daa (8-bit decimal adjust)
+//      [20] shl4 / [21] shr4 (4-bit shift without flags: RLD/RRD)
+// ci (in the core) = cin1 ? (fin[0] ^ cin0) : cin0
 module alu_prep(
     input  wire [63:0] a,
     input  wire [63:0] b,
     input  wire [4:0]  op,
     input  wire [1:0]  sz,
     input  wire [7:0]  fin,
-    output wire [63:0] xa,     // operando X ja mascarado pelo tamanho
-    output wire [63:0] yb,     // operando B mascarado (sem inversao)
-    output wire [63:0] yy,     // operando Y do somador (mascarado, com inversao)
-    output wire        ci,     // vai-um de entrada ja resolvido
+    output wire [63:0] xa,     // X operand already masked by size
+    output wire [63:0] yb,     // operand B masked (without inversion)
+    output wire [63:0] yy,     // adder operand Y (masked, with inversion)
+    output wire        ci,     // carry-in already resolved
     output reg  [21:0] ctl
 );
-    // (REV44: operandos por seletores de 1 bit em vez de um case de 64 bits - o case virava ~4 mil celulas no yosys)
+    // (REV44: operands by 1-bit selectors instead of a 64-bit case - the case became ~4 thousand cells in yosys)
     reg [63:0] xr, br_;
     localparam ADD=5'd0, ADC=5'd1, SUB=5'd2, SBC=5'd3, AND_=5'd4, OR_=5'd5, XOR_=5'd6, CP=5'd7,
                INC=5'd8, DEC=5'd9, NEG=5'd10, CPL=5'd11, SHL=5'd12, SHR=5'd13, SAR=5'd14, ROL=5'd15, ROR=5'd16,

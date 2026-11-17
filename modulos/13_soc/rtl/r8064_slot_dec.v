@@ -1,6 +1,6 @@
-// r8064_slot_dec.v - decodificacao das portas de E/S do slot MSX para o protocolo de troca (REV46): 0Bh STATUS/COMANDO, 0Ch DADOS, 0Dh COMPRIMENTO.
-// Converte para o barramento do r8064_fifo_if (fm_a: 0 DATA, 1 STATUS/CMD, 2 LEN_L, 3 LEN_H). A porta 0Dh alterna LEN_L / LEN_H a cada acesso (leitura ou escrita);
-// o ponteiro volta a LEN_L no reset e no comando "limpa FIFOs" (bit 1 do COMANDO). Entradas ja sincronizadas ao clk (pulsos de 1 clock; dado de leitura combinacional).
+// r8064_slot_dec.v - decoding of the MSX slot I/O ports for the exchange protocol (REV46): 0Bh STATUS/COMMAND, 0Ch DATA, 0Dh LENGTH.
+// Converts to the r8064_fifo_if bus (fm_a: 0 DATA, 1 STATUS/CMD, 2 LEN_L, 3 LEN_H). Port 0Dh alternates LEN_L / LEN_H on each access (read or write);
+// the pointer returns to LEN_L on reset and on the "clear FIFOs" command (bit 1 of COMMAND). Inputs already synchronized to clk (1-clock pulses; combinational read data).
 module r8064_slot_dec #(parameter P_ST = 8'h0B, parameter P_DT = 8'h0C, parameter P_LN = 8'h0D)(
     input  wire       clk, rst,
     input  wire       io_we, io_re, input wire [7:0] io_a, io_wd, output wire [7:0] io_rd, output wire io_hit,

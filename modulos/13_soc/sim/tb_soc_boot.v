@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
-// Boot: a imagem do buffer (boot_l0..7.hex) e copiada para a SDRAM 0 antes de o nucleo sair do reset. (derivado de tb_soc_dma)
-// SoC completo + DMA: o nucleo programa o canal 0 por MTCR (CR19..21), espera o fim pela porta EEh e confere que a cache de dados foi invalidada (LD DE,(2000h) devolve o dado novo).
+// Boot: the buffer image (boot_l0..7.hex) is copied to SDRAM 0 before the core leaves reset. (derived from tb_soc_dma)
+// Full SoC + DMA: the core programs channel 0 by MTCR (CR19..21), waits for the end on port EEh and checks that the data cache was invalidated (LD DE,(2000h) returns the new data).
 module tb_soc_boot;
     reg clk = 0, rst = 1; always #5 clk = ~clk;
     reg io_we = 0, io_re = 0; reg [7:0] io_a = 0, io_wd = 0; wire [7:0] io_rd; wire io_oe, iox_we, iox_re; wire [7:0] iox_a, iox_wd;
@@ -25,12 +25,12 @@ module tb_soc_boot;
         wait (init_done);
         repeat (20000) @(posedge clk);
         $display("mem0=%h mem1=%h mem2=%h xb0=%h", mdl.mem[0], mdl.mem[1], mdl.mem[2], {dut.u_xbuf.lane[7].mem[0],dut.u_xbuf.lane[6].mem[0],dut.u_xbuf.lane[5].mem[0],dut.u_xbuf.lane[4].mem[0],dut.u_xbuf.lane[3].mem[0],dut.u_xbuf.lane[2].mem[0],dut.u_xbuf.lane[1].mem[0],dut.u_xbuf.lane[0].mem[0]});
-        if (mdl.mem[0][7:0] !== 8'h31) begin errs = errs + 1; $display("ERRO imagem[0] = %h", mdl.mem[0]); end
-        if ({mdl.mem[2*16'h7FF+1], mdl.mem[2*16'h7FF]} !== 64'h214B_5241_4D44_4E45) begin errs = errs + 1; $display("ERRO fim = %h %h", mdl.mem[2*16'h7FF+1], mdl.mem[2*16'h7FF]); end
-        if (dut.u_sys.u_cpu.u_core.u_rf1.mem_a[0][7:0] !== 8'h5A) begin errs = errs + 1; $display("ERRO A=%h", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[0]); end
-        if (dut.u_sys.u_cpu.u_core.u_rf1.mem_a[1][15:8] !== 8'h5B) begin errs = errs + 1; $display("ERRO B=%h", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[1]); end
+        if (mdl.mem[0][7:0] !== 8'h31) begin errs = errs + 1; $display("ERROR imagem[0] = %h", mdl.mem[0]); end
+        if ({mdl.mem[2*16'h7FF+1], mdl.mem[2*16'h7FF]} !== 64'h214B_5241_4D44_4E45) begin errs = errs + 1; $display("ERROR end = %h %h", mdl.mem[2*16'h7FF+1], mdl.mem[2*16'h7FF]); end
+        if (dut.u_sys.u_cpu.u_core.u_rf1.mem_a[0][7:0] !== 8'h5A) begin errs = errs + 1; $display("ERROR A=%h", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[0]); end
+        if (dut.u_sys.u_cpu.u_core.u_rf1.mem_a[1][15:8] !== 8'h5B) begin errs = errs + 1; $display("ERROR B=%h", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[1]); end
         $display("mem[C000]=%h", mdl.mem[16'h3000]);
-        $display("RESULTADO boot: erros=%0d dbg_pc=%h boot_busy=%b", errs, dbg_pc, dut.boot_busy);
+        $display("RESULT boot: errors=%0d dbg_pc=%h boot_busy=%b", errs, dbg_pc, dut.boot_busy);
         $finish;
     end
 endmodule

@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// CPL/NEG (ED 26, 3o byte: tamanho[7:6] 00=B 01=W 10=L 11=Q). CPLB/NEGB nao aceitam o registrador A.
+// CPL/NEG (ED 26, 3rd byte: size[7:6] 00=B 01=W 10=L 11=Q). CPLB/NEGB do not accept register A.
 module tb_cplneg;
     reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -15,7 +15,7 @@ module tb_cplneg;
         if (d_req && !d_ack) d_ack <= 1;
     end
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     initial begin
         repeat (4) @(posedge clk); rst = 0; repeat (6000) @(posedge clk);
@@ -26,8 +26,8 @@ module tb_cplneg;
         chk("CPLL BC' -> BC' = 11223344AA998877", dut.u_rf1.mem_a[6], 64'h11223344AA998877);
         chk("NEGL DE' -> DE' = AAAAAAAAFFFFFFFE", dut.u_rf1.mem_a[7], 64'hAAAAAAAAFFFFFFFE);
         chk("CPLQ HL' -> HL' = FEDCBA9876543210", dut.u_rf1.mem_a[8], 64'hFEDCBA9876543210);
-        $display("F final = %h pc=%h erros=%0d", dbg_f, dbg_pc, errs);
-        if (errs == 0) $display("RESULTADO: CPL/NEG OK"); else $display("RESULTADO: %0d ERROS", errs);
+        $display("final F = %h pc=%h errors=%0d", dbg_f, dbg_pc, errs);
+        if (errs == 0) $display("RESULT: CPL/NEG OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

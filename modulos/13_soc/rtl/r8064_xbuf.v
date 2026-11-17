@@ -1,10 +1,10 @@
-// r8064_xbuf.v - buffer de 16 KB da janela de troca MSX <-> R8064 (REV46). 8 raias de 2048 x 8 bits (8 BSRAM), porta unica por raia.
-// Dono do buffer (win): win = 1 -> MSX (acesso byte a byte, A[13:0] da pagina 2) | win = 0 -> DMA do R8064 (palavras de 64 bits, 1 por clock).
-// A posse e exclusiva (half-duplex), por isso uma unica porta por raia basta: o endereco e os dados sao multiplexados por win.
-// Lado MSX: o endereco s_a deve ficar estavel >= 1 clock ANTES do pulso s_re (a leitura da BSRAM tem 1 clock de latencia); com win = 0 a leitura devolve FFh e a escrita e ignorada.
-// Lado DMA: d_a/d_wd/d_we valem so com win = 0; d_q e valido 1 clock depois de d_a (r8064_dma faz isso na espera E_RWB).
-// INIT_IMG=1: conteudo inicial = imagem do monitor, 8 arquivos <INIT_PFX><lane>.hex (1 byte por linha, 2048 linhas), copiada para a SDRAM no boot (r8064_soc, BOOT_WORDS).
-// Conteudo inicial (configuracao do FPGA): assinatura "R8064", versao do protocolo (1), 0, 0 nos 8 primeiros bytes. O monitor deve refaze-la ao iniciar.
+// r8064_xbuf.v - 16 KB buffer of the MSX <-> R8064 exchange window (REV46). 8 lanes of 2048 x 8 bits (8 BSRAM), single port per lane.
+// Buffer owner (win): win = 1 -> MSX (byte by byte, A[13:0] of page 2) | win = 0 -> R8064 DMA (64-bit words, 1 per clock).
+// Ownership is exclusive (half-duplex), so a single port per lane is enough: address and data are multiplexed by win.
+// MSX side: the address s_a must stay stable >= 1 clock BEFORE the s_re pulse (the BSRAM read has 1 clock of latency); with win = 0 the read returns FFh and the write is ignored.
+// DMA side: d_a/d_wd/d_we are valid only with win = 0; d_q is valid 1 clock after d_a (r8064_dma does this in the E_RWB wait).
+// INIT_IMG=1: initial content = monitor image, 8 files <INIT_PFX><lane>.hex (1 byte per line, 2048 lines), copied to the SDRAM at boot (r8064_soc, BOOT_WORDS).
+// Initial content (FPGA configuration): signature "R8064", protocol version (1), 0, 0 in the first 8 bytes. The monitor must redo it at start.
 module r8064_xbuf #(parameter INIT_IMG = 0, parameter INIT_PFX = "monitor_l")(
     input  wire        clk,
     input  wire        win,

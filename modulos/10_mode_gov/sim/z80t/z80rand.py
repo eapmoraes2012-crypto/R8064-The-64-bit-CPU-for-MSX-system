@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Teste diferencial aleatorio: gera programas Z80, executa no modelo e no RTL (iverilog), compara registradores, flags e memoria.
+# Random differential test: generates Z80 programs, runs them on the model and on the RTL (iverilog), compares registers, flags and memory.
 import random,subprocess,sys,os
 from z80model import Z
 HERE=os.path.dirname(os.path.abspath(__file__)); SIM=os.path.dirname(HERE); RTL=os.path.join(os.path.dirname(SIM),'rtl')
@@ -15,7 +15,7 @@ RG='bcdehl'
 def gen(seed,nunits=40,mix=None):
     R=random.Random(seed)
     mem=bytearray(4096)
-    # sub-rotinas: 0x300: INC C ; RET   | 0x310: LD A,B ; RET NZ ; INC E ; RET | 0x320: RET Z ; DEC D ; RET
+    # subroutines: 0x300: INC C ; RET   | 0x310: LD A,B ; RET NZ ; INC E ; RET | 0x320: RET Z ; DEC D ; RET
     mem[0x300:0x303]=bytes([0x0C,0xC9,0]); mem[0x310:0x316]=bytes([0x78,0xC0,0x1C,0xC9,0,0]); mem[0x320:0x324]=bytes([0xC8,0x15,0xC9,0])
     mem[0x38]=0xC9; mem[0:3]=bytes([0xC3,0x40,0x00])
     for i in range(0x400,0xE00): mem[i]=R.randrange(256)
@@ -27,14 +27,14 @@ def gen(seed,nunits=40,mix=None):
     bc=ptr(); z.r['b'],z.r['c']=bc>>8,bc&255; de=ptr(); z.r['d'],z.r['e']=de>>8,de&255
     z.x['ix']=R.randrange(0x400,0xDF0) if R.random()<0.9 else R.randrange(65536); z.x['iy']=R.randrange(0x400,0xDF0) if R.random()<0.9 else R.randrange(65536)
     init=dict(r=dict(z.r),sp=z.sp,x=dict(z.x))
-    z.pc=0x40; cur=[0x40]            # codigo a partir de 0x40 (0..2: JP 0040h; 38h: RET para RST 38h)
+    z.pc=0x40; cur=[0x40]            # code from 0x40 (0..2: JP 0040h; 38h: RET for RST 38h)
     def emit(bs):
         a=cur[0]; z.m[a:a+len(bs)]=bytes(bs); cur[0]+=len(bs)
     def run_to(end):
         n=0
         while z.pc!=end:
             z.step(); n+=1
-            if n>3000: raise RuntimeError('laco')
+            if n>3000: raise RuntimeError('loop')
     def safe_ptr(v): return 0x400<=v<0xE00
     def regonly_instr():
         c=R.choice(['mov','alu','incdec','alui','ldn','cpl','ex'])
@@ -148,7 +148,7 @@ def gen(seed,nunits=40,mix=None):
             n=R.randrange(1,5); blk=[]
             for _ in range(R.randrange(1,3)):
                 i=regonly_instr()
-                if i[0] in (0x04,0x05,0x06): continue    # nao mexer em B (contador)
+                if i[0] in (0x04,0x05,0x06): continue    # do not touch B (counter)
                 if (i[0]&0xC0)==0x40 and (i[0]>>3&7)==0: continue
                 if (i[0]&0xC7) in (4,5,6) and (i[0]>>3&7)==0: continue
                 blk+=i
@@ -213,4 +213,4 @@ if __name__=='__main__':
         if r=='skip': nsk+=1; continue
         errs,img,end,n=r
         if errs: nb+=1; print('seed',seed,'instr',n,errs[:4])
-    print('semente %d..%d: %d com erro, %d puladas'%(a,b,nb,nsk))
+    print('seed %d..%d: %d with error, %d skipped'%(a,b,nb,nsk))

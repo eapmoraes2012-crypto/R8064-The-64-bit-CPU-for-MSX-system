@@ -1,4 +1,4 @@
-// Wrapper de P&R: cache D (8 KB) + arbitro; lado CPU e memoria dirigidos por LFSR; saida = paridade (nao e o projeto final).
+// P&R wrapper: D cache (8 KB) + arbiter; CPU and memory sides driven by LFSR; output = parity (not the final design).
 module pnr_cache_top(input wire clk, input wire din, output wire dout);
     reg [3:0] rc = 0; wire rstw; reg [63:0] l = 64'h1; reg [63:0] m = 64'hACE1; reg [63:0] r;
     always @(posedge clk) begin l <= {l[62:0], l[63]^l[62]^l[60]^l[59]^din}; m <= {m[62:0], m[63]^m[61]^m[60]^m[58]}; end

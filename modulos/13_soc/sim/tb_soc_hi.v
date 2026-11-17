@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// SoC completo: programa de sequencias (LD SP/PUSH/POP/CALL/RET/OUT/IN) executado a partir da SDRAM (modelo com verificacao de protocolo) atraves de MMU (bypass) + caches + arbitros.
+// Full SoC: sequence program (LD SP/PUSH/POP/CALL/RET/OUT/IN) executed from the SDRAM (model with protocol checking) through MMU (bypass) + caches + arbiters.
 module tb_soc_hi;
     wire mmu_en_w, mmu_user_w; integer sc = 1; integer nfi = 0, nfd = 0; reg clk = 0, rst = 1; always #5 clk = ~clk;
     reg io_we = 0, io_re = 0; reg [7:0] io_a = 0, io_wd = 0; wire [7:0] io_rd; wire io_oe, iox_we, iox_re; wire [7:0] iox_a, iox_wd;
@@ -20,7 +20,7 @@ module tb_soc_hi;
     always @(posedge clk) begin if (iox_we) begin n_ow <= n_ow + 1; lw_a <= iox_a; lw_d <= iox_wd; end if (iox_re) n_ir <= n_ir + 1; end
     task wio(input [7:0] ad, input [7:0] d); begin @(posedge clk); #1 io_a = ad; io_wd = d; io_we = 1; @(posedge clk); #1 io_we = 0; end endtask
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     reg [7:0] by [0:511]; reg [63:0] w; integer p;
     task emit(input [7:0] x); begin by[p] = x; p = p + 1; end endtask
@@ -52,9 +52,9 @@ module tb_soc_hi;
         chk("BC (POP de PA 700000h)", rf(1), 64'h0);
         chk("SP", rf(11), 64'h4002);
         w = {mdl.mem[2*24'h0008FF + 1], mdl.mem[2*24'h0008FF]}; chk("PA 47F8 (alias de 4 MB) intacto", w, 64'h0);
-        chk("sem falta I", nfi, 0); chk("sem falta D", nfd, 0); chk("violacoes SDRAM", mdl.viol, 0);
+        chk("no I fault", nfi, 0); chk("no D fault", nfd, 0); chk("SDRAM violations", mdl.viol, 0);
         $display("pc=%h", dbg_pc);
-        if (errs == 0) $display("RESULTADO: MMU 8MB OK"); else $display("RESULTADO: %0d ERROS", errs);
+        if (errs == 0) $display("RESULT: MMU 8MB OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

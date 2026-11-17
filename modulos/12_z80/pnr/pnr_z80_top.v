@@ -1,4 +1,4 @@
-// Invólucro de medida do Z80 (core + ce turbo). Entradas por LFSR, saida = paridade. Nao e o projeto final.
+// Z80 measurement wrapper (core + turbo ce). Inputs from LFSR, output = parity. Not the final design.
 module pnr_z80_top(input wire clk, input wire din, output wire dout);
   reg [3:0] rc = 0; reg [63:0] l = 64'h1;
   always @(posedge clk) begin l <= {l[62:0], l[63]^l[62]^l[60]^l[59]^din}; if (rc != 15) rc <= rc + 1; end

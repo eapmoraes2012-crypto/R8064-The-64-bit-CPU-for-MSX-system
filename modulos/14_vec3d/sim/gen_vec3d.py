@@ -1,4 +1,4 @@
-# gera vetores e resultados esperados (modelo em inteiros do Python) para vec3d_unit. uso: python3 gen_vec3d.py <pasta_saida>
+# generates vectors and expected results (Python integer model) for vec3d_unit. usage: python3 gen_vec3d.py <output_folder>
 import random, sys
 random.seed(8064)
 def s16(x): x &= 0xffff; return x-0x10000 if x & 0x8000 else x

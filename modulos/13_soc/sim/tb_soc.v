@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// SoC completo: programa de sequencias (LD SP/PUSH/POP/CALL/RET/OUT/IN) executado a partir da SDRAM (modelo com verificacao de protocolo) atraves de MMU (bypass) + caches + arbitros.
+// Full SoC: sequence program (LD SP/PUSH/POP/CALL/RET/OUT/IN) executed from the SDRAM (model with protocol checking) through MMU (bypass) + caches + arbiters.
 module tb_soc;
     reg clk = 0, rst = 1; always #5 clk = ~clk;
     reg io_we = 0, io_re = 0; reg [7:0] io_a = 0, io_wd = 0; wire [7:0] io_rd; wire io_oe, iox_we, iox_re; wire [7:0] iox_a, iox_wd;
@@ -20,13 +20,13 @@ module tb_soc;
     always @(posedge clk) begin if (iox_we) begin n_ow <= n_ow + 1; lw_a <= iox_a; lw_d <= iox_wd; end if (iox_re) n_ir <= n_ir + 1; end
     task wio(input [7:0] ad, input [7:0] d); begin @(posedge clk); #1 io_a = ad; io_wd = d; io_we = 1; @(posedge clk); #1 io_we = 0; end endtask
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     reg [63:0] w;
     initial begin
         $readmemh("prog_seq.mem", pm);
-        // o nucleo comeca a buscar em 0000h antes de o mapeador ser programado: o mesmo programa tambem e carregado no fisico 0000h
-        // pre-carga: endereco fisico 4000h + 8k -> palavra de 64 bits 800h+k -> modelo[2*(800h+k)] (baixa) e [+1] (alta)
+        // the core starts fetching at 0000h before the mapper is programmed: the same program is also loaded at physical 0000h
+        // preload: physical address 4000h + 8k -> 64-bit word 800h+k -> model[2*(800h+k)] (low) and [+1] (high)
         for (k = 0; k < 512; k = k + 1) begin mdl.mem[2*k] = pm[k][31:0]; mdl.mem[2*k + 1] = pm[k][63:32]; mdl.mem[2*(16'h0800 + k)] = pm[k][31:0]; mdl.mem[2*(16'h0800 + k) + 1] = pm[k][63:32]; end
         if (0) begin
             // tabelas Sv39 na SDRAM (PA 100000h, 101000h, 102000h): VA 0000h-0FFFh -> PA 0000h e VA 4000h-4FFFh -> PA 4000h (folhas V R W X A D = CFh)
@@ -41,12 +41,12 @@ module tb_soc;
         chk("HL", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[3], 64'h22); chk("AX", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[0], 64'h5A);
         chk("SP", dut.u_sys.u_cpu.u_core.u_rf1.mem_a[11], 64'h0F00);
         w = {mdl.mem[2*(16'h4EFE>>3) + 1], mdl.mem[2*(16'h4EFE>>3)]};
-        chk("pilha na SDRAM: retorno (byte 6..7 da palavra)", w[63:48], 64'h0008);
-        chk("OUT porta 77h", lw_a, 64'h77); chk("OUT dado", lw_d, 64'h41); chk("1 OUT externo", n_ow, 1); chk("1 IN externo", n_ir, 1);
-        chk("sem falta I", i_fault, 0); chk("sem falta D", d_fault, 0);
-        if ($test$plusargs("mmu")) $display("leituras de tabela de paginas: MMU-I=%0d MMU-D=%0d", nwi, nwd);
+        chk("stack in the SDRAM: return (byte 6..7 of the word)", w[63:48], 64'h0008);
+        chk("OUT porta 77h", lw_a, 64'h77); chk("OUT data", lw_d, 64'h41); chk("1 external OUT", n_ow, 1); chk("1 external IN", n_ir, 1);
+        chk("no I fault", i_fault, 0); chk("no D fault", d_fault, 0);
+        if ($test$plusargs("mmu")) $display("page table reads: MMU-I=%0d MMU-D=%0d", nwi, nwd);
         $display("violacoes SDRAM=%0d | dbg_pc=%h | modo z80=%0d rom=%0d", mdl.viol, dbg_pc, z80, rom);
-        if (errs == 0) $display("RESULTADO: SOC OK"); else $display("RESULTADO: %0d ERROS", errs);
+        if (errs == 0) $display("RESULT: SOC OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule

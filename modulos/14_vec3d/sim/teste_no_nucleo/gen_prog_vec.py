@@ -1,8 +1,8 @@
-# gera prog_vec.mem (programa aleatorio LDQ + instrucoes 3D com/sem prefixos de banco) e exp_vec.mem (resultado esperado de cada instrucao 3D, em ordem).
-# modelo de referencia: o mesmo de 14_vec3d/sim/gen_vec3d.py (inteiros do Python). uso: python3 gen_prog_vec.py [semente] [n_instr]
+# generates prog_vec.mem (random program LDQ + 3D instructions with/without bank prefixes) and exp_vec.mem (expected result of each 3D instruction, in order).
+# reference model: the same as 14_vec3d/sim/gen_vec3d.py (Python integers). usage: python3 gen_prog_vec.py [seed] [n_instr]
 import random, sys
 seed=int(sys.argv[1]) if len(sys.argv)>1 else 8064; NI=int(sys.argv[2]) if len(sys.argv)>2 else 400
-random.seed(seed); LANE0=(len(sys.argv)<=3 or sys.argv[3]!='full')   # padrao: unidade minima (sem op 4-7)
+random.seed(seed); LANE0=(len(sys.argv)<=3 or sys.argv[3]!='full')   # default: minimal unit (without op 4-7)
 def s16(x): x &= 0xffff; return x-0x10000 if x & 0x8000 else x
 def sat(x): return max(-32768, min(32767, x))
 def lanes(v): return [s16(v >> (16*i)) for i in range(4)]

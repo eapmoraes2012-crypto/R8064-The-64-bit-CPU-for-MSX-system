@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// SoC completo: programa de sequencias (LD SP/PUSH/POP/CALL/RET/OUT/IN) executado a partir da SDRAM (modelo com verificacao de protocolo) atraves de MMU (bypass) + caches + arbitros.
+// Full SoC: sequence program (LD SP/PUSH/POP/CALL/RET/OUT/IN) executed from the SDRAM (model with protocol checking) through MMU (bypass) + caches + arbiters.
 module tb_soc_nat;
     wire mmu_en_w, mmu_user_w; integer sc = 1; integer nfi = 0, nfd = 0; reg clk = 0, rst = 1; always #5 clk = ~clk;
     reg io_we = 0, io_re = 0; reg [7:0] io_a = 0, io_wd = 0; wire [7:0] io_rd; wire io_oe, iox_we, iox_re; wire [7:0] iox_a, iox_wd;
@@ -22,7 +22,7 @@ module tb_soc_nat;
     function [7:0] pb(input [23:0] pa); reg [31:0] q; begin q = mdl.mem[2*(pa>>3) + ((pa>>2)&1)]; pb = q >> (8*(pa&3)); end endfunction
     task wio(input [7:0] ad, input [7:0] d); begin @(posedge clk); #1 io_a = ad; io_wd = d; io_we = 1; @(posedge clk); #1 io_we = 0; end endtask
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     reg [7:0] by [0:511]; reg [63:0] w; integer p;
     task emit(input [7:0] x); begin by[p] = x; p = p + 1; end endtask
@@ -35,14 +35,14 @@ module tb_soc_nat;
     initial begin
         if (!$value$plusargs("sc=%d", sc)) sc = 1;
         for (k = 0; k < 512; k = k + 1) by[k] = 8'h00; p = 0;
-        ldrr(7, 16'h00A5); emit(8'hD3); emit(8'h3D); ldrr(7, 16'h0001); emit(8'hD3); emit(8'h3E);   // modo NATIVO
+        ldrr(7, 16'h00A5); emit(8'hD3); emit(8'h3D); ldrr(7, 16'h0001); emit(8'hD3); emit(8'h3E);   // NATIVE mode
         for (k = 0; k < 16; k = k + 1) emit(8'h00);
         ldrr(7, 16'h0000);
         emit(8'h31); emit(8'h00); emit(8'h30);        // LD SP,3000h
         loop0 = p;
         for (j = 0; j < MIX; j = j + 1) begin
             emit(8'h80); emit(8'h78); emit(8'h04); emit(8'h05); emit(8'h81);      // ADD A,B ; LD A,B ; INC B ; DEC B ; ADD A,C   (ALU reg)
-            emit(8'hC5); emit(8'hD1);                                              // PUSH BC ; POP DE   (memoria, cache D)
+            emit(8'hC5); emit(8'hD1);                                              // PUSH BC ; POP DE   (memory, D cache)
             emit(8'h3C); emit(8'h47);                                              // INC A ; LD B,A
         end
         emit(8'h18); emit(8'h00); p = p - 2; emit(8'h18); emit(8'h00);
@@ -54,10 +54,10 @@ module tb_soc_nat;
         repeat (4) @(posedge clk); rst = 0;
         wait (init_done);
         repeat (30000) @(posedge clk); it0 = it; c0 = cyc; repeat (200000) @(posedge clk); it = it - it0; cyc = cyc - c0;
-        $display("INSTR/iteracao=%0d  iteracoes=%0d  ciclos=%0d", MIX*9+1, it, cyc);
+        $display("INSTR/iteration=%0d  iterations=%0d  cycles=%0d", MIX*9+1, it, cyc);
         $display("pc=%h a8=%h mreg3=%h breg0=%h z80=%b rom=%b nwd=%0d AX=%h SP=%h BC=%h DE=%h", dbg_pc, dut.u_sys.u_mmd.a8, dut.u_sys.u_mmd.mreg[3], dut.u_sys.u_mmd.breg[0], z80, rom, nwd, rf(0), rf(11), rf(1), rf(2));
-        if (errs == 0) $display("RESULTADO: MAPPER+MEGARAM NATIVO OK"); else $display("RESULTADO: %0d ERROS", errs);
+        if (errs == 0) $display("RESULT: NATIVE MAPPER+MEGARAM OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
-    defparam dut.u_sys.u_cpu.u_core.UOP_FILE = "uop_toy.mem"; defparam dut.u_sys.u_cpu.u_core.MAINC_FILE = "mainctrl_toy.mem";   // testes legados: decodificador de brinquedo
+    defparam dut.u_sys.u_cpu.u_core.UOP_FILE = "uop_toy.mem"; defparam dut.u_sys.u_cpu.u_core.MAINC_FILE = "mainctrl_toy.mem";   // legacy tests: toy decoder
 endmodule

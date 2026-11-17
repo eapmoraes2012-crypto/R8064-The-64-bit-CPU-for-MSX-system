@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// Teste de alu_core_s (2 estagios) contra os mesmos 148.128 vetores do modulo 01. Rodar na pasta 01_alu_regfile\ref (arquivos .mem).
+// alu_core_s (2 stages) test against the same 148,128 vectors of module 01. Run in the 01_alu_regfile\ref folder (.mem files).
 module tb_alu_s;
     localparam NV = 148128;
     reg clk = 0; always #5 clk = ~clk;
@@ -18,10 +18,10 @@ module tb_alu_s;
         for (i = 0; i < NV; i = i + 1) begin
             @(negedge clk); a = va[i]; b = vb[i]; op = vc[i][14:10]; sz = vc[i][9:8]; fin = vc[i][7:0];
             @(posedge clk); @(posedge clk); #1;
-            if (res !== vr[i] || fout !== vf[i]) begin e = e + 1; if (e <= 8) $display("ERRO #%0d op=%0d sz=%0d a=%h b=%h fin=%h: res=%h/%h f=%h/%h", i, op, sz, a, b, fin, res, vr[i], fout, vf[i]); end
+            if (res !== vr[i] || fout !== vf[i]) begin e = e + 1; if (e <= 8) $display("ERROR #%0d op=%0d sz=%0d a=%h b=%h fin=%h: res=%h/%h f=%h/%h", i, op, sz, a, b, fin, res, vr[i], fout, vf[i]); end
         end
-        if (va[0] === 64'bx) $display("FAIL: .mem nao carregou (rode em 01_alu_regfile\\ref)");
-        else if (e == 0) $display("PASS: alu_core_s %0d vetores, 0 erros", NV); else $display("FAIL: %0d erros", e);
+        if (va[0] === 64'bx) $display("FAIL: .mem did not load (run in 01_alu_regfile\\ref)");
+        else if (e == 0) $display("PASS: alu_core_s %0d vectors, 0 errors", NV); else $display("FAIL: %0d errors", e);
         $finish;
     end
 endmodule

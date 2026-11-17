@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
-// Teste diferencial das instrucoes Z80 do nucleo: programa (z80mem.hex, 4096 bytes), registradores iniciais (z80regs.hex) e flags iniciais (z80fl.hex);
-// roda +cyc=N clocks e despeja registradores, flags e memoria em z80out.txt (comparado com o modelo em Python por z80rand.py).
+// Differential test of the core's Z80 instructions: program (z80mem.hex, 4096 bytes), initial registers (z80regs.hex) and initial flags (z80fl.hex);
+// runs +cyc=N clocks and dumps registers, flags and memory to z80out.txt (compared with the Python model by z80rand.py).
 module tb_z80;
     wire [7:0] d_be; reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;

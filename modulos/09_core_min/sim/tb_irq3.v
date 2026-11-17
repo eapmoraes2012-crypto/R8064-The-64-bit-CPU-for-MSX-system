@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// instrucoes de bloco do Z80: LDIR, LDDR, CPIR, INIR, OTIR (nucleo isolado; memoria byte-a-byte)
+// Z80 block instructions: LDIR, LDDR, CPIR, INIR, OTIR (isolated core; byte-by-byte memory)
 module tb_irq3;
     wire [7:0] d_be; reg clk = 0, rst = 1, irq = 1; integer n_take = 0; reg [7:0] f1 = 0, f2 = 0; reg [63:0] a1 = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -24,17 +24,17 @@ module tb_irq3;
     end
     always @* io_rdata = (io_a == 8'h78) ? 8'h5A : 8'hFF;
     task chk(input [255:0] nome, input [63:0] got, input [63:0] exp);
-        if (got !== exp) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", nome, got, exp); end
+        if (got !== exp) begin errs = errs + 1; $display("ERROR %0s: got %h expected %h", nome, got, exp); end
     endtask
     always @(posedge clk) if (dut.irq_take) begin n_take <= n_take + 1; irq <= 0; end
     initial begin
         repeat (4) @(posedge clk); rst = 0;
         repeat (6000) @(posedge clk);
         chk("1 interrupcao", n_take, 1); chk("OUT executado", n_ow, 1);
-        chk("A=55 ja executado antes da interrupcao (atraso do EI)", ow_d[0], 8'h55);
-        chk("retorno empilhado = 8 (apos LD A)", mem[16'hEFE], 8'h08);
-        $display("take=%0d out=%h ret=%h erros=%0d", n_take, ow_d[0], mem[16'hEFE], errs);
-        if (errs == 0) $display("RESULTADO: ATRASO DO EI OK"); else $display("RESULTADO: %0d ERROS", errs);
+        chk("A=55 already executed before the interrupt (EI delay)", ow_d[0], 8'h55);
+        chk("return pushed = 8 (after LD A)", mem[16'hEFE], 8'h08);
+        $display("take=%0d out=%h ret=%h errors=%0d", n_take, ow_d[0], mem[16'hEFE], errs);
+        if (errs == 0) $display("RESULT: EI DELAY OK"); else $display("RESULT: %0d ERRORS", errs);
         $finish;
     end
 endmodule
