@@ -41,10 +41,11 @@ module r8064_clkgen #(parameter SRC = 1, parameter [3:0] SDR_PSDA = 4'd4)(   // 
         assign pll_clkp = ckp;
 `else
         // IDIV_SEL = IDIV-1 ; FBDIV_SEL = FBDIV-1 ; fout = fin*FBDIV/IDIV ; VCO = fout*ODIV
-        localparam [4*8-1:0] SDR_PSDA_S = {"0"+SDR_PSDA[3], "0"+SDR_PSDA[2], "0"+SDR_PSDA[1], "0"+SDR_PSDA[0]};   // "0100" etc.
+        // PSDA_SEL as a literal string (Gowin synthesis does not accept the string built by arithmetic: EX0205 -> "0000")
+        localparam [4*8-1:0] SDR_PSDA_S = (SDR_PSDA == 4'd0) ? "0000" : (SDR_PSDA == 4'd1) ? "0001" : (SDR_PSDA == 4'd2) ? "0010" : (SDR_PSDA == 4'd3) ? "0011" : (SDR_PSDA == 4'd4) ? "0100" : (SDR_PSDA == 4'd5) ? "0101" : (SDR_PSDA == 4'd6) ? "0110" : (SDR_PSDA == 4'd7) ? "0111" : (SDR_PSDA == 4'd8) ? "1000" : (SDR_PSDA == 4'd9) ? "1001" : (SDR_PSDA == 4'd10) ? "1010" : (SDR_PSDA == 4'd11) ? "1011" : (SDR_PSDA == 4'd12) ? "1100" : (SDR_PSDA == 4'd13) ? "1101" : (SDR_PSDA == 4'd14) ? "1110" : "1111";
         rPLL #(
             .FCLKIN       ((SRC == 0) ? "27" : (SRC == 3) ? "14.31818" : "3.579545"),
-            .DEVICE       ("GW2A-18"),
+            .DEVICE       ("GW2AR-18C"),
             .IDIV_SEL     ((SRC == 0) ? 7  : 0),
             .FBDIV_SEL    ((SRC == 0) ? 16 : (SRC == 3) ? 3 : 15),
             .ODIV_SEL     (16),
