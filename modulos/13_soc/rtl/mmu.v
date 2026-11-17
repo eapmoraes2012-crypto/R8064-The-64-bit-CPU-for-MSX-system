@@ -3,7 +3,7 @@
 //  Pagina de 4 KB, megapagina de 2 MB (folha no nivel 1), 3 niveis, PTE de 64 bits:
 //    [0]V [1]R [2]W [3]X [4]U [5]G [6]A [7]D [29:10]PPN.  Nao-folha: V=1 e R=W=X=0.  V=0 ou (W&&!R) = invalida.
 //  Software gerencia A/D (A=0 ou escrita com D=0 -> falta causa 3). Usuario so acessa U=1; supervisor nao executa U=1.
-//  Endereco fisico: 32 bits de byte; a memoria (cache/SDRAM) tem 4 MB (indice de palavra de 19 bits): PPN[19:10]!=0 -> causa 4 (barramento).
+//  Endereco fisico: 32 bits de byte; a memoria (cache/SDRAM) tem 8 MB (indice de palavra de 20 bits): PPN[19:11]!=0 -> causa 4 (barramento).
 //  Causas: 1 falta de pagina (invalida/nao canonico/folha no nivel 2/desalinhada), 2 permissao, 3 A/D, 4 fora da memoria.
 //  TLB totalmente associativa de NENT entradas com ASID de 8 bits e bit global; substituicao: primeira invalida, senao circular.
 //  Interface de traducao: v_req/ready (aceito quando v_req&&ready); 2 estagios (1: comparacao de todas as entradas -> vetor mt2; 2: selecao+permissoes), 1 traducao por clock; latencia de acerto = 2 clocks;
@@ -27,7 +27,7 @@ module mmu #(parameter NENT = 16, parameter STATS = 1)(
     output wire        p_fault,
     output wire [2:0]  p_cause,
     output reg         m_req,
-    output reg  [18:0] m_addr,
+    output reg  [19:0] m_addr,
     input  wire        m_accept, m_done,
     input  wire [63:0] m_rdata,
     output reg  [31:0] st_hit, st_miss, st_walk, st_fault
@@ -119,27 +119,27 @@ module mmu #(parameter NENT = 16, parameter STATS = 1)(
             case (ws)
                 W_IDLE: if (need_walk && !(accept)) begin
                     if (STATS) begin st_miss <= st_miss + 1; st_walk <= st_walk + 1; end lvl <= 2'd2; restart <= 0;
-                    if (s2_root[19:10] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; end
-                    else begin ws <= W_REQ; m_req <= 1; m_addr <= {s2_root[9:0], s2_addr[38:30]}; end
+                    if (s2_root[19:11] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; end
+                    else begin ws <= W_REQ; m_req <= 1; m_addr <= {s2_root[10:0], s2_addr[38:30]}; end
                 end
                 W_REQ: if (m_accept) ws <= W_WAIT;
                 W_WAIT: if (m_done) begin
                     if (restart || flush_any) begin   // tabelas podem ter mudado: recomeca
                         restart <= 0; lvl <= 2'd2;
-                        if (s2_root[19:10] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; ws <= W_IDLE; end
-                        else begin ws <= W_REQ; m_req <= 1; m_addr <= {s2_root[9:0], s2_addr[38:30]}; end
+                        if (s2_root[19:11] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; ws <= W_IDLE; end
+                        else begin ws <= W_REQ; m_req <= 1; m_addr <= {s2_root[10:0], s2_addr[38:30]}; end
                     end else if (!pv || (pw && !pr)) begin wf_valid <= 1; wf_cause <= 3'd1; ws <= W_IDLE; end
                     else if (leaf) begin
                         if (lvl == 2'd2 || (lvl == 2'd1 && pppn[8:0] != 0)) begin wf_valid <= 1; wf_cause <= 3'd1; ws <= W_IDLE; end
-                        else if (pppn[19:10] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; ws <= W_IDLE; end
+                        else if (pppn[19:11] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; ws <= W_IDLE; end
                         else begin   // instala
                             e_v[vic] <= 1; e_big[vic] <= (lvl == 2'd1); e_g[vic] <= pte[5]; e_r[vic] <= pr; e_w[vic] <= pw; e_x[vic] <= px; e_u[vic] <= pte[4]; e_a[vic] <= pte[6]; e_d[vic] <= pte[7];
                             e_asid[vic] <= s2_asid; e_vpn[vic] <= s2_vpn; mt2 <= ({{(NENT-1){1'b0}}, 1'b1} << vic); s2_stale <= 0; e_ppn[vic] <= pppn; if (!anyfree) rr <= rr + 1; ws <= W_IDLE;
                         end
                     end else begin
                         if (lvl == 2'd0) begin wf_valid <= 1; wf_cause <= 3'd1; ws <= W_IDLE; end
-                        else if (pppn[19:10] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; ws <= W_IDLE; end
-                        else begin lvl <= lvl - 1; ws <= W_REQ; m_req <= 1; m_addr <= {pppn[9:0], vpn_n}; end
+                        else if (pppn[19:11] != 0) begin wf_valid <= 1; wf_cause <= 3'd4; ws <= W_IDLE; end
+                        else begin lvl <= lvl - 1; ws <= W_REQ; m_req <= 1; m_addr <= {pppn[10:0], vpn_n}; end
                     end
                 end
                 default: ws <= W_IDLE;

@@ -7,12 +7,12 @@
 #   [97] ccinv (condicao contraria: desvio de pulo de CALL cc / RET cc).  immsel com isz = 1 / 2: numero do bit em b3[6:3] / b3[7:3].
 #   [98] mdu (multiplicacao/divisao; o campo alu vira o comando: 0-3 dispara MULU/MULS/DIVU/DIVS, 8+n le o resultado n, 16 guarda a parte alta do dividendo),
 #   [99] r8b (fonte B = registrador de 8 bits do Z80), [100] bb2 (campo da fonte B no 2o byte), [101] crk (LDCR/STCR: CR em b3[7:3]).
-#   [102] priv (instrucao privilegiada: excecao em modo usuario), [103] unimp (sem microcodigo: excecao se CR14 bit 2 = 1, senao NOP),
+#   [102] priv (instrucao privilegiada: excecao em modo usuario), [103] (livre),
 #   [104] scall (a instrucao e uma chamada de sistema: sempre excecao), [105] ju (JP USER: registrador pelos 2 bits baixos do 2o byte).
 # Modelo de privilegio e de excecao: ../MODELO_PRIVILEGIO.txt.
-# SEM microcodigo (marcadas unimp): FPU (45 instrucoes) e a E/S de 16/32/64 bits (INW/OUTW...). FENCE, ISYNC e WAKE sao NOP.
+# Todas as instrucoes tem microcodigo; FENCE, ISYNC e WAKE sao NOP.
 from gen_z80_rom import POS, ADD, ADC, SUB, SBC, AND, OR, XOR, CP, INC, DEC, SHL, SHR, SAR, ROL, ROR, SP, TMP, ZERO
-POS.update(r8=95, ccf=96, ccinv=97, mdu=98, r8b=99, bb2=100, crk=101, priv=102, unimp=103, scall=104, ju=105, fpu=106)
+POS.update(r8=95, ccf=96, ccinv=97, mdu=98, r8b=99, bb2=100, crk=101, priv=102, scall=104, ju=105, fpu=106)
 IX, IY, BC, AX, DE, HL, T2 = 9, 10, 1, 0, 2, 3, 12
 def uop(**k):
     v = 0
@@ -78,15 +78,15 @@ def aplica(uops, livre):
     chain(134, [dict(br=1, cond=0, rel=1, ioff=2, isz=1, sext=1)])                                                # JRW nn
     chain(133, [dict(br=1, rel=1, ioff=3, isz=1, sext=1, **CCF)])                                                 # JRW cc, nn
     chain(132, [dict(alu=DEC, wren=1, dI=BC, aD=1, sz=1, tzw=1), dict(br=1, cond=2, condx=1, rel=1, ioff=2, isz=1, sext=1)])   # DJNZW nn: BC (16 bits) := BC - 1 sem flags; salta se BC != 0
-    chain(138, [dict(br=1, cond=0, tabs=1, aI=ZERO, ioff=2, isz=2)])                                              # JPE nnnn
+    chain(138, [dict(br=1, cond=0, tabs=1, aI=ZERO, ioff=2, isz=2)])                                              # JPL nnnn
     chain(142, [dict(br=1, cond=0, tabs=1, aI=ZERO, ioff=2, isz=3)])                                              # JPQ nnnnnnnn
-    chain(137, [dict(br=1, tabs=1, aI=ZERO, ioff=3, isz=2, **CCF)])                                               # JPE cc, nnnn
+    chain(137, [dict(br=1, tabs=1, aI=ZERO, ioff=3, isz=2, **CCF)])                                               # JPL cc, nnnn
     chain(141, [dict(br=1, tabs=1, aI=ZERO, ioff=3, isz=3, **CCF)])                                               # JPQ cc, nnnnnnnn
     T32 = lambda fp: dict(aF=1, fpos=fp, wren=1, dI=TMP, sz=2, zx=1, **MOV)                                       # TMP = 32 bits baixos do registrador
     JTMP = dict(br=1, aI=TMP, immz=1)
-    chain(135, [T32(0), dict(cond=0, **JTMP)])                                                                    # JPE (vv)      vv = b3[5:3]
+    chain(135, [T32(0), dict(cond=0, **JTMP)])                                                                    # JPL (vv)      vv = b3[5:3]
     chain(139, [dict(br=1, cond=0, aF=1, fpos=0, immz=1)])                                                        # JPQ (vv)
-    chain(136, [T32(1), dict(**JTMP, **CCF)])                                                                     # JPE cc, (vv)  vv = b3[2:0]
+    chain(136, [T32(1), dict(**JTMP, **CCF)])                                                                     # JPL cc, (vv)  vv = b3[2:0]
     chain(140, [dict(br=1, aF=1, fpos=1, immz=1, **CCF)])                                                         # JPQ cc, (vv)
     # ---- chamadas e retornos (endereco de retorno de 4 ou 8 bytes) ----
     SKIP = dict(br=1, rel=1, immz=1, ccf=1, ccinv=1, altinv=1)                                                    # condicao falsa: pula o resto da cadeia
@@ -109,12 +109,12 @@ def aplica(uops, livre):
     for sg, (ib, iw, ie, iq) in ((0, (None, 28, 29, 30)), (1, (21, 22, 23, 24))):
         if ib: chain(ib, [START(sg, 0, aI=AX, r8b=1), READ(0, AX, 1)])                                            # MLTSB AL,u   -> AX (16 bits)
         chain(iw, [START(sg, 1, aI=HL, bF=1), READ(0, HL, 1), READ(2, DE, 1)])                                    # MLTxW HL,rr  -> DE:HL
-        chain(ie, [START(sg, 2, aI=AX, bF=1), READ(0, AX, 3)])                                                    # MLTxE        -> QA (64 bits)
+        chain(ie, [START(sg, 2, aI=AX, bF=1), READ(0, AX, 3)])                                                    # MLTxL        -> QA (64 bits)
         chain(iq, [START(sg, 3, aI=AX, bF=1), READ(0, AX, 3)] + ([READ(1, DE, 3)] if sg else []))                 # MLTUQ -> QA ; MLTSQ -> QDE:QA
     for sg, (ib, iw, ie, iq) in ((0, (14, 15, 16, 17)), (1, (10, 11, 12, 13))):
         chain(ib, [SETHI(AX, 0, ashr8=1), START(2 | sg, 0, aI=AX, r8b=1), READ(0, AX, 0), READ(1, AX, 0, hb=1)])  # DIVxB AX,t   -> AL = quociente, AH = resto
         chain(iw, [SETHI(DE, 1), START(2 | sg, 1, aI=AX, bF=1), READ(0, AX, 1), READ(1, DE, 1)])                  # DIVxW DX:AX  -> AX = quociente, DE = resto
-        chain(ie, [SETHI(AX, 2), START(2 | sg, 2, aI=AX, bF=1), READ(3, AX, 3)])                                  # DIVxE QA     -> QA = {resto, quociente}
+        chain(ie, [SETHI(AX, 2), START(2 | sg, 2, aI=AX, bF=1), READ(3, AX, 3)])                                  # DIVxL QA     -> QA = {resto, quociente}
         chain(iq, [SETHI(DE, 3), START(2 | sg, 3, aI=AX, bF=1), READ(0, AX, 3), READ(1, DE, 3)])                  # DIVxQ QDE:QA -> QA = quociente, QDE = resto
     # ---- registradores de controle, TLB, troca e comparacao-e-troca ----
     chain(180, [dict(aF=1, fpos=1, crd=1, crk=1, wren=1, sz=3, priv=1, **MOV)])                                           # LDCR kk,rr : CR[kk] := rr
@@ -186,5 +186,16 @@ def aplica(uops, livre):
         sv += [FX(K3 | 1), FRD(0, T2), WT(3), NEXT, FRD(1, T2), WT(1), NEXT2]
         ld += [dict(rd=1, aI=TMP, immz=1, wren=1, dI=T3, sz=3), NEXT, dict(rd=1, aI=TMP, immz=1, wren=1, dI=T2, sz=1), FHI(T2), FX(K3 | 3, aI=T3), NEXT2]
     chain(193, sv); chain(194, ld)
-    for i in [163, 164, 165, 166, 167, 168]: chain(i, [dict(unimp=1)])                                            # E/S larga: sem microcodigo
+    # ---- E/S de 16/32/64 bits em UMA porta (C): bytes sucessivos, o menos significativo primeiro (faixa k em ioff = u[41:39] com immz) ----
+    T2_ = 12
+    for z, ii, io in ((1, 163, 166), (2, 164, 167), (3, 165, 168)):
+        nb = {1: 2, 2: 4, 3: 8}[z]
+        rdk = lambda k, d: dict(iord=1, wren=1, dI=d, aI=BC, immz=1, ioff=k, sz=3, zx=1)
+        ul = [rdk(0, T2_)]
+        for k in range(1, nb): ul += [rdk(k, TMP), dict(alu=OR, aI=T2_, bI=TMP, wren=1, dI=T2_, sz=3)]
+        ul += [dict(aI=T2_, wren=1, sz=z, **MOV, **D1)]                          # rr := acumulado (so no fim: rr pode ser BC)
+        chain(ii, ul)                                                           # INx rr,(C)
+        ol = [dict(aF=1, fpos=0, wren=1, dI=T2_, sz=z, zx=1, **MOV)]            # copia rr (b3[5:3]) para T2
+        for k in range(nb): ol.append(dict(iowr=1, aI=BC, immz=1, ioff=k, bI=T2_))
+        chain(io, ol)                                                           # OUTx (C),rr
     return nextfree[0]

@@ -3,18 +3,18 @@
 // Interface com a CPU: req/ready (aceito quando req && ready); leitura: rvalid+rdata na MESMA clock seguinte ao aceite se acertar (latencia de acerto = 1 clock; 1 acesso por clock);
 //   escrita: postada no buffer (WBD entradas), 1 bolha apos cada escrita. Falha de leitura: preenche a linha (4 leituras de 64 bits) e repete o acesso.
 // Interface com a memoria (via arbitro): m_req mantido ate m_accept; depois espera m_done (rvalid ou wdone).
-// Endereco: indice de palavra de 64 bits (19 bits = 4 MB): tag [18:9], conjunto [8:2], palavra na linha [1:0].
+// Endereco: indice de palavra de 64 bits (20 bits = 8 MB): tag [19:9], conjunto [8:2], palavra na linha [1:0].
 module cache_dm #(parameter WR = 1, parameter WBD = 4, parameter IDX = 8, parameter STATS = 1, parameter B2B = 1)(
     input  wire        clk, rst, inv,
     input  wire        req, we,
-    input  wire [18:0] addr,
+    input  wire [19:0] addr,
     input  wire [63:0] wdata,
     input  wire [7:0]  be,
     output wire        ready,
     output wire        rvalid,
     output wire [63:0] rdata,
     output reg         m_req, m_we,
-    output reg  [18:0] m_addr,
+    output reg  [19:0] m_addr,
     output reg  [63:0] m_wdata,
     output reg  [7:0]  m_be,
     input  wire        m_accept, m_done,
@@ -22,14 +22,14 @@ module cache_dm #(parameter WR = 1, parameter WBD = 4, parameter IDX = 8, parame
     output reg  [31:0] st_rd_hit, st_rd_miss, st_wr, st_wr_hit
 );
     // ---------------- arranjos
-    localparam TB = 17 - IDX;   // bits de etiqueta
+    localparam TB = 18 - IDX;   // bits de etiqueta
     reg [63:0] d0 [0:(1<<(IDX+2))-1];
     // etiquetas com bit de valido (bit 10), em 2 copias (A: lida com o endereco novo, B: lida com o do estagio 1) para nao haver mux dependente de 'accept'
     reg [TB:0] tA0 [0:(1<<IDX)-1]; reg [TB:0] tB0 [0:(1<<IDX)-1];
     reg inv_pend, sweeping; reg [IDX-1:0] sw;
     // estagio 1
-    reg        s1_valid, s1_ok, s1_we; reg [18:0] s1_addr; reg [63:0] s1_wd; reg [7:0] s1_be;
-    wire [TB-1:0] s1_tag = s1_addr[18:IDX+2]; wire [IDX-1:0] s1_set = s1_addr[IDX+1:2];
+    reg        s1_valid, s1_ok, s1_we; reg [19:0] s1_addr; reg [63:0] s1_wd; reg [7:0] s1_be;
+    wire [TB-1:0] s1_tag = s1_addr[19:IDX+2]; wire [IDX-1:0] s1_set = s1_addr[IDX+1:2];
     wire       accept;
     wire [IDX+1:0] ra = accept ? addr[IDX+1:0] : s1_addr[IDX+1:0];
     wire [IDX-1:0] sa = addr[IDX+1:2], sb = s1_addr[IDX+1:2];
@@ -39,12 +39,12 @@ module cache_dm #(parameter WR = 1, parameter WBD = 4, parameter IDX = 8, parame
         qd0 <= d0[ra];
         // tags e validos: leem os DOIS candidatos (endereco novo e o do estagio 1) e escolhem depois, para tirar ready->accept do caminho do mux 128:1
         // a comparacao de tag tambem e feita antes do registrador: o estagio 1 so recebe hit0/hit1 ja registrados (ready fica rasa)
-        hit0 <= accept ? (t0_a[TB] && t0_a[TB-1:0] == addr[18:IDX+2]) : (t0_b[TB] && t0_b[TB-1:0] == s1_tag);
+        hit0 <= accept ? (t0_a[TB] && t0_a[TB-1:0] == addr[19:IDX+2]) : (t0_b[TB] && t0_b[TB-1:0] == s1_tag);
     end
     wire hit = hit0;
     wire [63:0] hword = qd0;
     // buffer de escrita
-    reg [18:0] wb_a [0:WBD-1]; reg [63:0] wb_d [0:WBD-1]; reg [7:0] wb_b [0:WBD-1]; reg [3:0] wb_cnt; reg [1:0] wb_rp, wb_wp;
+    reg [19:0] wb_a [0:WBD-1]; reg [63:0] wb_d [0:WBD-1]; reg [7:0] wb_b [0:WBD-1]; reg [3:0] wb_cnt; reg [1:0] wb_rp, wb_wp;
     wire wb_space = (WR != 0) && (wb_cnt < WBD);
     // estado de falha
     localparam [2:0] F_NORMAL = 0, F_WAIT = 1, F_REQ = 2, F_RD = 3, F_TAG = 4;
@@ -98,11 +98,11 @@ module cache_dm #(parameter WR = 1, parameter WBD = 4, parameter IDX = 8, parame
             case (fs)
                 F_NORMAL: if (rd_miss) begin if (STATS) st_rd_miss <= st_rd_miss + 1; s1_ok <= 0; fs <= F_WAIT; fk <= 0; end
                 F_WAIT: if (wb_cnt == 0 && ds == 0 && !m_req) begin
-                    m_req <= 1; m_we <= 0; m_addr <= {s1_addr[18:2], fk}; fs <= F_RD;
+                    m_req <= 1; m_we <= 0; m_addr <= {s1_addr[19:2], fk}; fs <= F_RD;
                 end
                 F_RD: if (m_done) begin
                     if (fk == 2'd3) fs <= F_TAG;
-                    else begin fk <= fk + 1; m_req <= 1; m_we <= 0; m_addr <= {s1_addr[18:2], fk + 2'd1}; end
+                    else begin fk <= fk + 1; m_req <= 1; m_we <= 0; m_addr <= {s1_addr[19:2], fk + 2'd1}; end
                 end
                 F_TAG: begin
                     fs <= F_NORMAL; s1_ok <= 0;   // um clock de espera: releitura de s1_addr

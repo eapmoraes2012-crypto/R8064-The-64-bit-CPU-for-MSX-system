@@ -24,8 +24,10 @@ module div_unit(
     wire [63:0] M = mask(s);
     wire        msb_lo = (s == 2'd0) ? ql[7] : (s == 2'd1) ? ql[15] : (s == 2'd2) ? ql[31] : ql[63];
     wire [64:0] nr   = {rem[63:0], msb_lo};
-    wire        ge   = (nr >= {1'b0, rd});
-    wire [64:0] rem_n = ge ? (nr - {1'b0, rd}) : nr;
+    // REV44: um unico subtrator de 66 bits serve a iteracao e a checagem de estouro do LOAD (rh >= rd); antes eram 2 comparadores + 1 subtrator
+    wire [65:0] dif  = ((st == LOAD) ? {2'b00, rh} : {1'b0, nr}) - {2'b00, rd};
+    wire        ge   = ~dif[65];
+    wire [64:0] rem_n = ge ? dif[64:0] : nr;
     wire [63:0] ql_n  = ((ql << 1) | {63'd0, ge}) & M;
     // PRE: valor absoluto
     wire        top_hi = (s == 2'd0) ? rh[7] : (s == 2'd1) ? rh[15] : (s == 2'd2) ? rh[31] : rh[63];
@@ -36,7 +38,9 @@ module div_unit(
     // POST
     wire        qneg = sd ^ sv;
     wire [63:0] half = (s == 2'd0) ? 64'h80 : (s == 2'd1) ? 64'h8000 : (s == 2'd2) ? 64'h8000_0000 : 64'h8000_0000_0000_0000;
-    wire        qbad = qneg ? (ql > half) : (ql >= half);
+    wire        qtop = (s == 2'd0) ? ql[7] : (s == 2'd1) ? ql[15] : (s == 2'd2) ? ql[31] : ql[63];   // ql >= half  <=>  bit alto do tamanho
+    wire        qlow = |(ql & (M >> 1));                                                            // ql >  half  <=>  bit alto e algum bit abaixo
+    wire        qbad = qtop & (qneg ? qlow : 1'b1);
     always @(posedge clk) begin
         if (rst) begin st <= IDLE; err <= 0; q <= 0; r <= 0; end
         else case (st)
@@ -54,7 +58,7 @@ module div_unit(
             end
             LOAD: begin
                 cnt <= nbits(s); rem <= {1'b0, rh}; ql <= rl;
-                if (rd == 64'd0 || rh >= rd) begin err <= 1; q <= 0; r <= 0; st <= DONE; end
+                if (rd == 64'd0 || ge) begin err <= 1; q <= 0; r <= 0; st <= DONE; end
                 else st <= ITER;
             end
             ITER: begin

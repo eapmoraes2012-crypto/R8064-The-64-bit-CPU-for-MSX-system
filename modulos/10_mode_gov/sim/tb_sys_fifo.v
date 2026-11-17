@@ -9,7 +9,7 @@ module tb_sys_fifo;
         .d_req(d_req), .d_we(d_we), .d_paddr(d_paddr), .d_size(d_size), .d_wdata(d_wdata), .d_be(d_be), .d_ack(1'b0), .d_rdata(64'd0), .i_hit(i_hit), .d_hit(d_hit), .d_wr_ok(d_wr_ok),
         .io_we(io_we), .io_re(io_re), .io_a(io_a), .io_wd(io_wd), .io_rd(io_rd), .io_oe(io_oe), .io_x_we(iox_we), .io_x_re(iox_re), .io_x_a(iox_a), .io_x_wd(iox_wd), .io_x_rd(8'h5A), .port_c(8'd0),
         .fm_we(fm_we), .fm_re(fm_re), .fm_a(fm_a), .fm_wd(fm_wd), .fm_rd(fm_rd), .fifo_irq(fifo_irq), .fifo_rst(fifo_rst),
-        .native64(nat), .clk_sel(csel), .is_z80(z80), .is_rom(rom), .mode_busy(mbusy), .dbg_pc(dbg_pc), .dbg_f(dbg_f), .dbg_sig(dbg_sig), .gov_cv(cv));
+        .native64(nat), .clk_sel(csel), .is_z80(z80), .is_rom(rom), .mode_busy(mbusy), .dbg_pc(dbg_pc), .dbg_f(dbg_f), .dbg_sig(dbg_sig), .gov_cv(cv), .dma_pop(1'b0), .dma_push(1'b0), .dma_wd(8'h00), .dma_a_avail(), .dma_a_q(), .dma_b_space(), .fifo_win());
     integer errs = 0, leak = 0, ext = 0; reg [7:0] v;
     always @(posedge clk) begin if ((iox_we || iox_re) && iox_a >= 8'hE8 && iox_a <= 8'hEC) leak = leak + 1; if ((iox_we || iox_re) && (iox_a == 8'hF3 || iox_a == 8'hF4)) ext = ext + 1; end
     task chk(input [255:0] n, input [31:0] g, input [31:0] e); if (g !== e) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", n, g, e); end endtask

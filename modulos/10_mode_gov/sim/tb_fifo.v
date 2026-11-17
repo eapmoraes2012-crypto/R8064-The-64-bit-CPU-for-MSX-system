@@ -5,7 +5,7 @@ module tb_fifo;
     reg r_we = 0, r_re = 0; reg [7:0] r_a = 0, r_wd = 0; wire [7:0] r_rd; wire r_hit;
     reg m_we = 0, m_re = 0; reg [1:0] m_a = 0; reg [7:0] m_wd = 0; wire [7:0] m_rd; wire m_irq, rrst;
     r8064_fifo_if dut(.clk(clk), .rst(rst), .r_we(r_we), .r_re(r_re), .r_a(r_a), .r_wd(r_wd), .r_rd(r_rd), .r_hit(r_hit),
-        .m_we(m_we), .m_re(m_re), .m_a(m_a), .m_wd(m_wd), .m_rd(m_rd), .m_irq(m_irq), .r8064_rst(rrst));
+        .m_we(m_we), .m_re(m_re), .m_a(m_a), .m_wd(m_wd), .m_rd(m_rd), .m_irq(m_irq), .r8064_rst(rrst), .win(), .d_pop(1'b0), .d_push(1'b0), .d_wd(8'h00), .a_avail(), .a_q(), .b_space());
     integer errs = 0, i; reg [7:0] v;
     task chk(input [255:0] n, input [31:0] g, input [31:0] e); if (g !== e) begin errs = errs + 1; $display("ERRO %0s: obtido %h esperado %h", n, g, e); end endtask
     task mw(input [1:0] a, input [7:0] d); begin @(posedge clk); #1 m_a = a; m_wd = d; m_we = 1; @(posedge clk); #1 m_we = 0; end endtask
@@ -16,7 +16,7 @@ module tb_fifo;
         repeat (4) @(posedge clk); rst = 0;
         chk("hit E8", {31'd0, 1'b0}, 0); r_a = 8'hE8; #1 chk("hit em E8", r_hit, 1); r_a = 8'hE4; #1 chk("sem hit em E4", r_hit, 0);
         r_a = 8'hF3; #1 chk("sem hit em F3 (porta antiga)", r_hit, 0); r_a = 8'hF4; #1 chk("sem hit em F4", r_hit, 0); r_a = 8'hED; #1 chk("sem hit em ED", r_hit, 0);
-        mr(1, v); chk("STATUS MSX inicial: espaco", v, 8'h02); rr(8'hE9, v); chk("STATUS R8064 inicial: espaco, sem dado", v, 8'h02);
+        mr(1, v); chk("STATUS MSX inicial: espaco + JANELA (REV46)", v, 8'h22); rr(8'hE9, v); chk("STATUS R8064 inicial: espaco, sem dado", v, 8'h02);
         // MSX envia LEN=3 e 3 bytes, depois INICIAR
         mw(2, 8'd3); mw(3, 8'd0); mw(0, 8'h11); mw(0, 8'h22); mw(0, 8'h33);
         repeat (3) @(posedge clk);
@@ -29,7 +29,7 @@ module tb_fifo;
         rr(8'hE9, v); chk("FIFO MSX->R8064 vazio", v[0], 0);
         // R8064 devolve 2 bytes e marca CONCLUIDO
         rw(8'hEA, 8'd2); rw(8'hE8, 8'hA1); rw(8'hE8, 8'hB2); repeat (3) @(posedge clk); rw(8'hEC, 8'h04);
-        mr(1, v); chk("STATUS MSX: dado, espaco, concluido, IRQ", v, 8'h1B & ~8'h04 | 8'h00 ); // b0 b1 b3 b4 (b2 ocupado = 0)
+        mr(1, v); chk("STATUS MSX: dado, espaco, concluido, IRQ, JANELA devolvida", v, 8'h3B); // b0 b1 b3 b4 (b2 ocupado = 0)
         chk("INT ativo", m_irq, 1); mr(2, v); chk("LEN_L no MSX = 2", v, 2);
         mr(0, v); chk("MSX le A1", v, 8'hA1); mr(0, v); chk("MSX le B2", v, 8'hB2); mr(1, v); chk("sem dado", v[0], 0);
         mw(1, 8'h84); chk("CONCLUIDO limpo", m_irq, 0); mr(1, v); chk("STATUS apos limpar", v & 8'h18, 0);

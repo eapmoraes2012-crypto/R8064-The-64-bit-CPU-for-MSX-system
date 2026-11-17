@@ -1,43 +1,43 @@
 ﻿id;mnemonico;hex
 0;(ilegal);
 1;ADCW HL, rr;ED 3F --
-2;ADCE EA, rr;ED 3F --
+2;ADCL EA, rr;ED 3F --
 3;ADCQ QA, rr;ED 3F --
 4;ADDW rr, rr’;ED 3E --
-5;ADDE rr, rr’;ED 3E --
+5;ADDL rr, rr’;ED 3E --
 6;ADDQ rr, rr’;ED 3E --
 7;DECW rr;ED 3C --
-8;DECE rr;ED 3C --
+8;DECL rr;ED 3C --
 9;DECQ rr;ED 3C --
 10;DIVSB AX, t;ED 3D --
 11;DIVSW DX:AX, rr;ED 3D --
-12;DIVSE QA, rr;ED 3D --
+12;DIVSL QA, rr;ED 3D --
 13;DIVSQ QDE:QA, rr;ED 3D --
 14;DIVUB AX, t;ED 3C --
 15;DIVUW DX:AX, rr;ED 3C --
-16;DIVUE QA, rr;ED 3C --
+16;DIVUL QA, rr;ED 3C --
 17;DIVUQ QDE:QA, rr;ED 3C --
 18;INCW rr;ED 3E --
-19;INCE rr;ED 3E --
+19;INCL rr;ED 3E --
 20;INCQ rr;ED 3E --
 21;MLTSB AL, u;ED 3F --
 22;MLTSW HL,rr;ED 3F --
-23;MLTSE QA, rr;ED 3F --
+23;MLTSL QA, rr;ED 3F --
 24;MLTSQ QDE:QA, rr;ED 3F --
 25;MLTUB HL, u;ED --
 26;MLTUW HL, BC;ED C3
 27;MLTUW HL, SP;ED F3
 28;MLTUW HL, rr;ED 3E --
-29;MLTUE EA, rr;ED 3E --
+29;MLTUL EA, rr;ED 3E --
 30;MLTUQ QA, rr;ED 3E --
 31;SUBCW rr, rr’;ED 3D --
-32;SUBCE rr, rr’;ED 3D --
+32;SUBCL rr, rr’;ED 3D --
 33;SUBCQ rr, rr’;ED 3D --
 34;SUBW rr, rr’;ED 3C --
-35;SUBE rr, rr’;ED 3C --
+35;SUBL rr, rr’;ED 3C --
 36;SUBQ rr, rr’;ED 3C --
 37;CPW rr, rr’;ED 02 --
-38;CPE rr, rr’;ED 02 --
+38;CPL rr, rr’;ED 02 --
 39;CPQ rr, rr’;ED 02 --
 40;FCOPP ST0, ST1;ED 80
 41;FCOS ST0;ED 81
@@ -78,18 +78,18 @@
 76;LDW rr, nn;ED 3B -- -- --
 77;LDW rr, rr’;ED 3B --
 78;LDW rr, (nnnnnnnn);ED 3B -- -- : --
-79;LDE (nnnnnnnn), rr;ED 3A -- -- : --
-80;LDE (QIX+dd), rr;ED DD -- -- --
-81;LDE (QIX+dd), nnnn;ED DD -- -- -- -- : --
-82;LDE (QIY+dd), rr;ED FD -- -- --
-83;LDE (QIY+dd), nnnn;ED FD -- -- -- -- : --
-84;LDE (rr), rr’;ED 3A --
-85;LDE rr, (QIX+dd);ED DD -- -- --
-86;LDE rr, (QIY+dd);ED FD -- -- --
-87;LDE rr, (rr’);ED 3A --
-88;LDE rr, nnnn;ED 3A -- -- : --
-89;LDE rr, rr’;ED 3A --
-90;LDE rr, (nnnnnnnn);ED 3A -- -- : --
+79;LDL (nnnnnnnn), rr;ED 3A -- -- : --
+80;LDL (QIX+dd), rr;ED DD -- -- --
+81;LDL (QIX+dd), nnnn;ED DD -- -- -- -- : --
+82;LDL (QIY+dd), rr;ED FD -- -- --
+83;LDL (QIY+dd), nnnn;ED FD -- -- -- -- : --
+84;LDL (rr), rr’;ED 3A --
+85;LDL rr, (QIX+dd);ED DD -- -- --
+86;LDL rr, (QIY+dd);ED FD -- -- --
+87;LDL rr, (rr’);ED 3A --
+88;LDL rr, nnnn;ED 3A -- -- : --
+89;LDL rr, rr’;ED 3A --
+90;LDL rr, (nnnnnnnn);ED 3A -- -- : --
 91;LDQ (nnnnnnnn), rr;ED 39 -- -- : --
 92;LDQ (QIX+dd), rr;ED DD -- -- --
 93;LDQ (QIX+dd), nnnnnnnn;ED DD -- -- -- -- : --
@@ -102,77 +102,77 @@
 100;LDQ rr, nnnnnnnn;ED 39 -- -- : --
 101;LDQ rr, rr’;ED 39 --
 102;LDQ rr, (nnnnnnnn);ED 39 -- -- : --
-103;POPE rr;ED 38 --
+103;POPL rr;ED 38 --
 104;POPQ rr;ED 38 --
-105;PUSHE rr;ED 38 --
+105;PUSHL rr;ED 38 --
 106;PUSHQ rr;ED 38 --
 107;ANDW rr, rr’;ED 38 --
-108;ANDE rr, rr’;ED 38 --
+108;ANDL rr, rr’;ED 38 --
 109;ANDQ rr, rr’;ED 38 --
 110;ORW rr, rr’;ED 37 --
-111;ORE rr, rr’;ED 37 --
+111;ORL rr, rr’;ED 37 --
 112;ORQ rr, rr’;ED 37 --
 113;XORW rr, rr’;ED 36 --
-114;XORE rr, rr’;ED 36 --
+114;XORL rr, rr’;ED 36 --
 115;XORQ rr, rr’;ED 36 --
-116;CALLE (rr);ED 37 --
-117;CALLE cc,(rr);ED 37 --
-118;CALLE nnnn;ED 35 -- -- --
+116;CALLL (rr);ED 37 --
+117;CALLL cc,(rr);ED 37 --
+118;CALLL nnnn;ED 35 -- -- --
 119;CALLQ (rr);ED 36 --
 120;CALLQ cc,(rr);ED 36 --
 121;CALLQ nnnnnnnn;ED 34 -- -- --
-122;RETE cc;ED 03 --
+122;RETL cc;ED 03 --
 123;RETQ cc;ED 03 --
-124;RETE;ED 04
+124;RETL;ED 04
 125;RETQ;ED 05
 126;BITW bbbb, tt;ED 30 --
-127;BITE bbbbb, tt;ED 33 --
+127;BITL bbbbb, tt;ED 33 --
 128;RESW bbbb, tt;ED 30 --
-129;RESE bbbbb, tt;ED 32 --
+129;RESL bbbbb, tt;ED 32 --
 130;SETW bbbb, tt;ED 2F --
-131;SETE bbbbb, tt;ED 31 --
+131;SETL bbbbb, tt;ED 31 --
 132;DJNZW nn;ED 2E -- --
 133;JRW cc, nn;ED 2A -- -- --
 134;JRW nn;ED 2D -- --
-135;JPE (vv);ED 2A --
-136;JPE cc, (vv);ED 2A --
-137;JPE cc, nnnn;ED 2A -- -- : --
-138;JPE nnnn;ED 2C -- : --
+135;JPL (vv);ED 2A --
+136;JPL cc, (vv);ED 2A --
+137;JPL cc, nnnn;ED 2A -- -- : --
+138;JPL nnnn;ED 2C -- : --
 139;JPQ (vv);ED 2A --
 140;JPQ cc, (vv);ED 2A --
 141;JPQ cc, nnnnnnnn;ED 2A -- -- : --
 142;JPQ nnnnnnnn;ED 2B -- : --
 143;SARB u;ED 29 --
 144;SARW rr;ED 29 --
-145;SARE rr;ED 29 --
+145;SARL rr;ED 29 --
 146;SARQ rr;ED 29 --
 147;SHLB u;ED 29 --
 148;SHLW rr;ED 29 --
-149;SHLE rr;ED 29 --
+149;SHLL rr;ED 29 --
 150;SHLQ rr;ED 29 --
 151;SHRB u;ED 28 --
 152;SHRW rr;ED 28 --
-153;SHRE rr;ED 28 --
+153;SHRL rr;ED 28 --
 154;SHRQ rr;ED 28 --
 155;(removida: igual a RLC r);ED 06 --
 156;RLCW rr;ED 06 --
-157;RLCE rr;ED 06 --
+157;RLCL rr;ED 06 --
 158;RLCQ rr;ED 06 --
 159;(removida: igual a RRC r);ED 07 --
 160;RRCW rr;ED 07 --
-161;RRCE rr;ED 07 --
+161;RRCL rr;ED 07 --
 162;RRCQ rr;ED 07 --
 163;INW rr, (C);ED 27 --
-164;INE rr, (C);ED 27 --
+164;INL rr, (C);ED 27 --
 165;INQ rr, (C);ED 27 --
 166;OUTW (C), rr;ED 27 --
-167;OUTE (C), rr;ED 27 --
+167;OUTL (C), rr;ED 27 --
 168;OUTQ (C), rr;ED 27 --
 169;CPLW rr;ED 26 --
-170;CPLE rr;ED 26 --
+170;CPLL rr;ED 26 --
 171;CPLQ rr;ED 26 --
 172;NEGW rr;ED 26 --
-173;NEGE rr;ED 26 --
+173;NEGL rr;ED 26 --
 174;NEGQ rr;ED 26 --
 175;JP USER, (uu);ED 08~0F
 176;PROT;ED 00~01
@@ -186,9 +186,9 @@
 184;FENCE;ED A5
 185;ISYNC;ED A6
 186;PGINV (uu);ED C4~FC
-187;XCHGE rr, (rr’);ED AC --
+187;XCHGL rr, (rr’);ED AC --
 188;XCHGQ rr, (rr’);ED AC --
-189;CASE (rr’), rr;ED AD --
+189;CASL (rr’), rr;ED AD --
 190;CASQ (rr’), rr;ED AD --
 191;SVCTX (uu);ED AE --
 192;LDCTX (uu);ED AE --

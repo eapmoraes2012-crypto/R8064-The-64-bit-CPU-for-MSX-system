@@ -16,3 +16,4 @@ PRIVILEGIO E EXCECOES (15/11/2026, REV40): MODELO_PRIVILEGIO.txt (modos, CR18, c
  Testes: sim_r64/rodar_r64.bat (passo a passo e +livre) e 13_soc/rodar_exc.bat (cenarios 9 a 12).
 FPU (15/11/2026, REV41): MODELO_FPU.txt. O nucleo instancia 08_fpu/rtl/fpu_unit.v (que instancia fpu_seq.v): qualquer compilacao do nucleo precisa tambem
  desses dois arquivos (os .bat, .ys e .sh do repositorio ja os incluem).
+REV43 (16/11/2026): INW/OUTW implementados; mnemonicos de 32 bits agora com sufixo L (INL, OUTL, CALLL...); modo de privilegio no CR18 e DMA em CR19-CR30; limpeza do nucleo. Ver 13_soc/resultado_soc.txt, REV43.

@@ -1,0 +1,775 @@
+
+31. Printing statistics.
+
+=== $paramod$2b64db3f1c3d22f0c75fd64bfcf11e607c42664a\cache_dm ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1080 wires
+     2532 wire bits
+     1080 public wires
+     2532 public wire bits
+       23 ports
+      451 port bits
+     1338 cells
+       12   ALU
+      157   DFF
+      185   DFFE
+        9   DFFR
+       17   DFFRE
+        1   DFFS
+        5   DPX9B
+        1   GND
+      118   LUT1
+       38   LUT2
+      183   LUT3
+      319   LUT4
+      167   MUX2_LUT5
+       34   MUX2_LUT6
+       15   MUX2_LUT7
+        5   MUX2_LUT8
+       71   RAM16SDP4
+        1   VCC
+
+=== $paramod$324840631820cd86b44f776fb9cb8efb23018b2d\r8064_cpu_gov ===
+
+        +----------Local Count, excluding submodules.
+        | 
+       78 wires
+      768 wire bits
+       78 public wires
+      768 public wire bits
+       58 ports
+      679 port bits
+        2 cells
+        1   LUT1
+        1   LUT2
+        4 submodules
+        1   $paramod$324840631820cd86b44f776fb9cb8efb23018b2d\timing_gov
+        1   mem_class
+        1   r8064_core_min
+        1   r8064_mode
+
+=== $paramod$324840631820cd86b44f776fb9cb8efb23018b2d\timing_gov ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      474 wires
+      919 wire bits
+      474 public wires
+      919 public wire bits
+       18 ports
+       53 port bits
+      443 cells
+      153   ALU
+       28   DFF
+        5   DFFE
+       31   DFFR
+       36   DFFRE
+       10   DFFS
+        1   GND
+       27   LUT1
+       33   LUT2
+       48   LUT3
+       48   LUT4
+       19   MUX2_LUT5
+        3   SPX9
+        1   VCC
+
+=== $paramod$474f72f02f2b238ec513c6a9569aba6f43647067\msx_mem ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      289 wires
+      581 wire bits
+      289 public wires
+      581 public wire bits
+       17 ports
+       90 port bits
+      402 cells
+       64   DFFE
+        9   DFFRE
+        1   GND
+       71   LUT1
+       39   LUT2
+       27   LUT3
+      119   LUT4
+       69   MUX2_LUT5
+        3   MUX2_LUT6
+
+=== $paramod$5e1a6e2f5e8ab65a18db794e2d67041267467cc0\r8064_memsys ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      212 wires
+     1639 wire bits
+      212 public wires
+     1639 public wire bits
+       50 ports
+      702 port bits
+      295 cells
+        8   DFF
+       72   DFFR
+       47   DFFRE
+        1   GND
+       28   LUT1
+       74   LUT2
+       10   LUT3
+       18   LUT4
+       22   MUX2_LUT5
+        8   MUX2_LUT6
+        4   MUX2_LUT7
+        2   MUX2_LUT8
+        1   VCC
+        6 submodules
+        1   $paramod$2b64db3f1c3d22f0c75fd64bfcf11e607c42664a\cache_dm
+        1   $paramod$5e1a6e2f5e8ab65a18db794e2d67041267467cc0\sdram_ctrl
+        1   $paramod$6b3d2a43b4499327fd01d6118ba8a73fb4a64609\mmu
+        1   $paramod$a02770be70c59cf5d0662988b525e150b75629b8\cache_dm
+        1   $paramod$a03ecfb14ab91a262120a5ba3d348d60fc9f107f\mmu
+        1   mem_arb5
+
+=== $paramod$5e1a6e2f5e8ab65a18db794e2d67041267467cc0\sdram_ctrl ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1182 wires
+     2316 wire bits
+     1182 public wires
+     2316 public wire bits
+       23 ports
+      251 port bits
+     1602 cells
+      128   ALU
+       18   DFF
+      233   DFFE
+      101   DFFR
+       85   DFFRE
+        3   DFFS
+        4   DFFSE
+        1   GND
+      210   LUT1
+      120   LUT2
+      194   LUT3
+      222   LUT4
+      198   MUX2_LUT5
+       60   MUX2_LUT6
+       19   MUX2_LUT7
+        5   MUX2_LUT8
+        1   VCC
+
+=== $paramod$6b3d2a43b4499327fd01d6118ba8a73fb4a64609\mmu ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1892 wires
+     5147 wire bits
+     1892 public wires
+     5147 public wire bits
+       30 ports
+      431 port bits
+     3503 cells
+       30   ALU
+     1060   DFFE
+       19   DFFR
+       18   DFFRE
+        1   GND
+      225   LUT1
+      137   LUT2
+      357   LUT3
+     1134   LUT4
+      373   MUX2_LUT5
+       97   MUX2_LUT6
+       40   MUX2_LUT7
+       11   MUX2_LUT8
+        1   VCC
+
+=== $paramod$a02770be70c59cf5d0662988b525e150b75629b8\cache_dm ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      519 wires
+     1607 wire bits
+      519 public wires
+     1607 public wire bits
+       23 ports
+      451 port bits
+      686 cells
+        7   ALU
+      157   DFF
+       41   DFFE
+        3   DFFR
+       10   DFFRE
+        1   DFFS
+        1   DPX9B
+        1   GND
+       56   LUT1
+       35   LUT2
+      138   LUT3
+      119   LUT4
+       62   MUX2_LUT5
+       18   MUX2_LUT6
+        8   MUX2_LUT7
+        2   MUX2_LUT8
+       24   RAM16SDP4
+        2   SDPX9B
+        1   VCC
+
+=== $paramod$a03ecfb14ab91a262120a5ba3d348d60fc9f107f\mmu ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1153 wires
+     3346 wire bits
+     1153 public wires
+     3346 public wire bits
+       30 ports
+      431 port bits
+     2124 cells
+       23   ALU
+      696   DFFE
+       14   DFFR
+       16   DFFRE
+        1   GND
+      200   LUT1
+       96   LUT2
+      246   LUT3
+      535   LUT4
+      219   MUX2_LUT5
+       52   MUX2_LUT6
+       20   MUX2_LUT7
+        5   MUX2_LUT8
+        1   VCC
+
+=== $paramod\r8064_clkgen\SRC=s32'00000000000000000000000000000000\SDR_PSDA=4'0100 ===
+
+        +----------Local Count, excluding submodules.
+        | 
+       30 wires
+       31 wire bits
+       30 public wires
+       31 public wire bits
+        6 ports
+        6 port bits
+       18 cells
+        5   ALU
+        1   DFFC
+        4   DFFCE
+        1   DFFP
+        1   GND
+        3   LUT1
+        1   LUT2
+        1   VCC
+        1   rPLL
+
+=== $paramod\r8064_fifo_if\BASE=8'11101000 ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      788 wires
+     1347 wire bits
+      788 public wires
+     1347 public wire bits
+       22 ports
+       72 port bits
+      902 cells
+       51   ALU
+       58   DFF
+       57   DFFR
+       19   DFFRE
+        1   DFFS
+        2   DPX9B
+        1   GND
+      118   LUT1
+       67   LUT2
+      123   LUT3
+      155   LUT4
+      156   MUX2_LUT5
+       65   MUX2_LUT6
+       23   MUX2_LUT7
+        5   MUX2_LUT8
+        1   VCC
+
+=== $paramod\r8064_msx_sys\FIFO_BASE=8'11101000 ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     2061 wires
+     3113 wire bits
+     2061 public wires
+     3113 public wire bits
+       71 ports
+      710 port bits
+     2170 cells
+        1   GND
+       57   LUT1
+       96   LUT2
+       96   LUT3
+      969   LUT4
+      530   MUX2_LUT5
+      247   MUX2_LUT6
+      117   MUX2_LUT7
+       56   MUX2_LUT8
+        1   VCC
+        4 submodules
+        1   $paramod$324840631820cd86b44f776fb9cb8efb23018b2d\r8064_cpu_gov
+        2   $paramod$474f72f02f2b238ec513c6a9569aba6f43647067\msx_mem
+        1   $paramod\r8064_fifo_if\BASE=8'11101000
+
+=== alu_core_s ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1211 wires
+     2701 wire bits
+     1211 public wires
+     2701 public wire bits
+       11 ports
+      294 port bits
+     1600 cells
+       66   ALU
+      192   DFFE
+        1   DFFRE
+        1   GND
+      131   LUT1
+      170   LUT2
+      188   LUT3
+      447   LUT4
+      290   MUX2_LUT5
+       86   MUX2_LUT6
+       20   MUX2_LUT7
+        7   MUX2_LUT8
+        1   VCC
+
+=== alu_prep ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     3991 wires
+     4358 wire bits
+     3991 public wires
+     4358 public wire bits
+       10 ports
+      353 port bits
+     4189 cells
+        1   GND
+     1268   LUT1
+        5   LUT2
+      300   LUT3
+      627   LUT4
+     1097   MUX2_LUT5
+      538   MUX2_LUT6
+      257   MUX2_LUT7
+       96   MUX2_LUT8
+
+=== mem_arb5 ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1532 wires
+     2885 wire bits
+     1532 public wires
+     2885 public wire bits
+       19 ports
+      707 port bits
+     1617 cells
+       92   DFFE
+        9   DFFRE
+        1   GND
+      502   LUT1
+       69   LUT2
+      129   LUT3
+      162   LUT4
+      374   MUX2_LUT5
+      186   MUX2_LUT6
+       93   MUX2_LUT7
+
+=== mem_class ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      288 wires
+      467 wire bits
+      288 public wires
+      467 public wire bits
+       19 ports
+       71 port bits
+      312 cells
+       20   ALU
+        5   DFF
+       32   DFFE
+        4   DFFR
+        1   GND
+       42   LUT1
+       12   LUT2
+       38   LUT3
+       93   LUT4
+       41   MUX2_LUT5
+       14   MUX2_LUT6
+        7   MUX2_LUT7
+        2   MUX2_LUT8
+        1   VCC
+
+=== r8064_board_top ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      204 wires
+      451 wire bits
+      204 public wires
+      451 public wire bits
+       17 ports
+       62 port bits
+      188 cells
+       25   ALU
+       28   DFF
+        1   GND
+        3   IBUF
+       32   IOBUF
+        2   LUT1
+        3   LUT2
+       44   LUT4
+       15   MUX2_LUT5
+        4   MUX2_LUT6
+        2   MUX2_LUT7
+        1   MUX2_LUT8
+       27   OBUF
+        1   VCC
+        2 submodules
+        1   $paramod\r8064_clkgen\SRC=s32'00000000000000000000000000000000\SDR_PSDA=4'0100
+        1   r8064_soc
+
+=== r8064_core_min ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     5625 wires
+    14993 wire bits
+     5625 public wires
+    14993 public wire bits
+       56 ports
+      695 port bits
+     9288 cells
+      450   ALU
+      120   DFF
+     2342   DFFE
+       79   DFFR
+      548   DFFRE
+       78   DFFSE
+        1   GND
+      323   LUT1
+      288   LUT2
+     1670   LUT3
+     2274   LUT4
+      951   MUX2_LUT5
+      106   MUX2_LUT6
+       41   MUX2_LUT7
+        7   MUX2_LUT8
+        9   SPX9
+        1   VCC
+        9 submodules
+        1   alu_core_s
+        1   alu_prep
+        1   r8064_decode
+        2   regfile64
+        3   regmap_b
+        1   regmerge
+
+=== r8064_decode ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      328 wires
+      750 wire bits
+      328 public wires
+      750 public wire bits
+       14 ports
+       57 port bits
+      349 cells
+       24   DFF
+        1   DFFR
+        1   GND
+       33   LUT3
+      147   LUT4
+       72   MUX2_LUT5
+       36   MUX2_LUT6
+       18   MUX2_LUT7
+        9   MUX2_LUT8
+        7   SPX9
+        1   VCC
+        2 submodules
+        1   r8064_rom_a
+        1   r8064_rom_amb
+
+=== r8064_dma ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1727 wires
+     3697 wire bits
+     1727 public wires
+     3697 public wire bits
+       33 ports
+      422 port bits
+     2283 cells
+       96   ALU
+        9   DFF
+      420   DFFE
+       16   DFFR
+       81   DFFRE
+        2   DFFSE
+        1   GND
+      131   LUT1
+      290   LUT2
+      354   LUT3
+      563   LUT4
+      252   MUX2_LUT5
+       45   MUX2_LUT6
+       15   MUX2_LUT7
+        7   MUX2_LUT8
+        1   VCC
+
+=== r8064_mode ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      120 wires
+      186 wire bits
+      120 public wires
+      186 public wire bits
+       16 ports
+       44 port bits
+      133 cells
+       11   DFFRE
+        4   DFFSE
+        1   GND
+       27   LUT1
+        8   LUT2
+        9   LUT3
+       29   LUT4
+       29   MUX2_LUT5
+       10   MUX2_LUT6
+        4   MUX2_LUT7
+        1   MUX2_LUT8
+
+=== r8064_rom_a ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      302 wires
+      320 wire bits
+      302 public wires
+      320 public wire bits
+        2 ports
+       20 port bits
+      311 cells
+        1   GND
+        4   LUT1
+        4   LUT2
+       27   LUT3
+      125   LUT4
+       80   MUX2_LUT5
+       40   MUX2_LUT6
+       20   MUX2_LUT7
+       10   MUX2_LUT8
+
+=== r8064_rom_amb ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      182 wires
+      196 wire bits
+      182 public wires
+      196 public wire bits
+        2 ports
+       16 port bits
+      187 cells
+        1   GND
+       45   LUT1
+        8   LUT3
+       43   LUT4
+       48   MUX2_LUT5
+       24   MUX2_LUT6
+       12   MUX2_LUT7
+        6   MUX2_LUT8
+
+=== r8064_soc ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      122 wires
+     1173 wire bits
+      122 public wires
+     1173 public wire bits
+       56 ports
+      297 port bits
+       13 cells
+        1   LUT1
+        4   LUT2
+        8   LUT3
+        4 submodules
+        1   $paramod$5e1a6e2f5e8ab65a18db794e2d67041267467cc0\r8064_memsys
+        1   $paramod\r8064_msx_sys\FIFO_BASE=8'11101000
+        1   r8064_dma
+        1   r8064_xbuf
+
+=== r8064_xbuf ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      396 wires
+      890 wire bits
+      396 public wires
+      890 public wire bits
+       12 ports
+      175 port bits
+      405 cells
+        3   DFF
+        1   GND
+      100   LUT1
+        3   LUT2
+       77   LUT3
+       76   LUT4
+       82   MUX2_LUT5
+       35   MUX2_LUT6
+       16   MUX2_LUT7
+        3   MUX2_LUT8
+        8   SPX9
+        1   VCC
+
+=== regfile64 ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      481 wires
+     1360 wire bits
+      481 public wires
+     1360 public wire bits
+        8 ports
+      212 port bits
+      619 cells
+      139   DFF
+        1   GND
+        8   LUT1
+        6   LUT2
+       16   LUT3
+      280   LUT4
+      150   MUX2_LUT5
+       10   MUX2_LUT6
+        4   MUX2_LUT7
+        4   SDPX9B
+        1   VCC
+
+=== regmap_b ===
+
+        +----------Local Count, excluding submodules.
+        | 
+       50 wires
+       58 wire bits
+       50 public wires
+       58 public wire bits
+        6 ports
+       14 port bits
+       49 cells
+        1   GND
+        4   LUT1
+        6   LUT2
+       11   LUT3
+        6   LUT4
+       13   MUX2_LUT5
+        6   MUX2_LUT6
+        2   MUX2_LUT7
+
+=== regmerge ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      100 wires
+      291 wire bits
+      100 public wires
+      291 public wire bits
+        4 ports
+      195 port bits
+      160 cells
+       32   LUT3
+       80   LUT4
+       40   MUX2_LUT5
+        8   MUX2_LUT6
+
+=== design hierarchy ===
+
+        +----------Count including submodules.
+        | 
+    36307 r8064_board_top
+       18 $paramod\r8064_clkgen\SRC=s32'00000000000000000000000000000000\SDR_PSDA=4'0100
+       13 r8064_soc
+      295   $paramod$5e1a6e2f5e8ab65a18db794e2d67041267467cc0\r8064_memsys
+     1338     $paramod$2b64db3f1c3d22f0c75fd64bfcf11e607c42664a\cache_dm
+     1602     $paramod$5e1a6e2f5e8ab65a18db794e2d67041267467cc0\sdram_ctrl
+     3503     $paramod$6b3d2a43b4499327fd01d6118ba8a73fb4a64609\mmu
+      686     $paramod$a02770be70c59cf5d0662988b525e150b75629b8\cache_dm
+     2124     $paramod$a03ecfb14ab91a262120a5ba3d348d60fc9f107f\mmu
+     1617     mem_arb5
+     2170   $paramod\r8064_msx_sys\FIFO_BASE=8'11101000
+        2     $paramod$324840631820cd86b44f776fb9cb8efb23018b2d\r8064_cpu_gov
+      443       $paramod$324840631820cd86b44f776fb9cb8efb23018b2d\timing_gov
+      312       mem_class
+     9288       r8064_core_min
+     1600         alu_core_s
+     4189         alu_prep
+      349         r8064_decode
+      311           r8064_rom_a
+      187           r8064_rom_amb
+      619         regfile64
+       49         regmap_b
+      160         regmerge
+      133       r8064_mode
+      402     $paramod$474f72f02f2b238ec513c6a9569aba6f43647067\msx_mem
+      902     $paramod\r8064_fifo_if\BASE=8'11101000
+     2283   r8064_dma
+      405   r8064_xbuf
+
+        +----------Count including submodules.
+        | 
+    27287 wires
+    60179 wire bits
+    27287 public wires
+    60179 public wire bits
+      693 ports
+     8291 port bits
+        - memories
+        - memory bits
+        - processes
+    36307 cells
+     1066   ALU
+      893   DFF
+        1   DFFC
+        4   DFFCE
+     5426   DFFE
+        1   DFFP
+      406   DFFR
+      916   DFFRE
+       16   DFFS
+       88   DFFSE
+        8   DPX9B
+       29   GND
+        3   IBUF
+       32   IOBUF
+     3789   LUT1
+     1662   LUT2
+     4387   LUT3
+     9045   LUT4
+     5594   MUX2_LUT5
+     1757   MUX2_LUT6
+      765   MUX2_LUT7
+      240   MUX2_LUT8
+       27   OBUF
+       95   RAM16SDP4
+       10   SDPX9B
+       27   SPX9
+       19   VCC
+        1   rPLL
+        2 submodules
+        1   $paramod\r8064_clkgen\SRC=s32'00000000000000000000000000000000\SDR_PSDA=4'0100
+        1   r8064_soc
+

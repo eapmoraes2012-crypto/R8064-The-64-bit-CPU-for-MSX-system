@@ -16,21 +16,26 @@ module alu_prep(
     output wire        ci,     // vai-um de entrada ja resolvido
     output reg  [21:0] ctl
 );
+    // (REV44: operandos por seletores de 1 bit em vez de um case de 64 bits - o case virava ~4 mil celulas no yosys)
     reg [63:0] xr, br_;
     localparam ADD=5'd0, ADC=5'd1, SUB=5'd2, SBC=5'd3, AND_=5'd4, OR_=5'd5, XOR_=5'd6, CP=5'd7,
                INC=5'd8, DEC=5'd9, NEG=5'd10, CPL=5'd11, SHL=5'd12, SHR=5'd13, SAR=5'd14, ROL=5'd15, ROR=5'd16,
                RL=5'd17, RR=5'd18, SLL=5'd19, DAA=5'd20, SHL4=5'd21, SHR4=5'd22;
+    wire is_neg = (op == NEG);
+    wire is_one = (op == INC) || (op == DEC);
     always @* begin
-        xr = a; br_ = b; ctl = 22'd0;
+        xr  = is_neg ? 64'd0 : a;
+        br_ = is_neg ? a : (is_one ? 64'd1 : b);
+        ctl = 22'd0;
         case (op)
             ADD: ctl[5] = 1'b1;
             ADC: begin ctl[5] = 1'b1; ctl[1] = 1'b1; end
             SUB: begin ctl[5] = 1'b1; ctl[0] = 1'b1; ctl[2] = 1'b1; ctl[3] = 1'b1; end
             CP:  begin ctl[5] = 1'b1; ctl[0] = 1'b1; ctl[2] = 1'b1; ctl[3] = 1'b1; ctl[15] = 1'b1; end
             SBC: begin ctl[5] = 1'b1; ctl[0] = 1'b1; ctl[1] = 1'b1; ctl[2] = 1'b1; ctl[3] = 1'b1; end
-            INC: begin ctl[5] = 1'b1; br_ = 64'd1; ctl[4] = 1'b1; end
-            DEC: begin ctl[5] = 1'b1; br_ = 64'd1; ctl[0] = 1'b1; ctl[2] = 1'b1; ctl[3] = 1'b1; ctl[4] = 1'b1; end
-            NEG: begin ctl[5] = 1'b1; xr = 64'd0; br_ = a; ctl[0] = 1'b1; ctl[2] = 1'b1; ctl[3] = 1'b1; end
+            INC: begin ctl[5] = 1'b1; ctl[4] = 1'b1; end
+            DEC: begin ctl[5] = 1'b1; ctl[0] = 1'b1; ctl[2] = 1'b1; ctl[3] = 1'b1; ctl[4] = 1'b1; end
+            NEG: begin ctl[5] = 1'b1; ctl[0] = 1'b1; ctl[2] = 1'b1; ctl[3] = 1'b1; end
             AND_: ctl[6] = 1'b1;
             OR_:  ctl[7] = 1'b1;
             XOR_: ctl[8] = 1'b1;

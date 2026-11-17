@@ -3,7 +3,7 @@
 // a ultima escrita fica registrada (wq_*) e, se coincide com o endereco lido, substitui a saida da memoria. Cobre o consumidor que le
 // exatamente quando o produtor esta no estagio W; os demais casos sao encaminhados pelo pipeline. (Nao entra no caminho w_data -> leitura.)
 // Duas copias para inferir BSRAM (2 portas de leitura).
-// Indices: 0 QAX,1 QBC,2 QDE,3 QHL,4 QWX,5 QAX',6 QBC',7 QDE',8 QHL',9 QIX,10 QIY,11 QSP,12 QPC,13 temporario; 16..23 = N0..N7; 32..51 = CR0..CR19.
+// Indices: 0 QAX,1 QBC,2 QDE,3 QHL,4 QWX,5 QAX',6 QBC',7 QDE',8 QHL',9 QIX,10 QIY,11 QSP,12 QPC,13 temporario; 16..23 = N0..N7; 32..63 = CR00..CR31 (CR18 = modo; ver MODELO_PRIVILEGIO.txt).
 module regfile64(
     input  wire        clk,
     input  wire        we,

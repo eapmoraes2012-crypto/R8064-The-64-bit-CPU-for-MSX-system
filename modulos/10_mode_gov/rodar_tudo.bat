@@ -3,7 +3,7 @@ rem Rode DENTRO do terminal do OSS CAD Suite. Modulo 10: registrador de modo + g
 cd /d "%~dp0sim"
 set R=..\rtl
 set C=..\..\09_core_min
-set CORE=%R%\r8064_cpu_gov.v %R%\r8064_mode.v %R%\timing_gov.v %R%\mem_class.v %C%\rtl\r8064_core_min.v %C%\rtl\r8064_decode.v %C%\rtl\r8064_decode_rom.v %C%\rtl\regfile64.v %C%\rtl\regmap_b.v %C%\rtl\regmerge.v %C%\rtl\alu_prep.v %C%\rtl\alu_core_s.v ..\..\03_muldiv\rtl\mul_unit.v ..\..\03_muldiv\rtl\div_unit.v ..\..\08_fpu\rtl\fpu_unit.v ..\..\08_fpu\rtl\fpu_seq.v %C%\rtl\alu_core.v %C%\rtl\alu64.v 
+set CORE=%R%\r8064_cpu_gov.v %R%\r8064_mode.v %R%\timing_gov.v %R%\mem_class.v %C%\rtl\r8064_core_min.v %C%\rtl\r8064_decode.v %C%\rtl\r8064_decode_rom.v %C%\rtl\regfile64.v %C%\rtl\regmap_b.v %C%\rtl\regmerge.v %C%\rtl\alu_prep.v %C%\rtl\alu_core_s.v ..\..\03_muldiv\rtl\mul_unit.v ..\..\03_muldiv\rtl\div_unit.v ..\..\08_fpu\rtl\fpu_unit.v ..\..\08_fpu\rtl\fpu_seq.v 
 rem arquivos .mem do nucleo (uop, mainctrl, ctrl_b, rom_ed_*, amb_idx, prog) ficam em 09_core_min\sim
 copy /y %C%\sim\*.mem . >nul
 copy /y %C%\sim\gen_roms.py . >nul

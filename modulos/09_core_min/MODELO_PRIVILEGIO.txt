@@ -1,4 +1,4 @@
-MODELO DE PRIVILEGIO E DE EXCECAO DO R8064 (REV40, 15/11/2026)
+MODELO DE PRIVILEGIO E DE EXCECAO DO R8064 (REV40, 15/11/2026; revisto na REV43, 16/11/2026)
 ================================================================
 Definido nesta revisao (o repositorio nao trazia esse modelo). Implementado em rtl/r8064_core_min.v e sim/gen_r64_rom.py; testado em sim_r64 (nucleo x modelo em
 Python) e em 13_soc/sim/tb_soc_exc.v (cenarios 9 a 12, com MMU). Tudo aqui e uma ESCOLHA DE PROJETO: revise e mude o que nao servir.
@@ -8,7 +8,7 @@ Python) e em 13_soc/sim/tb_soc_exc.v (cenarios 9 a 12, com MMU). Tudo aqui e uma
    O modo fica no CR18:  bit 0 = U (modo atual)   bit 1 = PU (modo anterior, salvo na entrada de excecao).
    O modo atual vai para a MMU (sinal cr_mmu_user): pagina sem o bit U do PTE nao e acessivel em modo usuario; pagina com U nao e executavel em supervisor.
    CR14 (ja existia):   bit 0 = MMU ligada   bit 1 = U (forma antiga de mudar o modo: continua aceita na ESCRITA)   bit 2 = TE (novo)   bits 15:8 = ASID.
-   TE = "trap enable": liga as excecoes de instrucao ilegal / nao implementada e de erro de divisao. Com TE = 0 (reset) elas se comportam como antes
+   TE = "trap enable": liga as excecoes de instrucao ilegal (opcode ED indefinido) e de erro de divisao. Com TE = 0 (reset) elas se comportam como antes
    (NOP / resultado fixo com flags), que e o que o software de MSX espera.
 
 2. ENTRADA DE EXCECAO (igual para todas as causas; nada e empilhado)
@@ -23,9 +23,8 @@ Python) e em 13_soc/sim/tb_soc_exc.v (cenarios 9 a 12, com MMU). Tudo aqui e uma
    5  SCALL n                                    n                           a instrucao DEPOIS do SCALL
    6  erro de divisao (so com TE = 1)            0                           a instrucao de divisao (nada foi alterado)
    7  instrucao que nao pode ser executada       0 = opcode ED ilegal        a propria instrucao
-                                                 1 = sem microcodigo
                                                  2 = privilegiada em modo usuario
-   Causa 7 com auxiliar 0 ou 1 so acontece com TE = 1; com auxiliar 2, sempre. Se mais de uma condicao vale, a ordem e: privilegiada, ilegal / sem microcodigo, SCALL.
+   Causa 7 com auxiliar 0 so acontece com TE = 1; com auxiliar 2, sempre. Se mais de uma condicao vale, a ordem e: privilegiada, ilegal, SCALL.
 
 3. RETORNO: SYSRT (ED A4)      modo := PU (CR18 := CR18 >> 1)      IFF1 := IFF2      PC := CR13
    O tratador pode mudar CR13 (para pular a instrucao) e CR18 (para escolher o modo de volta) antes do SYSRT.
@@ -47,7 +46,7 @@ Python) e em 13_soc/sim/tb_soc_exc.v (cenarios 9 a 12, com MMU). Tudo aqui e uma
                                                      O bloco de 128 bytes deve estar mapeado: uma falta no meio do LDCTX reinicia a instrucao com uu ja alterado.
    Privilegiadas tambem: MFCR, MTCR, LDCR, STCR, PGINV e, do Z80, DI, EI, IM n, LD I,A e toda a E/S (IN, OUT, INI/IND/INIR/INDR, OUTI/OUTD/OTIR/OTDR).
    NAO privilegiadas: HALT, RETI, RETN, LD A,I, LD A,R, LD R,A.
-   Sem microcodigo (NOP com TE = 0; excecao 7/1 com TE = 1): a FPU (45 instrucoes) e INW/INE/INQ, OUTW/OUTE/OUTQ. Com TE = 1 o sistema pode EMULAR a FPU no tratador.
+   Todas as instrucoes tem microcodigo (a FPU e INW/INL/INQ, OUTW/OUTL/OUTQ entraram na REV43); so as codificacoes ED 06/07 (removidas), ED 77/7F, FENCE e ISYNC sao NOP.
 
 5. INTERRUPCOES
    Em supervisor nada mudou (IM 0/1/2 do Z80 empilham o PC; modo legado salta para o vetor). Em modo usuario a interrupcao entra como EXCECAO de causa 0

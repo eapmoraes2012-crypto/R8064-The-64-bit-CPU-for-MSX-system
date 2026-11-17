@@ -59,6 +59,9 @@ module tb_soc_exc;
         end else if (sc == 12) begin                                                 // STDBY espera a interrupcao (IM legado: salta para o vetor 0040h)
             ldrr(7, 16'h0001); mtcr(5'd10); retpc = p; emit(8'hED); emit(8'h24); ldrr(2, 16'hDDDD); emit(8'h18); emit(8'hFE);
             p = 16'h40; ldrr(2, 16'hBBBB); emit(8'h18); emit(8'hFE);
+        end else if (sc == 13 || sc == 14) begin                                     // ED ilegal (ED 08): com TE=1 (CR14 bit 2) causa 7/aux 0; com TE=0 e executado como NOP
+            ldrr(7, (sc == 13) ? 16'h0005 : 16'h0001); mtcr(5'd14); retpc = p; emit(8'hED); emit(8'h08); ldrr(2, 16'hAAAA); emit(8'h18); emit(8'hFE);
+            p = 16'h40; mfcr(5'd11); emit(8'h18); emit(8'hFE);
         end else
         if (sc >= 4) begin
             emit(8'h31); emit(8'h00); emit(8'h20);                                   // LD SP,2000h (a pagina 1000h-1FFFh nao esta mapeada: pilha em 1FFEh falta)
@@ -96,6 +99,8 @@ module tb_soc_exc;
         if (sc >= 4) begin mdl.mem[2*(24'h6000>>3)] = 32'h00006463; end
         repeat (4) @(posedge clk); rst = 0;
         wait (init_done);
+        // +r800: repete o cenario sob o modo R800 (is_z80=0, is_rom=0) e o governador de tempo do R800 (o padrao apos o reset e Z80 em ROM)
+        if ($test$plusargs("r800")) begin dut.u_sys.u_cpu.u_mode.r6 = 2'b00; dut.u_sys.u_cpu.u_mode.is_z80 = 1'b0; dut.u_sys.u_cpu.u_mode.is_rom = 1'b0; end
         if (sc == 1) begin wait (d_fault); repeat (2) @(posedge clk); mdl.mem[2*((24'h102000>>3)+2)] = 32'h000014CF; end   // o "SO" mapeia a pagina 2000h -> PA 5000h
         if (sc == 10) begin wait (mmu_user_w); repeat (300) @(posedge clk); irq_r = 1; end
         if (sc == 12) begin repeat (4000) @(posedge clk); de_antes = rf(2); chk("parado no STDBY", dbg_pc, retpc); irq_r = 1; end
@@ -119,6 +124,8 @@ module tb_soc_exc;
         if (sc == 10) begin chk("CR11 causa 0", r43, 64'h0); chk("CR12", r44, 64'h0); chk("EPC no laco do usuario", (r45 >= 64'h4000 && r45 <= 64'h4003), 1); chk("AX=CR18", rf(0), 64'h2); chk("modo supervisor", mmu_user_w, 0);
             chk("BC contou", rf(1) != 0, 1); chk("IFF1=0", dut.u_sys.u_cpu.u_core.ie, 0); chk("IFF2=1", dut.u_sys.u_cpu.u_core.iff2, 1); chk("sem faltas", nfi + nfd, 0); end
         if (sc == 11) begin chk("DE segunda passada", rf(2), 64'hCCCC); chk("RESET desligou a MMU 1 vez", nfall, 1); chk("sem faltas", nfi + nfd, 0); end
+        if (sc == 13) begin chk("CR11 causa 7 (ilegal)", r43, 64'h7); chk("CR12 aux 0", r44, 64'h0); chk("CR13 EPC = ED 08", r45, retpc); chk("DE nao executado", rf(2), 64'h0); chk("AX=causa", rf(0), 64'h7); chk("sem faltas", nfi + nfd, 0); end
+        if (sc == 14) begin chk("TE=0: sem excecao (CR11)", r43, 64'h0); chk("TE=0: DE executado", rf(2), 64'hAAAA); chk("sem faltas", nfi + nfd, 0); end
         if (sc == 12) begin chk("DE antes da INT", de_antes, 64'h0); chk("DE tratador", rf(2), 64'hBBBB); end
         $display("violacoes SDRAM=%0d", mdl.viol);
         if (errs == 0) $display("RESULTADO: EXCECOES SOC OK"); else $display("RESULTADO: %0d ERROS", errs);

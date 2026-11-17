@@ -33,7 +33,7 @@ module tb_sys;
         repeat (4) @(posedge clk); rst = 0;
         rio(8'h3D, v); chk("ID 3DH", v, 8'h64);
         rio(8'h77, v); chk("porta externa", v, 8'h5A);
-        wio(8'hA8, 8'hFF); wio(8'hFC, 8'h01); rio(8'hFC, v); chk("FCH lido de volta (bits nao usados em 1)", v, 8'hC1); rio(8'hA8, v); chk("A8H lido de volta", v, 8'hFF);
+        wio(8'hA8, 8'hFF); wio(8'hFC, 8'h01); rio(8'hFC, v); chk("FCH lido de volta (mapper de 8 bits: todos validos)", v, 8'h01); rio(8'hA8, v); chk("A8H lido de volta", v, 8'hFF);
         if ($test$plusargs("r800")) begin wio(8'hE4, 8'h06); wio(8'hE5, 8'h00); end
         go_mem = 1;
         repeat (60000) @(posedge clk);

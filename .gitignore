@@ -41,3 +41,20 @@ modulos/09_core_min/sim_z80/*.exe
 
 # Teste das instrucoes R8064: copias temporarias
 modulos/09_core_min/sim_r64/*.mem
+
+# Copias de seguranca e saidas de PnR/sintese (geradas localmente)
+*.bak
+*.bak_*
+*.novo
+*.futuro
+**/bak/
+**/bak_*/
+pnr_*.log
+yosys_*.log
+rep_*.json
+g*.json
+*.fs
+ys_*_run.ys
+ys_tmp*.ys
+ys_h_tmp*.ys
+a.out

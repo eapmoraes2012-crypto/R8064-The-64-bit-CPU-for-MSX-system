@@ -2,7 +2,7 @@
 // PREMISSAS (nao confirmadas no chip real): geometria acima; CL=2; BL=2 (um acesso de 64 bits = 2 palavras de 32 bits); tempos genericos de SDR a 100 MHz
 //   (tRCD=2, tRP=2, tRAS=5, tRC=7, tRFC=7, tWR=2, tMRD=2 clocks) e refresh a cada 7,8 us (cobre 8192 linhas em 64 ms). Todos parametrizados.
 // Politica de pagina aberta, um pedido por vez; escrita postada (wdone quando o comando WRITE e emitido); be[7:0] vira DQM por byte.
-// Interface: req/ready (aceita quando ready=1 e req=1 no mesmo clock), we, addr (indice de palavra de 64 bits, 19 bits = 4 MB), wdata, be; leitura: rvalid+rdata; escrita: wdone.
+// Interface: req/ready (aceita quando ready=1 e req=1 no mesmo clock), we, addr (indice de palavra de 64 bits, 20 bits = 8 MB), wdata, be; leitura: rvalid+rdata; escrita: wdone.
 module sdram_ctrl #(
     parameter INIT_CYC = 20000,            // 200 us a 100 MHz
     parameter tRCD = 2, tRP = 2, tRAS = 5, tRC = 7, tRFC = 7, tWR = 2, tMRD = 2, CL = 2,
@@ -10,7 +10,7 @@ module sdram_ctrl #(
 )(
     input  wire        clk, rst,
     input  wire        req, we,
-    input  wire [18:0] addr,
+    input  wire [19:0] addr,
     input  wire [63:0] wdata,
     input  wire [7:0]  be,
     output wire        ready,

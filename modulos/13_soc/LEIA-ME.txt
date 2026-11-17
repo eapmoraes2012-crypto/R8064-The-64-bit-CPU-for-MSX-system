@@ -1,5 +1,5 @@
 Modulo 13 - SoC: sistema MSX (nucleo+modo+governador+msx_mem+FIFOs) + MMU (TLB I=4, D=8) + cache I 4 KB + cache D 8 KB + arbitro de 4 mestres (pedido registrado) + controlador de SDRAM.
-Arquivos: rtl/r8064_soc.v (topo), rtl/r8064_memsys.v (subsistema de memoria), rtl/mem_arb4.v, cache_dm.v, mmu.v, sdram_ctrl.v. Os demais (nucleo etc.) estao em 09_core_min/rtl e 10_mode_gov/rtl.
+Arquivos: rtl/r8064_soc.v (topo), rtl/r8064_memsys.v (subsistema de memoria), rtl/mem_arb5.v (5 mestres), r8064_dma.v, r8064_xbuf.v, cache_dm.v, mmu.v, sdram_ctrl.v. Os demais (nucleo etc.) estao em 09_core_min/rtl e 10_mode_gov/rtl.
 Teste: sim/tb_soc.v (modelo de SDRAM com verificacao de protocolo): programa de sequencias executado a partir da SDRAM. Sem argumento: MMU em bypass. +mmu: MMU ligada com tabelas Sv39 na SDRAM
 (VA 0000h-0FFFh e 4000h-4FFFh mapeadas 1:1); confere 6 leituras de tabela na MMU-I e 3 na MMU-D. Resultado: SOC OK, 0 violacoes de SDRAM.
 Compilar: iverilog -g2012 -o soc.vvp sim/tb_soc.v rtl/*.v sim/sdram_model.v <todos os .v do nucleo>   (copiar tambem gov_rom.mem, uop.mem, mainctrl.mem, amb_idx.mem, ctrl_b.mem, rom_ed_*.mem para a pasta de execucao)

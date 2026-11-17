@@ -160,17 +160,17 @@ def t_jr():
         b = (r['BC'] - 1) & 0xFFFF; wr_reg('BC', b, 16); branch([0xED, 0x2E] + le(k, 2), b != 0, k)
 def t_jpimm():
     k = rnd.randrange(0, 5); kind = rnd.randrange(4)
-    if kind == 0: t = code[0] + 6 + k; branch([0xED, 0x2C] + le(t, 4), True, k)                              # JPE nnnn
+    if kind == 0: t = code[0] + 6 + k; branch([0xED, 0x2C] + le(t, 4), True, k)                              # JPL nnnn
     elif kind == 1: t = code[0] + 10 + k; branch([0xED, 0x2B] + le(t, 8), True, k)                           # JPQ nnnnnnnn
-    elif kind == 2: cc = rnd.randrange(8); t = code[0] + 7 + k; branch([0xED, 0x2A, 0x80 | cc << 3 | 1] + le(t, 4), cond(cc), k)   # JPE cc,nnnn
+    elif kind == 2: cc = rnd.randrange(8); t = code[0] + 7 + k; branch([0xED, 0x2A, 0x80 | cc << 3 | 1] + le(t, 4), cond(cc), k)   # JPL cc,nnnn
     else: cc = rnd.randrange(8); t = code[0] + 11 + k; branch([0xED, 0x2A, 0xC0 | cc << 3 | 6] + le(t, 8), cond(cc), k)            # JPQ cc,nnnnnnnn
 def t_jpreg():
     k = rnd.randrange(0, 5); kind = rnd.randrange(4); v = rnd.choice(R6); e = kind in (0, 2)
     t = code[0] + 11 + 3 + k                                                                                 # depois do LDQ (11 bytes) e do JP (3 bytes)
-    ldq(v, t | (rnd.getrandbits(32) << 32 if e else 0))                                                      # JPE ignora os 32 bits de cima
-    if kind == 0: branch([0xED, 0x2A, 0x40 | v << 3 | 1], True, k)                                           # JPE (vv)
+    ldq(v, t | (rnd.getrandbits(32) << 32 if e else 0))                                                      # JPL ignora os 32 bits de cima
+    if kind == 0: branch([0xED, 0x2A, 0x40 | v << 3 | 1], True, k)                                           # JPL (vv)
     elif kind == 1: branch([0xED, 0x2A, 0xC0 | v << 3 | 1], True, k)                                         # JPQ (vv)
-    elif kind == 2: cc = rnd.randrange(8); branch([0xED, 0x2A, cc << 3 | v], cond(cc), k)                    # JPE cc,(vv)
+    elif kind == 2: cc = rnd.randrange(8); branch([0xED, 0x2A, cc << 3 | v], cond(cc), k)                    # JPL cc,(vv)
     else: cc = rnd.randrange(8); branch([0xED, 0x2A, 0x40 | cc << 3 | v], cond(cc), k)                       # JPQ cc,(vv)
 def push_ret(n, ret):
     wrm(r['SP'] - n // 8, ret, n); r['SP'] = (r['SP'] - n // 8) & M64
@@ -190,15 +190,15 @@ def t_ret():
     chk_sp(); k = rnd.randrange(0, 5); s = rnd.choice('EQ'); n = BITS[s]; v = rnd.choice(R6); q = 1 if s == 'Q' else 0; cc = rnd.randrange(9)
     ln = 2 if cc == 8 else 3
     t = code[0] + 11 + 3 + ln + k                                                                            # LDQ (11) + PUSHx (3) + RETx
-    ldq(v, t | (rnd.getrandbits(32) << 32 if s == 'E' else 0))                                               # RETE usa so os 32 bits baixos
+    ldq(v, t | (rnd.getrandbits(32) << 32 if s == 'E' else 0))                                               # RETL usa so os 32 bits baixos
     wrm(r['SP'] - n // 8, r[REG[v]], n); r['SP'] = (r['SP'] - n // 8) & M64; seq([0xED, 0x38, 0x80 | q << 6 | 1 << 3 | v])   # PUSHx rr
     tk = True if cc == 8 else cond(cc)
     if tk: r['SP'] = (r['SP'] + n // 8) & M64
     bs = [0xED, 0x04 + q] if cc == 8 else [0xED, 0x03, (0x80 if q else 0x40) | cc << 3]
-    branch(bs, tk, k)                                                                                        # o alvo lido da pilha = t (32 bits baixos em RETE)
+    branch(bs, tk, k)                                                                                        # o alvo lido da pilha = t (32 bits baixos em RETL)
 def sgn(v, n): v &= msk(n); return v - (1 << n) if v >> (n - 1) else v
 def r8get(u): name, sh = R8[u]; return (r[name] >> sh) & 0xFF
-def ldx(code_r, val, s):                        # LDW/LDE/LDQ rr, imediato
+def ldx(code_r, val, s):                        # LDW/LDL/LDQ rr, imediato
     n = BITS[s]; wr_reg(REG[code_r], val, n); seq([0xED, LDB2[s], 0x40 | code_r << 3 | 1] + le(val & msk(n), n // 8))
 def mflags(p, n, sg):                           # flags de MLT: p = produto (inteiro Python), n = bits de cada operando
     lo, hi = p & msk(n), (p >> n) & msk(n)
@@ -219,7 +219,7 @@ def t_mul():
         p = (sgn(a, n) * sgn(b, n)) if sg else ((a & msk(n)) * (b & msk(n)))
         mflags(p, n, sg)
         if s == 'W': wr_reg('HL', p, 16); wr_reg('DE', p >> 16, 16)                                          # MLTxW HL,rr: DE:HL
-        elif s == 'E': r['AX'] = p & M64                                                                     # MLTxE: QA
+        elif s == 'E': r['AX'] = p & M64                                                                     # MLTxL: QA
         else:
             r['AX'] = p & M64                                                                                # MLTUQ: QA ; MLTSQ: QDE:QA
             if sg: r['DE'] = (p >> 64) & M64
@@ -466,7 +466,7 @@ def t_cr():
     else: r['AX'] = cr[k]; seq([0xED, 0x0A, k])                                                              # MFCR n
 def t_nop2():                                   # FENCE, ISYNC, ED ilegal, PGINV, WAKE, FLUSH (TLB inteira + pipeline: sem efeito visivel aqui), FPU e E/S larga (sem microcodigo; com TE = 0 sao NOP), PROT 0
     if rnd.random() < .15: cr[14] &= ~1; seq([0xED, 0x00]); return
-    seq(rnd.choice([[0xED, 0xA5], [0xED, 0xA6], [0xED, 0x08], [0xED, 0x0F], [0xED, 0xC4], [0xED, 0xFC], [0xED, 0x23], [0xED, 0x94], [0xED, 0x27, 0x01]]))
+    seq(rnd.choice([[0xED, 0xA5], [0xED, 0xA6], [0xED, 0x08], [0xED, 0x0F], [0xED, 0xC4], [0xED, 0xFC], [0xED, 0x23], [0xED, 0x94]]))
 CTXR = ['AX', 'BC', 'DE', 'HL', 'IX', 'IY', 'SP']
 def t_ctx():                                    # SVCTX (uu) / LDCTX (uu): 16 palavras de 8 bytes: AX BC DE HL IX IY SP F N0..N7
     u = rnd.choice([0, 2, 4, 7]); ldq(u, rnd.randrange(0x8000, 0xFF00) & ~7 | (rnd.getrandbits(48) << 16 if rnd.random() < .3 else 0)); a = r[REG[u]]
@@ -503,7 +503,7 @@ ntrap = {}                                      # (causa, auxiliar, modo) -> qua
 PRIV = [[0xED, 0x20, 0x4A], [0xED, 0x21, 0x58], [0xED, 0x0A, 0x0E], [0xED, 0x0C, 0x12], [0xED, 0xC4], [0xED, 0xA4], [0xED, 0xB5], [0xED, 0x00], [0xED, 0x01], [0xED, 0x25], [0xED, 0x24], [0xED, 0x23], [0xED, 0x94],
         [0xF3], [0xFB], [0xD3, 0x98], [0xDB, 0x98], [0xED, 0x78], [0xED, 0x79], [0xED, 0x56], [0xED, 0x47], [0xED, 0xA2], [0xED, 0xB3]]   # Z80: DI, EI, E/S, IM, LD I,A
 def one_trap(H, user, te):                      # sorteia e monta UMA instrucao que causa excecao; devolve (causa, auxiliar)
-    kinds = ['scall'] + (['priv'] * 2 if user else []) + (['ill', 'unimp', 'div'] if te else [])
+    kinds = ['scall'] + (['priv'] * 2 if user else []) + (['ill', 'div'] if te else [])
     k = rnd.choice(kinds)
     if k == 'scall': n = rnd.getrandbits(8); trap([0xED, 0x22, n], 5, n, code[0] + 3, H); return 5, n
     if k == 'priv': trap(rnd.choice(PRIV), 7, 2, code[0], H); return 7, 2
@@ -534,7 +534,22 @@ def t_user():                                   # entra em modo usuario (JP USER
         else: handler(exp, nextvec=True); H = code[0] + GAP; assert cr[18] == 1                               # volta para o modo usuario
     if te: ldcr(14, 0)
 USERPOOL = [t_alu, t_incdec, t_shift, t_bit, t_ldrr, t_ldimm, t_mul, t_ldabs]
-TESTS = [(t_fpu, int(os.environ.get('FPU_PESO', '14'))), (t_trap, 3), (t_user, 3), (t_ctx, 2), (t_mul, 10), (t_div, 8), (t_xchg, 3), (t_cas, 4), (t_cr, 3), (t_nop2, 2), (t_alu, 22), (t_incdec, 6), (t_shift, 10), (t_bit, 8), (t_ldrr, 5), (t_ldimm, 8), (t_ldmem, 8), (t_ldabs, 6), (t_ldidx, 8), (t_stack, 6),
+io = {'n': 0, 'chk': 0}
+def io_rd8(): v = ((r['BC'] & 0xFF) + 37 * io['n'] + io['chk']) & 0xFF; io['n'] = (io['n'] + 1) & 0xFF; return v
+def io_wr8(d): io['chk'] = ((((io['chk'] << 1) | (io['chk'] >> 7)) & 0xFF) ^ d ^ (r['BC'] & 0xFF))
+def t_io():                                      # INW/INL/INQ rr,(C) e OUTW/OUTL/OUTQ (C),rr: bytes sucessivos na porta C
+    t = rnd.randrange(3); z = (16, 32, 64)[t]; rr = rnd.choice(R6)
+    if rnd.random() < .5:
+        v = 0
+        for k in range(z // 8): v |= io_rd8() << (8 * k)
+        if REG[rr] == 'BC': r['BC'] = (r['BC'] & ~msk(z) & 0xFFFFFFFFFFFFFFFF) | v     # BC e o endereco da porta: nao pode ser pre-carregado
+        else: wr_reg(REG[rr], v, z)
+        seq([0xED, 0x27, t << 6 | rr << 3 | 1])
+    else:
+        v = r[REG[rr]] & msk(z)
+        for k in range(z // 8): io_wr8((v >> (8 * k)) & 0xFF)
+        seq([0xED, 0x27, t << 6 | rr << 3 | 6])
+TESTS = [(t_io, 8), (t_fpu, int(os.environ.get('FPU_PESO', '14'))), (t_trap, 3), (t_user, 3), (t_ctx, 2), (t_mul, 10), (t_div, 8), (t_xchg, 3), (t_cas, 4), (t_cr, 3), (t_nop2, 2), (t_alu, 22), (t_incdec, 6), (t_shift, 10), (t_bit, 8), (t_ldrr, 5), (t_ldimm, 8), (t_ldmem, 8), (t_ldabs, 6), (t_ldidx, 8), (t_stack, 6),
          (t_jr, 5), (t_jpimm, 4), (t_jpreg, 4), (t_call, 4), (t_ret, 4)]
 pool = [t for t, w in TESTS for _ in range(w)]
 ld_sp(0xF000)

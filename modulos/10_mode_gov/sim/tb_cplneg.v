@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// CPL/NEG (ED 26, 3o byte: tamanho[7:6] 00=B 01=W 10=E 11=Q). CPLB/NEGB nao aceitam o registrador A.
+// CPL/NEG (ED 26, 3o byte: tamanho[7:6] 00=B 01=W 10=L 11=Q). CPLB/NEGB nao aceitam o registrador A.
 module tb_cplneg;
     reg clk = 0, rst = 1, irq = 0; always #5 clk = ~clk;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f; wire dbg_sig;
@@ -23,8 +23,8 @@ module tb_cplneg;
         chk("NEGQ AX + NEGB DE -> AX = FFFFFFFFFFFFFF01", dut.u_rf1.mem_a[0], 64'hFFFFFFFFFFFFFF01);
         chk("CPLW DE  -> DE  = FF00",   dut.u_rf1.mem_a[2], 64'hFF00);
         chk("NEGW HL  -> HL  = FFFF",   dut.u_rf1.mem_a[3], 64'hFFFF);
-        chk("CPLE BC' -> BC' = 11223344AA998877", dut.u_rf1.mem_a[6], 64'h11223344AA998877);
-        chk("NEGE DE' -> DE' = AAAAAAAAFFFFFFFE", dut.u_rf1.mem_a[7], 64'hAAAAAAAAFFFFFFFE);
+        chk("CPLL BC' -> BC' = 11223344AA998877", dut.u_rf1.mem_a[6], 64'h11223344AA998877);
+        chk("NEGL DE' -> DE' = AAAAAAAAFFFFFFFE", dut.u_rf1.mem_a[7], 64'hAAAAAAAAFFFFFFFE);
         chk("CPLQ HL' -> HL' = FEDCBA9876543210", dut.u_rf1.mem_a[8], 64'hFEDCBA9876543210);
         $display("F final = %h pc=%h erros=%0d", dbg_f, dbg_pc, errs);
         if (errs == 0) $display("RESULTADO: CPL/NEG OK"); else $display("RESULTADO: %0d ERROS", errs);

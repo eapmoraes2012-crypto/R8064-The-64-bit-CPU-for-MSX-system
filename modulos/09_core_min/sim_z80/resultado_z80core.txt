@@ -1,0 +1,12 @@
+--- r53 
+8000 instrucoes comparadas, 0 bytes de memoria diferentes
+RESULTADO: Z80 NO NUCLEO OK
+tb_z80core.v:71: $finish called at 1284366000 (1ps)
+--- r56 
+8000 instrucoes comparadas, 0 bytes de memoria diferentes
+RESULTADO: Z80 NO NUCLEO OK
+tb_z80core.v:71: $finish called at 1005236000 (1ps)
+--- zex 
+20000 instrucoes comparadas, 0 bytes de memoria diferentes
+RESULTADO: Z80 NO NUCLEO OK
+tb_z80core.v:71: $finish called at 2717236000 (1ps)

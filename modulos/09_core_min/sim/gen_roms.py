@@ -77,7 +77,7 @@ IRQ_PUSH=[dict(wr=1,aI=SP,immc=1,isz=1,bpcn=1,sz=1),SPDEC()]      # empilha o PC
 chain(600,IRQ_PUSH+[dict(br=1,cond=0,aI=63,tabs=1,ioff=1,isz=1)])                                   # IM 0/1: PC empilhado, salta para 0038h
 chain(601,[dict(rd=1,wren=1,dI=TMP,aI=63,ioff=1,isz=1,sz=1,zx=1)]+IRQ_PUSH+[dict(br=1,cond=0,aI=TMP,immz=1)])   # IM 2: le o vetor [I:FF] em TMP ANTES de empilhar (uma falta nele nao altera estado); a leitura de 16 bits cruza a palavra (2 transacoes)
 
-# ---- familia ED 26 (3o byte: tamanho[7:6] 00=B 01=W 10=E 11=Q): CPL x = tam,001,x ; NEG x = tam,x,001. B/W/E/Q = ids CPL 294/169/170/171, NEG 295/172/173/174 ----
+# ---- familia ED 26 (3o byte: tamanho[7:6] 00=B 01=W 10=L 11=Q): CPL x = tam,001,x ; NEG x = tam,x,001. B/W/L/Q = ids CPL 294/169/170/171, NEG 295/172/173/174 ----
 # CPLB/NEGB nao aceitam o registrador A (AX): o Z80 ja tem CPL e NEG para A. NEGB s: A <- 0 - s (destino fixo AX, fonte s)
 for szc,(ci,ni) in enumerate(((294,295),(169,172),(170,173),(171,174))):
     uops[256+ci]=uop(alu=11,dF=1,aD=1,wren=1,fwe=1,sz=szc,fpos=0)                          # s <- NOT s (rr em b3[2:0])
@@ -141,8 +141,8 @@ ldw8(2,0x00FF); neg8(0,2)                       # NEGB DE: A <- 0-FF -> AX = FFF
 cpl8(1,2)                                       # CPLW DE          -> DE = FF00
 ldw8(4,0x0001); neg8(1,4)                       # NEGW HL          -> HL = FFFF
 P8.append(0xD9)                                 # EXX
-ldq8(0,0x1122334455667788); cpl8(2,0)           # CPLE BC'         -> 11223344AA998877
-ldq8(2,0xAAAAAAAA00000002); neg8(2,2)           # NEGE DE'         -> AAAAAAAAFFFFFFFE
+ldq8(0,0x1122334455667788); cpl8(2,0)           # CPLL BC'         -> 11223344AA998877
+ldq8(2,0xAAAAAAAA00000002); neg8(2,2)           # NEGL DE'         -> AAAAAAAAFFFFFFFE
 ldq8(4,0x0123456789ABCDEF); cpl8(3,4)           # CPLQ HL'         -> FEDCBA9876543210
 P8.extend([0x18,0xFE]); words(P8,'prog_cplneg.mem')
 # programa de blocos: LDIR, LDDR, CPIR, INIR, OTIR (ver tb_blk.v)

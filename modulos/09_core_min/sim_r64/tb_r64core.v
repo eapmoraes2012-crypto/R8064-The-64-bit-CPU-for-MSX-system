@@ -9,11 +9,13 @@ module tb_r64core;
     wire i_req, d_req, d_we; wire [63:0] i_addr, d_addr, d_wdata, dbg_pc; wire [1:0] d_size; wire [7:0] dbg_f, d_be; wire dbg_sig;
     reg i_ack = 0, d_ack = 0; reg [63:0] i_rdata = 0, d_rdata = 0; reg [7:0] mem [0:65535]; reg [7:0] fim [0:65535];
     wire io_we, io_re; wire [7:0] io_a, io_wd;
+    reg [7:0] io_n = 0, io_chk = 0; wire [7:0] io_rd = io_a + 8'd37 * io_n + io_chk;   // porta de teste: leitura = C + 37*n + chk; gravacao atualiza chk
+    always @(posedge clk) begin if (io_re) io_n <= io_n + 8'd1; if (io_we) io_chk <= {io_chk[6:0], io_chk[7]} ^ io_wd ^ io_a; end
     r8064_core_min dut(.i_flt(1'b0), .d_flt(1'b0), .i_cs(3'd0), .d_cs(3'd0), .clk(clk), .rst(rst), .irq(1'b0),
         .i_req(i_req), .i_addr(i_addr), .i_ack(i_ack), .i_rdata(i_rdata),
         .d_req(d_req), .d_we(d_we), .d_addr(d_addr), .d_size(d_size), .d_wdata(d_wdata), .d_be(d_be), .d_ack(d_ack), .d_rdata(d_rdata),
         .dbg_pc(dbg_pc), .dbg_f(dbg_f), .dbg_sig(dbg_sig), .gov_go(go), .gov_wait(1'b0), .port_c(8'd0), .gov_page(), .gov_op(), .gov_port(), .gov_cv(), .gov_alt_ev(), .gov_boundary(),
-        .gov_pc(), .gov_len(), .gov_dev(), .gov_daddr(), .gov_dsize(), .gov_dwe(), .io_we(io_we), .io_re(io_re), .io_a(io_a), .io_wd(io_wd), .io_rdata(8'hFF));
+        .gov_pc(), .gov_len(), .gov_dev(), .gov_daddr(), .gov_dsize(), .gov_dwe(), .io_we(io_we), .io_re(io_re), .io_a(io_a), .io_wd(io_wd), .io_rdata(io_rd));
     integer ic = 0, k;
     wire [15:0] ia = {i_addr[15:3], 3'b000}, da = {d_addr[15:3], 3'b000};
     always @(posedge clk) begin

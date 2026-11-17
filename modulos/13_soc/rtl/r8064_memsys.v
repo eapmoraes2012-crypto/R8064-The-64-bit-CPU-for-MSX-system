@@ -1,4 +1,4 @@
-// r8064_memsys.v - subsistema de memoria do SoC: MMU (TLB I e D) + cache I 4 KB + cache D 8 KB + arbitros em cascata + controlador de SDRAM.
+// r8064_memsys.v - subsistema de memoria do SoC: MMU (TLB I e D) + cache I 4 KB + cache D 8 KB + arbitro de 5 mestres (o 5o e o DMA) + controlador de SDRAM (8 MB).
 //  Lado do nucleo: protocolo req/ack do nucleo (c_i_* e c_d_*). Ver r8064_soc.v para a descricao do caminho.
 module r8064_memsys #(parameter INIT_CYC = 20000, parameter REF_INT = 400)(
     input  wire        clk, rst,
@@ -7,6 +7,8 @@ module r8064_memsys #(parameter INIT_CYC = 20000, parameter REF_INT = 400)(
     input  wire        mmu_en, mmu_user, input wire [7:0] mmu_asid, input wire [19:0] mmu_root,
     input  wire        fl_all, fl_va_en, fl_asid_en, input wire [63:0] fl_va, input wire [7:0] fl_asid, output wire fl_busy_i, fl_busy_d,
     input  wire        cache_inv,
+    // 5o mestre da SDRAM (DMA, prioridade mais baixa): protocolo req ate acc, depois espera done (rdata valido no clock de done)
+    input  wire        x_req, x_we, input wire [19:0] x_addr, input wire [63:0] x_wd, input wire [7:0] x_be, output wire x_acc, x_done, output wire [63:0] x_rd,
     output reg         i_fault, d_fault, output reg [2:0] i_cause, d_cause,
     output wire        init_done,
     output wire        s_cke, s_cs_n, s_ras_n, s_cas_n, s_we_n, output wire [3:0] s_dqm, output wire [1:0] s_ba, output wire [10:0] s_a,
@@ -14,16 +16,16 @@ module r8064_memsys #(parameter INIT_CYC = 20000, parameter REF_INT = 400)(
 );
     // ---------------- lado de instrucoes ----------------
     wire iv_ready, iv_pvalid, iv_pfault; wire [31:0] iv_paddr; wire [2:0] iv_pcause;
-    wire iw_req, iw_accept, iw_done; wire [18:0] iw_addr;
+    wire iw_req, iw_accept, iw_done; wire [19:0] iw_addr;
     wire ic_ready, ic_rvalid; wire [63:0] ic_rdata;
-    wire ic_mreq, ic_mwe, ic_maccept, ic_mdone; wire [18:0] ic_maddr; wire [63:0] ic_mwd; wire [7:0] ic_mbe;
+    wire ic_mreq, ic_mwe, ic_maccept, ic_mdone; wire [19:0] ic_maddr; wire [63:0] ic_mwd; wire [7:0] ic_mbe;
     wire [63:0] arbI_rdata;
     reg [1:0] ist; reg [31:0] ipa; reg i_ack_r; reg i_ic_sent; reg i_cancel;
     wire ican = i_cancel || !c_i_req;   // o nucleo retirou a requisicao (esvaziamento do front-end): a resposta em voo e descartada
     localparam S_IDLE = 2'd0, S_XL = 2'd1, S_CREQ = 2'd2, S_WAIT = 2'd3;
     wire iv_req  = (ist == S_IDLE) && c_i_req && !i_ack_r;   // !i_ack_r: no clock do ack de falta o nucleo ainda mantem a requisicao (nao aceitar de novo)
     wire ic_req  = (ist == S_CREQ);
-    wire [18:0] ic_addr = ipa[21:3];
+    wire [19:0] ic_addr = ipa[22:3];
     wire i_acc_v = iv_req && iv_ready;
     always @(posedge clk) begin
         if (rst) begin i_cancel <= 1'b0; ist <= S_IDLE; i_fault <= 1'b0; i_cause <= 3'd0; i_ack_r <= 1'b0; ipa <= 32'd0; end
@@ -45,7 +47,7 @@ module r8064_memsys #(parameter INIT_CYC = 20000, parameter REF_INT = 400)(
     end
     assign c_i_ack = (ist == S_WAIT && ic_rvalid && !ican) || i_ack_r;
     assign c_i_rd  = i_ack_r ? 64'd0 : ic_rdata;
-    mmu #(.NENT(4), .STATS(0)) u_mmu_i(.clk(clk), .rst(rst), .en(mmu_en), .user(mmu_user), .asid(mmu_asid), .root_ppn(mmu_root),
+    mmu #(.NENT(2), .STATS(0)) u_mmu_i(.clk(clk), .rst(rst), .en(mmu_en), .user(mmu_user), .asid(mmu_asid), .root_ppn(mmu_root),
         .fl_all(fl_all), .fl_va_en(fl_va_en), .fl_asid_en(fl_asid_en), .fl_va(fl_va), .fl_asid(fl_asid),
         .v_req(iv_req), .v_addr(c_i_pa), .v_acc(2'd2), .ready(iv_ready), .fl_busy(fl_busy_i), .p_valid(iv_pvalid), .p_addr(iv_paddr), .p_fault(iv_pfault), .p_cause(iv_pcause),
         .m_req(iw_req), .m_addr(iw_addr), .m_accept(iw_accept), .m_done(iw_done), .m_rdata(arbI_rdata), .st_hit(), .st_miss(), .st_walk(), .st_fault());
@@ -55,14 +57,14 @@ module r8064_memsys #(parameter INIT_CYC = 20000, parameter REF_INT = 400)(
 
     // ---------------- lado de dados ----------------
     wire dv_ready, dv_pvalid, dv_pfault; wire [31:0] dv_paddr; wire [2:0] dv_pcause;
-    wire dw_req, dw_accept, dw_done; wire [18:0] dw_addr;
+    wire dw_req, dw_accept, dw_done; wire [19:0] dw_addr;
     wire dc_ready, dc_rvalid; wire [63:0] dc_rdata;
-    wire dc_mreq, dc_mwe, dc_maccept, dc_mdone; wire [18:0] dc_maddr; wire [63:0] dc_mwd; wire [7:0] dc_mbe;
+    wire dc_mreq, dc_mwe, dc_maccept, dc_mdone; wire [19:0] dc_maddr; wire [63:0] dc_mwd; wire [7:0] dc_mbe;
     wire [63:0] arbD_rdata;
     reg [1:0] dst; reg [31:0] dpa; reg d_ack_r; reg d_fault_w; reg [2:0] d_cause_w; wire c_d_ack_w; wire [63:0] c_d_rd_w;
     wire dv_req = (dst == S_IDLE) && c_d_req && !d_ack_r && !c_d_ack;   // idem: ack postado/de falta ainda com a requisicao do nucleo no ar
     wire dc_req = (dst == S_CREQ);
-    wire [18:0] dc_addr = dpa[21:3];
+    wire [19:0] dc_addr = dpa[22:3];
     wire d_acc_v = dv_req && dv_ready;
     always @(posedge clk) begin
         if (rst) begin dst <= S_IDLE; d_fault_w <= 1'b0; d_cause_w <= 3'd0; d_ack_r <= 1'b0; dpa <= 32'd0; end
@@ -91,27 +93,28 @@ module r8064_memsys #(parameter INIT_CYC = 20000, parameter REF_INT = 400)(
         else begin c_d_ack <= c_d_ack_w; d_fault <= d_fault_w; d_cause <= d_cause_w; end
         c_d_rd <= c_d_rd_w;
     end
-    mmu #(.NENT(8), .STATS(0)) u_mmu_d(.clk(clk), .rst(rst), .en(mmu_en), .user(mmu_user), .asid(mmu_asid), .root_ppn(mmu_root),
+    mmu #(.NENT(2), .STATS(0)) u_mmu_d(.clk(clk), .rst(rst), .en(mmu_en), .user(mmu_user), .asid(mmu_asid), .root_ppn(mmu_root),
         .fl_all(fl_all), .fl_va_en(fl_va_en), .fl_asid_en(fl_asid_en), .fl_va(fl_va), .fl_asid(fl_asid),
         .v_req(dv_req), .v_addr(c_d_pa), .v_acc(c_d_we ? 2'd1 : 2'd0), .ready(dv_ready), .fl_busy(fl_busy_d), .p_valid(dv_pvalid), .p_addr(dv_paddr), .p_fault(dv_pfault), .p_cause(dv_pcause),
         .m_req(dw_req), .m_addr(dw_addr), .m_accept(dw_accept), .m_done(dw_done), .m_rdata(arbD_rdata), .st_hit(), .st_miss(), .st_walk(), .st_fault());
-    cache_dm #(.WR(1), .IDX(8), .STATS(0), .B2B(0)) u_dc(.clk(clk), .rst(rst), .inv(cache_inv), .req(dc_req), .we(c_d_we), .addr(dc_addr), .wdata(c_d_wd), .be(c_d_be),
+    cache_dm #(.WR(1), .IDX(7), .STATS(0), .B2B(0)) u_dc(.clk(clk), .rst(rst), .inv(cache_inv), .req(dc_req), .we(c_d_we), .addr(dc_addr), .wdata(c_d_wd), .be(c_d_be),
         .ready(dc_ready), .rvalid(dc_rvalid), .rdata(dc_rdata), .m_req(dc_mreq), .m_we(dc_mwe), .m_addr(dc_maddr), .m_wdata(dc_mwd), .m_be(dc_mbe),
         .m_accept(dc_maccept), .m_done(dc_mdone), .m_rdata(arbD_rdata), .st_rd_hit(), .st_rd_miss(), .st_wr(), .st_wr_hit());
 
-    // ---------------- arbitro de 4 mestres (pedido registrado) -> SDRAM ----------------
-    // m0 = cache D, m1 = caminhador MMU-D, m2 = cache I, m3 = caminhador MMU-I
-    wire t_req, t_we, t_ready, t_rvalid, t_wdone; wire [18:0] t_addr; wire [63:0] t_wd, top_rdata, sd_rdata; wire [7:0] t_be;
-    wire [3:0] a_acc, a_done;
-    mem_arb4 u_arb(.clk(clk), .rst(rst),
-        .req({iw_req, ic_mreq, dw_req, dc_mreq}), .we({1'b0, ic_mwe, 1'b0, dc_mwe}),
-        .addr({iw_addr, ic_maddr, dw_addr, dc_maddr}), .wdata({64'd0, ic_mwd, 64'd0, dc_mwd}), .be({8'd0, ic_mbe, 8'd0, dc_mbe}),
+    // ---------------- arbitro de 5 mestres (pedido registrado) -> SDRAM ----------------
+    // m0 = cache D, m1 = caminhador MMU-D, m2 = cache I, m3 = caminhador MMU-I, m4 = DMA
+    wire t_req, t_we, t_ready, t_rvalid, t_wdone; wire [19:0] t_addr; wire [63:0] t_wd, top_rdata, sd_rdata; wire [7:0] t_be;
+    wire [4:0] a_acc, a_done;
+    mem_arb5 u_arb(.clk(clk), .rst(rst),
+        .req({x_req, iw_req, ic_mreq, dw_req, dc_mreq}), .we({x_we, 1'b0, ic_mwe, 1'b0, dc_mwe}),
+        .addr({x_addr, iw_addr, ic_maddr, dw_addr, dc_maddr}), .wdata({x_wd, 64'd0, ic_mwd, 64'd0, dc_mwd}), .be({x_be, 8'd0, ic_mbe, 8'd0, dc_mbe}),
         .acc(a_acc), .done(a_done), .rdata(top_rdata),
         .c_req(t_req), .c_we(t_we), .c_addr(t_addr), .c_wdata(t_wd), .c_be(t_be), .c_ready(t_ready), .c_rvalid(t_rvalid), .c_rdata(sd_rdata), .c_wdone(t_wdone));
     assign dc_maccept = a_acc[0]; assign dc_mdone = a_done[0];
     assign dw_accept  = a_acc[1]; assign dw_done  = a_done[1];
     assign ic_maccept = a_acc[2]; assign ic_mdone = a_done[2];
     assign iw_accept  = a_acc[3]; assign iw_done  = a_done[3];
+    assign x_acc = a_acc[4]; assign x_done = a_done[4]; assign x_rd = top_rdata;
     assign arbD_rdata = top_rdata; assign arbI_rdata = top_rdata;
     sdram_ctrl #(.INIT_CYC(INIT_CYC), .REF_INT(REF_INT)) u_sdram(.clk(clk), .rst(rst), .req(t_req), .we(t_we), .addr(t_addr), .wdata(t_wd), .be(t_be),
         .ready(t_ready), .rvalid(t_rvalid), .rdata(sd_rdata), .wdone(t_wdone), .init_done(init_done),

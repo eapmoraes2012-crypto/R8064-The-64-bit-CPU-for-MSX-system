@@ -28,8 +28,10 @@ NS, NC, NL = 11, 12, 20
 S = [F((-1) ** (i + 1), math.factorial(2 * i + 3)) for i in range(NS)]
 C = [F((-1) ** (i + 1), math.factorial(2 * i + 2)) for i in range(NC)]
 L = [F(2, 2 * i + 1) for i in range(NL)]
-CONST = [ext(v) for v in [F(1), F(2), 2 / PI, P1, P2, P3, 1 / LN2, LN2] + S + C + L]
+LN2H = chop(LN2, 32); LN2L = LN2 - LN2H            # LN2 = LN2H + LN2L: LN2H tem 32 bits, entao e*LN2H e exato para |e| < 2^31 (FLN)
+CONST = [ext(v) for v in [F(1), F(2), 2 / PI, P1, P2, P3, 1 / LN2, LN2] + S + C + L + [LN2H, LN2L]]
 K_ONE, K_TWO, K_2OPI, K_P1, K_P2, K_P3, K_L2E, K_LN2, K_S, K_C, K_L = 0, 1, 2, 3, 4, 5, 6, 7, 8, 8 + NS, 8 + NS + NC
+K_LN2H, K_LN2L = 8 + NS + NC + NL, 8 + NS + NC + NL + 1
 ADD, SUB, MUL, DIV, FILD, FIST, RND = 0, 1, 2, 3, 6, 7, 8
 T = lambda i: 8 + i                             # temporarios: posicoes 8..15 da memoria da pilha
 ST = lambda i: 16 + i                           # relativo ao topo
@@ -55,7 +57,7 @@ st(3, dst=T(6), b=0); st(3, dst=ST(0), b=1); st(4, a=T(6)); st(7)               
 st(3, dst=T(6), b=0); st(3, dst=T(7), b=1); alu(ST(0), T(6), DIV, b=T(7)); st(7)
 def lnpoly(): alu(T(4), T(3), MUL, b=T(3)); horner(T(5), T(4), K_L, NL); alu(T(5), T(5), MUL, b=T(3))                      # f em T3 -> ln em T5
 def split(): st(2, dst=T(2), a=ST(0)); alu(T(0), 0, FILD); alu(T(3), T(2), SUB, c=K_ONE); alu(T(4), T(2), ADD, c=K_ONE); alu(T(3), T(3), DIV, b=T(4))
-ENTRY['fln'] = len(PROG); split(); lnpoly(); alu(T(0), T(0), MUL, c=K_LN2); alu(ST(0), T(0), ADD, b=T(5)); st(7)
+ENTRY['fln'] = len(PROG); split(); lnpoly(); alu(T(6), T(0), MUL, c=K_LN2H); alu(T(0), T(0), MUL, c=K_LN2L); alu(T(5), T(5), ADD, b=T(6)); alu(ST(0), T(5), ADD, b=T(0)); st(7)
 ENTRY['fyl2x'] = len(PROG); split(); lnpoly(); alu(T(5), T(5), MUL, c=K_L2E); alu(T(5), T(5), ADD, b=T(0)); alu(ST(1), ST(1), MUL, b=T(5)); st(7, a=1)
 ENTRY['fyl2p'] = len(PROG); alu(T(4), ST(0), ADD, c=K_TWO); alu(T(3), ST(0), DIV, b=T(4)); lnpoly(); alu(T(5), T(5), MUL, c=K_L2E); alu(ST(1), ST(1), MUL, b=T(5)); st(7, a=1)
 for nm, rc in (('frem', 3), ('frem1', 0)):
