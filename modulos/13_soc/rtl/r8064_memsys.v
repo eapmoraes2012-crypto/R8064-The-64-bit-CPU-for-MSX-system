@@ -23,7 +23,10 @@ module r8064_memsys #(parameter INIT_CYC = 20000, parameter REF_INT = 400)(
     reg [1:0] ist; reg [31:0] ipa; reg i_ack_r; reg i_ic_sent; reg i_cancel;
     wire ican = i_cancel || !c_i_req;   // the core withdrew the request (front-end flush): the in-flight response is discarded
     localparam S_IDLE = 2'd0, S_XL = 2'd1, S_CREQ = 2'd2, S_WAIT = 2'd3;
-    wire iv_req  = (ist == S_IDLE) && c_i_req && !i_ack_r;   // !i_ack_r: on the fault-ack clock the core still holds the request (do not accept again)
+    // REV48: with the MMU off (en = 0 is a pure pass-through of the low 32 bits) the request skips the 2 translation clocks: IDLE -> CREQ directly
+    wire i_new   = (ist == S_IDLE) && c_i_req && !i_ack_r;   // !i_ack_r: on the fault-ack clock the core still holds the request (do not accept again)
+    wire i_byp   = i_new && !mmu_en;
+    wire iv_req  = i_new && mmu_en;
     wire ic_req  = (ist == S_CREQ);
     wire [19:0] ic_addr = ipa[22:3];
     wire i_acc_v = iv_req && iv_ready;
@@ -33,7 +36,8 @@ module r8064_memsys #(parameter INIT_CYC = 20000, parameter REF_INT = 400)(
             i_ack_r <= 1'b0; i_fault <= 1'b0;
             if (ist == S_IDLE) i_cancel <= 1'b0; else if (!c_i_req) i_cancel <= 1'b1;
             case (ist)
-                S_IDLE: if (i_acc_v) ist <= S_XL;
+                S_IDLE: if (i_byp) begin ipa <= c_i_pa[31:0]; ist <= S_CREQ; end
+                        else if (i_acc_v) ist <= S_XL;
                 S_XL: if (iv_pvalid) begin
                           if (ican) ist <= S_IDLE;
                           else if (iv_pfault) begin i_fault <= 1'b1; i_cause <= iv_pcause; i_ack_r <= 1'b1; ist <= S_IDLE; end
@@ -62,7 +66,9 @@ module r8064_memsys #(parameter INIT_CYC = 20000, parameter REF_INT = 400)(
     wire dc_mreq, dc_mwe, dc_maccept, dc_mdone; wire [19:0] dc_maddr; wire [63:0] dc_mwd; wire [7:0] dc_mbe;
     wire [63:0] arbD_rdata;
     reg [1:0] dst; reg [31:0] dpa; reg d_ack_r; reg d_fault_w; reg [2:0] d_cause_w; wire c_d_ack_w; wire [63:0] c_d_rd_w;
-    wire dv_req = (dst == S_IDLE) && c_d_req && !d_ack_r && !c_d_ack;   // same: posted/fault ack with the core's request still in the air
+    wire d_new  = (dst == S_IDLE) && c_d_req && !d_ack_r && !c_d_ack;   // same: posted/fault ack with the core's request still in the air
+    wire d_byp  = d_new && !mmu_en;                                     // REV48: MMU off -> straight to the cache
+    wire dv_req = d_new && mmu_en;
     wire dc_req = (dst == S_CREQ);
     wire [19:0] dc_addr = dpa[22:3];
     wire d_acc_v = dv_req && dv_ready;
@@ -71,7 +77,8 @@ module r8064_memsys #(parameter INIT_CYC = 20000, parameter REF_INT = 400)(
         else begin
             d_ack_r <= 1'b0; d_fault_w <= 1'b0;
             case (dst)
-                S_IDLE: if (d_acc_v) dst <= S_XL;
+                S_IDLE: if (d_byp) begin dpa <= c_d_pa[31:0]; dst <= S_CREQ; end
+                        else if (d_acc_v) dst <= S_XL;
                 S_XL: if (dv_pvalid) begin
                           if (dv_pfault) begin d_fault_w <= 1'b1; d_cause_w <= dv_pcause; d_ack_r <= 1'b1; dst <= S_IDLE; end
                           else begin dpa <= dv_paddr; dst <= S_CREQ; end

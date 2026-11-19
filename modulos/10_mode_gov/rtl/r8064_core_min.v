@@ -106,7 +106,8 @@ module r8064_core_min #(
             drop <= 1'b0; ireq_r <= 1'b0; ifp <= 1'b0;   // request may be withdrawn before the ack (the cache fetch interface accepts cancellation)
         end else begin
             if (i_ack && ireq_r) begin
-                ireq_r <= 1'b0;
+                // REV48: back-to-back fetch: keep the request up if the queue will still have room for 8 more bytes (saves the re-request clock)
+                ireq_r <= !drop && !i_flt && (qcnt + addn - subn <= 6'd24);
                 if (drop) drop <= 1'b0;
                 else begin
                     case (wp) 2'd0: qw0 <= i_rdata; 2'd1: qw1 <= i_rdata; 2'd2: qw2 <= i_rdata; default: qw3 <= i_rdata; endcase
@@ -148,6 +149,7 @@ module r8064_core_min #(
     reg [1:0]   xy;               // 0 none, 1 IX, 2 IY
     wire xy_on = (xy != 2'd0);
     wire pfx_xy = (win_q[7:0] == 8'hDD || win_q[7:0] == 8'hFD) && !(win_q[15:8] == 8'hDD || win_q[15:8] == 8'hFD || win_q[15:8] == 8'hED);
+    wire [103:0] dwin_n = pfx_w ? {8'h00, win_q[103:16], 8'hED} : pfx_xy ? {8'h00, win_q[103:8]} : win_q;
     reg is_ed;                    // registered on capture (cuts the 8-bit comparator off the clen path)
     wire [9:0] ed_id; wire ed_ill; wire [3:0] ed_len; wire [4:0] ed_nr, ed_nw; wire [1:0] ed_nio; wire [7:0] ed_ex; wire [1:0] ed_pen; wire ed_hc, ed_z80, ed_bk;
     r8064_decode u_dec(.clk(clk), .b2(b2), .b3(b3), .id(ed_id), .illegal(ed_ill), .len(ed_len), .nr(ed_nr), .nw(ed_nw), .nio(ed_nio), .ex(ed_ex), .pen_code(ed_pen), .has_cond(ed_hc), .is_z80(ed_z80), .bankable(ed_bk));
@@ -167,7 +169,10 @@ module r8064_core_min #(
     assign clen = clen_r;
     reg ifx_q; reg [7:0] ifd_q;
     reg hz_q;   // partial-write interlock (see below)
-    wire issue = dv && (ds == ds_last) && !hold && !flush && (gov_go || seq) && (seqc == 3'd0) && !hz_q && !(ifx_q && !seq) && !trap_q;
+    // REV48: the bytes seen in dwin lag the queue count by 2 clocks (win -> win_q -> dwin); qcnt only grows while an instruction waits
+    reg [5:0] qd1, qd2; always @(posedge clk) begin qd1 <= qcnt; qd2 <= qd1; end
+    wire bytes_ok = (qd2 >= {2'd0, clen});
+    wire issue = dv && (ds == ds_last) && !hold && !flush && (gov_go || seq) && (seqc == 3'd0) && !hz_q && !(ifx_q && !seq) && !trap_q && bytes_ok;
     wire u_last = !uop_q[49];
     assign consume = issue && u_last;
     always @(posedge clk) begin
@@ -186,17 +191,20 @@ module r8064_core_min #(
             dwin <= (im == 2'd2) ? {72'd0, ireg, 8'hFF, 8'hFF} : {80'd0, 16'h0038, 8'hFF};   // IM2: bytes 1..2 = [I:FF]
         end else if (!dv) begin
             if (!wq_v) begin
-                if (qcnt >= 6'd13 && !hold) begin win_q <= win; wq_v <= 1; end
+                // REV48: capture as soon as the opcode bytes are in (4: prefix + ED/CB + 2 bytes); the window keeps being refreshed while the
+                // instruction is decoded and the issue waits until all clen bytes have arrived (bytes_ok). Before: 13 bytes (2 fetches after a branch).
+                if (qcnt >= 6'd4 && !hold) begin win_q <= win; wq_v <= 1; end
             end else begin
-                dwin <= pfx_w ? {8'h00, win_q[103:16], 8'hED} : pfx_xy ? {8'h00, win_q[103:8]} : win_q;   // removes the bank prefix (ED <pfx> op ... -> ED op ...) or the DD/FD
+                dwin <= dwin_n;   // removes the bank prefix (ED <pfx> op ... -> ED op ...) or the DD/FD
                 xy <= !pfx_xy ? 2'd0 : (win_q[7:0] == 8'hDD) ? 2'd1 : 2'd2;
                 bank <= pfx_w ? ((win_q[15:8] == 8'h0B) ? 2'd1 : (win_q[15:8] == 8'h0E) ? 2'd2 : 2'd3) : 2'd0;
                 is_ed <= (win_q[7:0] == 8'hED);
                 is_cb <= pfx_xy ? (win_q[15:8] == 8'hCB) : (win_q[7:0] == 8'hCB);
                 wq_v <= 0; dv <= 1; ds <= 0; dpc <= dpc_q;
             end
-        end else if (ds != ds_last) begin if (!hold) ds <= ds + 3'd1; end   // same: decode phases only advance with the pipeline moving
+        end else if (ds != ds_last) begin if (!hold) ds <= ds + 3'd1; if (!irq_ent) begin win_q <= win; dwin <= dwin_n; end end   // same: decode phases only advance with the pipeline moving
         else if (consume) begin dv <= 0; ds <= 0; irq_ent <= 1'b0; end
+        else if (!irq_ent) begin win_q <= win; dwin <= dwin_n; end   // REV48: window refresh (the bytes past the opcode may still be arriving)
     end
     // PC counter (address of the next instruction)
     always @(posedge clk) begin

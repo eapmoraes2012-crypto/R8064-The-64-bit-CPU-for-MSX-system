@@ -40,6 +40,14 @@ Clock target: 57.28 MHz (3.58 MHz x 16).
 - **Place and route**: with yosys + nextpnr the cartridge does not route reliably (68 % of the LUTs, BSRAM 46/46). With **Gowin EDA**
   (Education edition) it closes: 59 % of the logic, Fmax 59.94 MHz at 57.27 MHz, no setup/hold violations, bitstream generated
   (`13_soc/gowin/LEIA-ME_gowin.txt`). The SDRAM interface timing is not analysed (adjust `SDR_PSDA` in hardware).
+- **REV48, fewer memory waits** (measured in simulation with `13_soc/sim/tb_wait.v`, native mode, code and data in the caches):
+  with the MMU off the instruction fetch and the data access skip the 2 translation clocks (fetch 5 -> 3 clocks, load wait 4.7 -> 2.8),
+  the fetch requests go back to back, and decoding starts as soon as the opcode bytes are in the queue (before: 13 bytes = 2 fetches after
+  every branch; the window is refreshed until the whole instruction has arrived). Clocks per instruction, before -> after:
+  simple ALU/NOP 8.95 -> 8.46; LDQ rr,(rr') 13.6 -> 11.3; LDQ rr,imm64 10.9 -> 8.9; PUSH+POP 17.6 -> 15.5 each; CALL(L)+RET(L) 38-39 -> 27.6 each.
+  The rest of a simple instruction is the 4-phase decoder (about 6 clocks). The Z80/R800 modes keep their governed MSX timing.
+  All regressions pass (core, SoC, cartridge + monitor, also with the cartridge macros); +165 LUT (+1.5 %) in yosys. **Not yet run in Gowin** (timing to be checked).
+  The cycle table of the datasheet (`ref/expected_cycles.csv`) is a model and does not match these measurements.
 - Pending items and history: `modulos/13_soc/resultado_soc.txt` (REV33 lists what is still open).
 
 ## Modules (`modulos/`)
