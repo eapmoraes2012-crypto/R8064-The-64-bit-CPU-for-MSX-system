@@ -37,6 +37,21 @@ module tb_meas;
 
     reg [7:0] img [0:16383]; reg [63:0] w2; integer nit = 0, cfirst = 0, clast = 0, lp = 0, NW = 2048; reg [8*256-1:0] fn;
     reg seen = 0;
+    // wait clocks: the core stands still because of memory.
+    //  data wait : a load/store in M without its acknowledge (hold caused by the data bus, not by MLT/DIV)
+    //  fetch wait: the decoder has no window (fewer than 4 bytes queued) or has decoded the instruction but its bytes have not all arrived
+    wire w_mm = dut.u_sys.u_cpu.u_core.m_mem, w_ack = dut.u_sys.u_cpu.u_core.d_ack, w_xing = dut.u_sys.u_cpu.u_core.xing, w_beat = dut.u_sys.u_cpu.u_core.beat;
+    wire w_dv = dut.u_sys.u_cpu.u_core.dv, w_wq = dut.u_sys.u_cpu.u_core.wq_v, w_hold = dut.u_sys.u_cpu.u_core.hold, w_bok = dut.u_sys.u_cpu.u_core.bytes_ok;
+    wire w_last = (dut.u_sys.u_cpu.u_core.ds == dut.u_sys.u_cpu.u_core.ds_last); wire [5:0] w_q = dut.u_sys.u_cpu.u_core.qcnt;
+    wire w_seq = dut.u_sys.u_cpu.u_core.seq;
+    wire dwait = w_mm && !(w_ack && (!w_xing || w_beat));
+    wire fwait = !dwait && !w_seq && ((!w_dv && !w_wq && w_q < 6'd4) || (w_dv && w_last && !w_bok && !w_hold));
+    integer cw = 0, cwd = 0, wfirst = 0, wlast = 0, wdfirst = 0, wdlast = 0;
+    always @(posedge clk) begin cw <= cw + (dwait || fwait); cwd <= cwd + dwait; end
+    always @(posedge clk) if (dbg_pc == lp && ppc != lp) begin
+        if (nit == 4) begin wfirst <= cw; wdfirst <= cwd; end
+        wlast <= cw; wdlast <= cwd;
+    end
     always @(posedge clk) if (dbg_pc == lp && ppc != lp) begin
         nit <= nit + 1;
         if (nit == 4) cfirst <= cyc;
@@ -55,7 +70,7 @@ module tb_meas;
         wait (init_done);
         k = 0;
         while (nit < 4 + 24 && k < 400000) begin @(posedge clk); k = k + 1; end
-        if (nit >= 4 + 24) $display("TITER %0.3f native=%b", 1.0 * (clast - cfirst) / (nit - 1 - 4), nat);
+        if (nit >= 4 + 24) $display("TITER %0.3f native=%b wait=%0.3f dwait=%0.3f", 1.0 * (clast - cfirst) / (nit - 1 - 4), nat, 1.0 * (wlast - wfirst) / (nit - 1 - 4), 1.0 * (wdlast - wdfirst) / (nit - 1 - 4));
         else $display("TITER NA native=%b nit=%0d pc=%h", nat, nit, dbg_pc);
         $finish;
     end

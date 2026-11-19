@@ -163,9 +163,9 @@ def compile_tb(root, tag):
 
 def run(sim, vvp, hexf, loop):
     r = subprocess.run(['vvp', '-n', vvp, '+img=' + hexf, '+loop=%x' % loop], cwd=sim, capture_output=True, text=True, timeout=600)
-    m = re.search(r'TITER (\S+) native=(\d)', r.stdout)
+    m = re.search(r'TITER (\S+) native=(\d)(?: wait=(\S+) dwait=(\S+))?', r.stdout)
     if not m or m.group(1) == 'NA' or m.group(2) != '1': return None
-    return float(m.group(1))
+    return (float(m.group(1)), float(m.group(3) or 0), float(m.group(4) or 0))   # total, wait (fetch + data), data wait
 
 if __name__ == '__main__':
     targets = [(sys.argv[1], sys.argv[3])] + ([(sys.argv[4], sys.argv[5])] if len(sys.argv) > 5 else [])
@@ -184,20 +184,23 @@ if __name__ == '__main__':
             res = {}
             for c in cases:
                 t, e = jobs[c['key']][0].result(), jobs[c['key']][1].result()
-                res[c['key']] = None if t is None or e is None else (t - e) / c['n']
+                res[c['key']] = None if t is None or e is None else tuple((a - b) / c['n'] for a, b in zip(t, e))
         # derived values (returns = pair - call)
         out = {}; byk = {c['key']: c for c in cases}
-        def val(k):
+        def val(k, j):
             v = res.get(k); c = byk[k]
-            if v is not None and c.get('derive'):
+            if v is None: return None
+            v = v[j]
+            if c.get('derive'):
                 for k2 in c['derive'][1]:
-                    w = val(k2)
+                    w = val(k2, j)
                     if w is None: return None
                     v -= w
             return v
         for c in cases:
-            v = val(c['key'])
-            out[c['key']] = dict(id=c['id'], name=c['name'], src=c['src'].replace('\n', ' ; '), n=c['n'], clocks=v,
-                                 pair=res[c['key']] if c.get('derive') else None, z80=c.get('z80', 0), helper=c.get('helper', 0), per=c.get('per', 'instruction'))
+            v = val(c['key'], 0); wt = val(c['key'], 1); wd = val(c['key'], 2)
+            out[c['key']] = dict(id=c['id'], name=c['name'], src=c['src'].replace('\n', ' ; '), n=c['n'], clocks=v, wait=wt, dwait=wd,
+                                 fwait=None if wt is None else wt - wd, exec=None if v is None else v - wt,
+                                 pair=res[c['key']][0] if c.get('derive') and res[c['key']] else None, z80=c.get('z80', 0), helper=c.get('helper', 0), per=c.get('per', 'instruction'))
         json.dump(dict(cases=out, skip=SKIP), open(outj, 'w'), indent=1)
         print('done', root, sum(1 for v in out.values() if v['clocks'] is not None), 'measured of', len(out))
