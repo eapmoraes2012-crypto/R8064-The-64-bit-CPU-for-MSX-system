@@ -47,7 +47,7 @@ module tb_meas;
     wire dwait = w_mm && !(w_ack && (!w_xing || w_beat));
     wire fwait = !dwait && !w_seq && ((!w_dv && !w_wq && w_q < 6'd4) || (w_dv && w_last && !w_bok && !w_hold));
     integer cw = 0, cwd = 0, wfirst = 0, wlast = 0, wdfirst = 0, wdlast = 0;
-    always @(posedge clk) begin cw <= cw + (dwait || fwait); cwd <= cwd + dwait; end
+    always @(posedge clk) if (!rst) begin cw <= cw + ((dwait === 1'b1) || (fwait === 1'b1)); cwd <= cwd + (dwait === 1'b1); end
     always @(posedge clk) if (dbg_pc == lp && ppc != lp) begin
         if (nit == 4) begin wfirst <= cw; wdfirst <= cwd; end
         wlast <= cw; wdlast <= cwd;
