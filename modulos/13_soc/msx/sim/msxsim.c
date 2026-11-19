@@ -87,7 +87,9 @@ static void io_out(u8 p, u8 v){
 }
 
 // ---- MSX-DOS 1 shim
-static FILE *fp; static u16 dta = 0x80;
+static struct { u16 fcb; FILE *f; } files[8]; static u16 dta = 0x80;
+static FILE **fslot(u16 fcb, int create){ for (int i = 0; i < 8; i++) if (files[i].f && files[i].fcb == fcb) return &files[i].f;
+    if (create) for (int i = 0; i < 8; i++) if (!files[i].f) { files[i].fcb = fcb; return &files[i].f; } return 0; }
 static void fname(u16 f, char *o){ int k = 0; for (int i = 1; i <= 8; i++) if (mem[f + i] != ' ') o[k++] = mem[f + i];
     if (mem[f + 9] != ' ') { o[k++] = '.'; for (int i = 9; i <= 11; i++) if (mem[f + i] != ' ') o[k++] = mem[f + i]; } o[k] = 0; }
 static int bdos_call(void){                      // returns 1 at program end
@@ -98,14 +100,15 @@ static int bdos_call(void){                      // returns 1 at program end
     case 0x06: a = 0; break;                     // no key pressed
     case 0x09: { u16 p = DE; while (mem[p] != '$') putchar(mem[p++]); break; }
     case 0x0B: a = 0; break;
-    case 0x0F: fname(f, nm); fp = fopen(nm, "rb"); if (!fp) { a = 0xFF; break; }
-               fseek(fp, 0, SEEK_END); { long s = ftell(fp); for (int i = 0; i < 4; i++) mem[f + 0x10 + i] = s >> (8 * i); }
+    case 0x0F: { fname(f, nm); FILE **pp = fslot(f, 1); if (*pp) fclose(*pp); *pp = fopen(nm, "rb"); if (!*pp) { a = 0xFF; break; }
+               FILE *fp = *pp; fseek(fp, 0, SEEK_END); long s = ftell(fp); for (int i = 0; i < 4; i++) mem[f + 0x10 + i] = s >> (8 * i); }
                mem[f + 0x0C] = 0; mem[f + 0x0E] = 0x80; mem[f + 0x0F] = 0; break;
-    case 0x16: fname(f, nm); fp = fopen(nm, "w+b"); a = fp ? 0 : 0xFF; mem[f + 0x0E] = 0x80; mem[f + 0x0F] = 0; break;
-    case 0x10: if (fp) fclose(fp); fp = 0; break;
+    case 0x16: { fname(f, nm); FILE **pp = fslot(f, 1); if (*pp) fclose(*pp); *pp = fopen(nm, "w+b"); a = *pp ? 0 : 0xFF; mem[f + 0x0E] = 0x80; mem[f + 0x0F] = 0; break; }
+    case 0x10: { FILE **pp = fslot(f, 0); if (pp && *pp) { fclose(*pp); *pp = 0; } break; }
     case 0x1A: dta = DE; break;
     case 0x26: case 0x27: {
         int rs = mem[f + 0x0E] | mem[f + 0x0F] << 8; u32 rr = mem[f + 0x21] | mem[f + 0x22] << 8 | mem[f + 0x23] << 16 | (rs < 64 ? (u32)mem[f + 0x24] << 24 : 0);
+        FILE **pp = fslot(f, 0); if (!pp) { a = 1; setHL(0); break; } FILE *fp = *pp;
         int nrec = HL; fseek(fp, (long)rr * rs, SEEK_SET); int got;
         if (z.c == 0x27) { memset(mem + dta, 0, nrec * rs); int b = fread(mem + dta, 1, nrec * rs, fp); got = (b + rs - 1) / rs; a = got < nrec; }
         else { fwrite(mem + dta, 1, nrec * rs, fp); got = nrec; }
@@ -128,6 +131,7 @@ int main(int argc, char **argv){
     FILE *f = fopen(argv[k++], "rb"); if (!f) { fprintf(stderr, "no .COM\n"); return 2; } fread(mem + 0x100, 1, 0xC000, f); fclose(f);
     char line[128] = ""; for (; k < argc; k++) { strcat(line, " "); strcat(line, argv[k]); }
     mem[0x80] = strlen(line); memcpy(mem + 0x81, line, strlen(line));
+    if (getenv("MSXTOP")) { int t = strtol(getenv("MSXTOP"), 0, 16); mem[6] = t; mem[7] = t >> 8; }
     mem[0] = 0xC3; mem[1] = 0; mem[2] = 0; mem[5] = 0xC9; mem[6] = 0x00; mem[7] = 0xD0;
     z.pc = 0x100; z.sp = 0xD000; push(0x0000);
     u64 n = 0;

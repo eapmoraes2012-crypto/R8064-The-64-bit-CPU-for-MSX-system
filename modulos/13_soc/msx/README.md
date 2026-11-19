@@ -12,6 +12,7 @@ I/O ports 0Bh–0Dh), so it works on the V9968_Cartridge board, which has only A
 | `r8064io.asm` | Driver (include file): detection, transaction with SEQ, 1 s timeout and 3 retries, POKE/PEEK in 2,040-byte messages, HELLO, PING, CRC, EXEC, events (EVT), restart, local CRC-16 CCITT-FALSE |
 | `r8064.asm` | `R8064.COM`, MSX-DOS 1/2 command-line tool built on the driver |
 | `R8064.COM` | Ready-to-use binary (3.9 KB) |
+| `asm/` | `R8064AS.COM`, the R8064 assembler for MSX ([guide](../../../docs/R8064_Assembler.md)) |
 | `sim/` | Test bench: Z80 model (module 12) + MSX-DOS 1 shim + cartridge/monitor model; `run_tests.sh`, `tprog.asm` |
 
 ## R8064.COM

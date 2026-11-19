@@ -8,6 +8,7 @@ This guide covers the two MSX-side programs that send and read data and programs
 | --- | --- | --- |
 | **R8064.COM** | [`modulos/13_soc/msx/R8064.COM`](../modulos/13_soc/msx/R8064.COM) (source [`r8064.asm`](../modulos/13_soc/msx/r8064.asm)) | Ready-to-use MSX-DOS command-line tool |
 | **r8064io driver** | [`modulos/13_soc/msx/r8064io.asm`](../modulos/13_soc/msx/r8064io.asm) | Z80 assembly routines to include in your own MSX programs |
+| **R8064AS.COM** | [`modulos/13_soc/msx/asm`](../modulos/13_soc/msx/asm/README.md) | R8064 assembler that runs on the MSX — see the [assembler guide](R8064_Assembler.md) |
 
 Both use the MSX ↔ R8064 message protocol (REV46, chapter 8 of the [datasheet](R8064_Datasheet.md)) through I/O ports
 **0Bh, 0Ch and 0Dh only**. That is all the V9968_Cartridge board provides (A0–A7, D0–D7, /IORQ, /RD, /WR); the

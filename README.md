@@ -9,6 +9,8 @@ Clock target: 57.28 MHz (3.58 MHz x 16).
 
 **MSX software:** user guide [docs/R8064_MSX_Software.md](docs/R8064_MSX_Software.md); files in [modulos/13_soc/msx](modulos/13_soc/msx/README.md) — `R8064.COM` (MSX-DOS) and the `r8064io.asm` Z80 driver to send and read data and programs to/from the R8064 through ports 0Bh–0Dh.
 
+**Assembler for MSX:** `R8064AS.COM` assembles the full R8064 instruction set on the MSX itself — [docs/R8064_Assembler.md](docs/R8064_Assembler.md), files in [modulos/13_soc/msx/asm](modulos/13_soc/msx/asm/README.md).
+
 ## Current status (read before using)
 - The SoC core (`09_core_min`) runs the **complete Z80**: main page, CB, DD/FD (IX/IY, IXH/IXL), DDCB/FDCB and the Z80 ED page.
   Checked instruction by instruction against the model `12_z80/ref/z80ref.c` (`09_core_min/sim_z80`: over 1.1 million instructions, X/Y flags included,
