@@ -84,6 +84,7 @@ endmodule
 //   every 2.3 s without output from the CPU: "UART idle : pc=xxxxxxxx run=xxxx init=x flt=xx"  (init = SDRAM initialised and
 //   boot copy done, flt = instruction/data fault seen since the reset; all values in hex). After the bench ends (run = 2 x cases)
 //   these lines keep coming, so a terminal opened late still shows that the board is alive.
+//   The first of these silences prints instead "T xxxx xxxx ...": the low 16 bits of the first 48 values of the core PC after the reset.
 module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parameter SIL_BIT = 27)(
     input  wire        clk, rst,
     input  wire        we, input wire [7:0] a, input wire [7:0] wd, output reg [7:0] rd,
@@ -95,10 +96,20 @@ module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parame
     // ---- hardware messages
     reg hm_on = 1'b0, hm_m = 1'b0, spoke = 1'b0; reg [5:0] hm_i = 6'd0; reg [SIL_BIT:0] sil = 0; reg [31:0] hm_pc = 32'd0; reg [15:0] hm_run = 16'd0;
     reg hm_init = 1'b0; reg [1:0] flt_s = 2'b00; reg [7:0] hm_c; wire [15:0] run_w;
+    // PC trace of the first boot after the reset: the low 16 bits of the first 48 PC values, printed once ("T xxxx xxxx ...")
+    reg [15:0] trc [0:47]; reg [5:0] tn = 6'd0, tk = 6'd0; reg [2:0] tr = 3'd0; reg hm_t = 1'b0, tdone = 1'b0; reg [15:0] tpc = 16'd0;
+    wire [15:0] tv = trc[tk];
     function [7:0] hx(input [3:0] v); hx = (v < 4'd10) ? 8'h30 + v : 8'h37 + v; endfunction
     always @* begin
         hm_c = 8'h00;
-        if (!hm_m) case (hm_i)                      // "\r\nR8064 bench: FPGA up\r\n"
+        if (hm_t) begin
+            if (tk == 6'd48) hm_c = (tr == 3'd0) ? 8'h0D : (tr == 3'd1) ? 8'h0A : 8'h00;
+            else case (tr)
+                3'd0: hm_c = (tk == 6'd0) ? "T" : " ";
+                3'd1: hm_c = hx(tv[15:12]); 3'd2: hm_c = hx(tv[11:8]); 3'd3: hm_c = hx(tv[7:4]); default: hm_c = hx(tv[3:0]);
+            endcase
+        end
+        else if (!hm_m) case (hm_i)                      // "\r\nR8064 bench: FPGA up\r\n"
             0: hm_c = 8'h0D; 1: hm_c = 8'h0A; 2: hm_c = "R"; 3: hm_c = "8"; 4: hm_c = "0"; 5: hm_c = "6"; 6: hm_c = "4"; 7: hm_c = " ";
             8: hm_c = "b"; 9: hm_c = "e"; 10: hm_c = "n"; 11: hm_c = "c"; 12: hm_c = "h"; 13: hm_c = ":"; 14: hm_c = " "; 15: hm_c = "F";
             16: hm_c = "P"; 17: hm_c = "G"; 18: hm_c = "A"; 19: hm_c = " "; 20: hm_c = "u"; 21: hm_c = "p"; 22: hm_c = 8'h0D; 23: hm_c = 8'h0A;
@@ -121,14 +132,22 @@ module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parame
     // ---- UART TX 8N1 (the CPU has priority; the hardware messages only use the idle line)
     reg [9:0] tsh = 10'h3FF; reg [3:0] tbit = 4'd0; reg [15:0] tdiv = 16'd0; reg tbusy = 1'b0;
     always @(posedge clk) begin
-        if (rst) begin hm_on <= 1'b1; hm_m <= 1'b0; hm_i <= 6'd0; spoke <= 1'b0; sil <= 0; flt_s <= 2'b00; end
+        if (rst) begin hm_on <= 1'b1; hm_m <= 1'b0; hm_i <= 6'd0; spoke <= 1'b0; sil <= 0; flt_s <= 2'b00;
+                       tn <= 6'd0; tk <= 6'd0; tr <= 3'd0; hm_t <= 1'b0; tdone <= 1'b0; tpc <= 16'd0; end
         else begin
+            if (tn != 6'd48 && pc[15:0] != tpc) begin trc[tn] <= pc[15:0]; tn <= tn + 6'd1; tpc <= pc[15:0]; end
             flt_s <= flt_s | flt;
             if (cpu_tx) begin spoke <= 1'b1; sil <= 0; end else if (!hm_on) sil <= sil + 1'b1;
             if (hm_on && !tbusy && !cpu_tx) begin
-                if (hm_c == 8'h00) hm_on <= 1'b0; else hm_i <= hm_i + 6'd1;
+                if (hm_c == 8'h00) begin hm_on <= 1'b0; hm_t <= 1'b0; end
+                else if (hm_t) begin if (tr == 3'd4 && tk != 6'd48) begin tr <= 3'd0; tk <= tk + 6'd1; end else tr <= tr + 3'd1; end
+                else hm_i <= hm_i + 6'd1;
             end
-            if (!hm_on && sil[SIL_BIT]) begin hm_on <= 1'b1; hm_m <= 1'b1; hm_i <= 6'd0; sil <= 0; hm_pc <= pc; hm_run <= run_w; hm_init <= init_done; end
+            if (!hm_on && sil[SIL_BIT]) begin
+                hm_on <= 1'b1; sil <= 0; hm_i <= 6'd0;
+                if (!tdone) begin hm_t <= 1'b1; tdone <= 1'b1; tk <= 6'd0; tr <= 3'd0; end
+                else begin hm_m <= 1'b1; hm_pc <= pc; hm_run <= run_w; hm_init <= init_done; end
+            end
         end
     end
     always @(posedge clk) begin
