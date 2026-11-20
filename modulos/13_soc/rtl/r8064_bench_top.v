@@ -20,9 +20,11 @@ module r8064_bench_top #(parameter [3:0] SDR_PSDA = 4'd4)(
 );
     wire clk, clk_sd, locked, rst_pll;
     r8064_clkgen #(.SRC(0), .SDR_PSDA(SDR_PSDA)) u_clk(.clk_in(clk27), .rst_in(1'b0), .clk(clk), .clk_sdram(clk_sd), .locked(locked), .rst(rst_pll));
-    reg [1:0] bs = 2'b00; always @(posedge clk) bs <= {bs[0], btn_rst};
+    // KEY1: a change of its level (press or release) restarts the bench, so it works whatever the active level of the button
+    reg [2:0] bs = 3'b000; reg [4:0] bst = 5'd0;
+    always @(posedge clk) begin bs <= {bs[1:0], btn_rst}; if (bs[2] != bs[1]) bst <= 5'd16; else if (bst != 5'd0) bst <= bst - 5'd1; end
     wire s_cke, s_cs_n, s_ras_n, s_cas_n, s_we_n, s_dq_oe; wire [3:0] s_dqm; wire [1:0] s_ba; wire [10:0] s_a; wire [31:0] s_dq_o;
-    r8064_bench #(.BAUD_DIV(498)) u_b(.clk(clk), .rst(rst_pll | bs[1]), .uart_tx(uart_tx),
+    r8064_bench #(.BAUD_DIV(498)) u_b(.clk(clk), .rst(rst_pll | (bst != 5'd0)), .uart_tx(uart_tx),
         .s_cke(s_cke), .s_cs_n(s_cs_n), .s_ras_n(s_ras_n), .s_cas_n(s_cas_n), .s_we_n(s_we_n), .s_dqm(s_dqm), .s_ba(s_ba), .s_a(s_a),
         .s_dq_o(s_dq_o), .s_dq_oe(s_dq_oe), .s_dq_i(IO_sdram_dq));
     assign O_sdram_clk = clk_sd;
@@ -71,8 +73,9 @@ endmodule
 //   other ports: IN = 5Ah (as tb_meas), OUT ignored (the IN/OUT instructions under test use port 00h)
 // Hardware messages (no CPU needed, to tell a board/UART problem from a CPU/SDRAM problem):
 //   after the reset (power-up, KEY1):            "R8064 bench: FPGA up"
-//   every 2.3 s while the CPU has printed nothing: "CPU silent: pc=xxxxxxxx run=xxxx init=x flt=xx"  (init = SDRAM initialised and
-//   boot copy done, flt = instruction/data fault seen since the reset; all values in hex)
+//   every 2.3 s without output from the CPU: "UART idle : pc=xxxxxxxx run=xxxx init=x flt=xx"  (init = SDRAM initialised and
+//   boot copy done, flt = instruction/data fault seen since the reset; all values in hex). After the bench ends (run = 2 x cases)
+//   these lines keep coming, so a terminal opened late still shows that the board is alive.
 module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parameter SIL_BIT = 27)(
     input  wire        clk, rst,
     input  wire        we, input wire [7:0] a, input wire [7:0] wd, output reg [7:0] rd,
@@ -93,8 +96,8 @@ module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parame
             16: hm_c = "P"; 17: hm_c = "G"; 18: hm_c = "A"; 19: hm_c = " "; 20: hm_c = "u"; 21: hm_c = "p"; 22: hm_c = 8'h0D; 23: hm_c = 8'h0A;
             default: hm_c = 8'h00;
         endcase else case (hm_i)                    // "CPU silent: pc=xxxxxxxx run=xxxx init=x flt=xx\r\n"
-            0: hm_c = "C"; 1: hm_c = "P"; 2: hm_c = "U"; 3: hm_c = " "; 4: hm_c = "s"; 5: hm_c = "i"; 6: hm_c = "l"; 7: hm_c = "e"; 8: hm_c = "n";
-            9: hm_c = "t"; 10: hm_c = ":"; 11: hm_c = " "; 12: hm_c = "p"; 13: hm_c = "c"; 14: hm_c = "=";
+            0: hm_c = "U"; 1: hm_c = "A"; 2: hm_c = "R"; 3: hm_c = "T"; 4: hm_c = " "; 5: hm_c = "i"; 6: hm_c = "d"; 7: hm_c = "l"; 8: hm_c = "e";
+            9: hm_c = " "; 10: hm_c = ":"; 11: hm_c = " "; 12: hm_c = "p"; 13: hm_c = "c"; 14: hm_c = "=";
             15: hm_c = hx(hm_pc[31:28]); 16: hm_c = hx(hm_pc[27:24]); 17: hm_c = hx(hm_pc[23:20]); 18: hm_c = hx(hm_pc[19:16]);
             19: hm_c = hx(hm_pc[15:12]); 20: hm_c = hx(hm_pc[11:8]); 21: hm_c = hx(hm_pc[7:4]); 22: hm_c = hx(hm_pc[3:0]);
             23: hm_c = " "; 24: hm_c = "r"; 25: hm_c = "u"; 26: hm_c = "n"; 27: hm_c = "=";
@@ -117,7 +120,7 @@ module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parame
             if (hm_on && !tbusy && !cpu_tx) begin
                 if (hm_c == 8'h00) hm_on <= 1'b0; else hm_i <= hm_i + 6'd1;
             end
-            if (!hm_on && !spoke && sil[SIL_BIT]) begin hm_on <= 1'b1; hm_m <= 1'b1; hm_i <= 6'd0; sil <= 0; hm_pc <= pc; hm_run <= run_w; hm_init <= init_done; end
+            if (!hm_on && sil[SIL_BIT]) begin hm_on <= 1'b1; hm_m <= 1'b1; hm_i <= 6'd0; sil <= 0; hm_pc <= pc; hm_run <= run_w; hm_init <= init_done; end
         end
     end
     always @(posedge clk) begin

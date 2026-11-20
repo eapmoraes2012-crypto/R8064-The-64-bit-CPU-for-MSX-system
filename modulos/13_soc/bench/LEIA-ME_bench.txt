@@ -38,7 +38,7 @@ What it does
    (one line; Ctrl+C stops it).
    Messages from the hardware itself (they do not need the CPU):
      "R8064 bench: FPGA up"  after every reset (power-up, KEY1): the bitstream runs and the UART works.
-     "CPU silent: pc=... run=... init=... flt=..." every 2.3 s while the CPU prints nothing: init=0 means the SDRAM
+     "UART idle : pc=... run=... init=... flt=..." every 2.3 s without CPU output (also after the end): init=0 means the SDRAM
      initialisation/boot copy did not finish; pc shows where the core is; flt = instruction/data fault seen.
 
 Reading the result column
