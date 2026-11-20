@@ -1,0 +1,264 @@
+R8064 REV48 timing bench - Tang Nano 20K, native mode, code and data in cache
+clocks per instruction: hardware (this board) and simulation (RTL)
+
+instruction                       hardware  simul.  result
+--------------------------------- -------- ------- ------
+ADCW HL, rr                        8.00   8.00  OK
+ADCL EA, rr                        8.00   8.00  OK
+ADCQ QA, rr                        8.00   8.00  OK
+ADDW rr, rr'                       8.00   8.00  OK
+ADDL rr, rr'                       8.00   8.00  OK
+ADDQ rr, rr'                       8.00   8.00  OK
+DECW rr                            8.00   8.00  OK
+DECL rr                            8.00   8.00  OK
+DECQ rr                            8.00   8.00  OK
+DIVSB AX, t                       28.00  28.00  OK
+DIVSW DX:AX, rr                   44.43  44.43  OK
+DIVSL QA, rr                      47.31  47.31  OK
+DIVUB AX, t                       25.00  25.00  OK
+DIVUW DX:AX, rr                   41.00  41.00  OK
+DIVUL QA, rr                      49.00  49.00  OK
+INCW rr                            8.00   8.00  OK
+INCL rr                            8.00   8.00  OK
+INCQ rr                            8.00   8.00  OK
+MLTSB AL, u                       16.00  16.00  OK
+MLTSW HL,rr                       21.00  21.00  OK
+MLTSL QA, rr                      16.00  16.00  OK
+MLTUB HL, u                       16.00  16.00  OK
+MLTUW HL, BC                      21.00  21.00  OK
+MLTUW HL, SP                      21.00  21.00  OK
+MLTUW HL, rr                      21.00  21.00  OK
+MLTUL EA, rr                      16.00  16.00  OK
+SUBCW rr, rr'                      8.00   8.00  OK
+SUBCL rr, rr'                      8.00   8.00  OK
+SUBCQ rr, rr'                      8.00   8.00  OK
+SUBW rr, rr'                       8.00   8.00  OK
+SUBL rr, rr'                       8.00   8.00  OK
+SUBQ rr, rr'                       8.00   8.00  OK
+CPW rr, rr'                        8.00   8.00  OK
+CPL rr, rr'                        8.00   8.00  OK
+CPQ rr, rr'                        8.00   8.00  OK
+LDW (nnnnnnnn), rr                15.00  15.00  OK
+LDW (QIX+dd), rr                  15.00  15.00  OK
+LDW (QIX+dd), nn                  15.00  15.00  OK
+LDW (rr), rr'                     11.00  11.00  OK
+LDW rr, (QIX+dd)                  11.00  11.00  OK
+LDW rr, (rr')                     11.00  11.00  OK
+LDW rr, nn                         8.00   8.00  OK
+LDW rr, rr'                        8.00   8.00  OK
+LDW rr, (nnnnnnnn)                11.00  11.00  OK
+LDL (nnnnnnnn), rr                15.00  15.00  OK
+LDL (QIX+dd), rr                  15.00  15.00  OK
+LDL (QIX+dd), nnnn                15.00  15.00  OK
+LDL (rr), rr'                     11.00  11.00  OK
+LDL rr, (QIX+dd)                  11.00  11.00  OK
+LDL rr, (rr')                     11.00  11.00  OK
+LDL rr, nnnn                       8.00   8.00  OK
+LDL rr, rr'                        8.00   8.00  OK
+LDL rr, (nnnnnnnn)                11.00  11.00  OK
+LDQ (nnnnnnnn), rr                15.00  15.00  OK
+LDQ (QIX+dd), rr                  15.00  15.00  OK
+LDQ (QIX+dd), nnnnnnnn            15.00  15.00  OK
+LDQ (rr), rr'                     11.00  11.00  OK
+LDQ rr, (QIX+dd)                  11.00  11.00  OK
+LDQ rr, (rr')                     11.00  11.00  OK
+LDQ rr, nnnnnnnn                   8.00   8.00  OK
+LDQ rr, rr'                        8.00   8.00  OK
+LDQ rr, (nnnnnnnn)                11.00  11.00  OK
+POPL rr                           16.00  16.00  OK
+POPQ rr                           16.00  16.00  OK
+PUSHL rr                          15.00  15.00  OK
+PUSHQ rr                          15.00  15.00  OK
+ANDW rr, rr'                       8.00   8.00  OK
+ANDL rr, rr'                       8.00   8.00  OK
+ANDQ rr, rr'                       8.00   8.00  OK
+ORW rr, rr'                        8.00   8.00  OK
+ORL rr, rr'                        8.00   8.00  OK
+ORQ rr, rr'                        8.00   8.00  OK
+XORW rr, rr'                       8.00   8.00  OK
+XORL rr, rr'                       8.00   8.00  OK
+XORQ rr, rr'                       8.00   8.00  OK
+CALLL (rr)                        31.00  31.00  OK
+CALLL cc,(rr) (taken)             35.00  35.00  OK
+CALLL cc,(rr) (not taken)         16.00  16.00  OK
+CALLL nnnn                        27.75  27.75  OK
+CALLQ (rr)                        27.00  27.00  OK
+CALLQ cc,(rr) (taken)             31.00  31.00  OK
+CALLQ cc,(rr) (not taken)         16.00  16.00  OK
+CALLQ nnnnnnnn                    27.75  27.75  OK
+RETL cc (taken) +CALL             62.75  62.75  OK
+RETL cc (not taken) +CALL         74.75  74.75  OK
+RETQ cc (taken) +CALL             62.75  62.75  OK
+RETQ cc (not taken) +CALL         74.75  74.75  OK
+RETL +CALL                        58.75  58.75  OK
+RETQ +CALL                        58.75  58.75  OK
+BITW bbbb, tt                      8.00   8.00  OK
+BITL bbbbb, tt                     8.00   8.00  OK
+RESW bbbb, tt                      8.00   8.00  OK
+RESL bbbbb, tt                     8.00   8.00  OK
+SETW bbbb, tt                      8.00   8.00  OK
+SETL bbbbb, tt                     8.00   8.00  OK
+DJNZW nn                          20.00  20.00  OK
+JRW cc, nn (taken)                17.12  17.12  OK
+JRW cc, nn (not taken)             8.00   8.00  OK
+JRW nn                            16.00  16.00  OK
+JPL (vv)                          20.00  20.00  OK
+JPL cc, (vv) (taken)              20.00  20.00  OK
+JPL cc, (vv) (not taken)          12.00  12.00  OK
+JPL cc, nnnn (taken)              17.12  17.12  OK
+JPL cc, nnnn (not taken)           8.00   8.00  OK
+JPL nnnn                          16.75  16.75  OK
+JPQ (vv)                          16.00  16.00  OK
+JPQ cc, (vv) (taken)              16.00  16.00  OK
+JPQ cc, (vv) (not taken)           8.00   8.00  OK
+JPQ cc, nnnnnnnn (taken)          17.12  17.12  OK
+JPQ cc, nnnnnnnn (not taken)       8.00   8.00  OK
+JPQ nnnnnnnn                      16.75  16.75  OK
+SARB u                             8.00   8.00  OK
+SARW rr                            8.00   8.00  OK
+SARL rr                            8.00   8.00  OK
+SARQ rr                            8.00   8.00  OK
+SHLB u                             8.00   8.00  OK
+SHLW rr                            8.00   8.00  OK
+SHLL rr                            8.00   8.00  OK
+SHLQ rr                            8.00   8.00  OK
+SHRB u                             8.00   8.00  OK
+SHRW rr                            8.00   8.00  OK
+SHRL rr                            8.00   8.00  OK
+SHRQ rr                            8.00   8.00  OK
+RLCW rr                            8.00   8.00  OK
+RLCL rr                            8.00   8.00  OK
+RLCQ rr                            8.00   8.00  OK
+RRCW rr                            8.00   8.00  OK
+RRCL rr                            8.00   8.00  OK
+RRCQ rr                            8.00   8.00  OK
+CPLW rr                            8.00   8.00  OK
+CPLL rr                            8.00   8.00  OK
+CPLQ rr                            8.00   8.00  OK
+NEGW rr                            8.00   8.00  OK
+NEGL rr                            8.00   8.00  OK
+NEGQ rr                            8.00   8.00  OK
+STCR rr, kk                        8.00   8.00  OK
+FENCE                              8.00   8.00  OK
+ISYNC                              8.00   8.00  OK
+PGINV (uu)                         8.00   8.00  OK
+XCHGL rr, (rr')                   27.00  27.00  OK
+XCHGQ rr, (rr')                   27.00  27.00  OK
+CASL (rr'), rr                    35.25  35.25  OK
+CASQ (rr'), rr                    31.25  31.25  OK
+SVCTX (uu)                       180.00 180.00  OK
+IN B,(C)                          16.00  16.00  OK
+OUT (C),B                         12.00  12.00  OK
+SBC HL,BC                          8.00   8.00  OK
+LD (nn),BC                        11.00  11.00  OK
+NEG                                8.00   8.00  OK
+RETN +CALL                        63.12  63.12  OK
+IM 0                               8.00   8.00  OK
+LD I,A                             8.00   8.00  OK
+IN C,(C)                          16.00  16.00  OK
+OUT (C),C                          8.00   8.00  OK
+ADC HL,BC                          8.00   8.00  OK
+LD BC,(nn)                        11.00  11.00  OK
+NEG                                8.00   8.00  OK
+RETI +CALL                        63.12  63.12  OK
+IM 0                               8.00   8.00  OK
+LD R,A                             8.00   8.00  OK
+IN D,(C)                          16.00  16.00  OK
+OUT (C),D                         12.00  12.00  OK
+SBC HL,DE                          8.00   8.00  OK
+LD (nn),DE                        11.00  11.00  OK
+NEG                                8.00   8.00  OK
+RETN +CALL                        63.12  63.12  OK
+IM 1                               8.00   8.00  OK
+LD A,I                            16.00  16.00  OK
+IN E,(C)                          16.00  16.00  OK
+OUT (C),E                          8.00   8.00  OK
+ADC HL,DE                          8.00   8.00  OK
+LD DE,(nn)                        11.00  11.00  OK
+NEG                                8.00   8.00  OK
+RETN +CALL                        63.12  63.12  OK
+IM 2                               8.00   8.00  OK
+LD A,R                            16.00  16.00  OK
+IN H,(C)                          16.00  16.00  OK
+OUT (C),H                         12.00  12.00  OK
+SBC HL,HL                          8.00   8.00  OK
+LD (nn),HL                        11.00  11.00  OK
+NEG                                8.00   8.00  OK
+RETN +CALL                        63.12  63.12  OK
+IM 0                               8.00   8.00  OK
+RRD                               51.00  51.00  OK
+IN L,(C)                          16.00  16.00  OK
+OUT (C),L                          8.00   8.00  OK
+ADC HL,HL                          8.00   8.00  OK
+LD HL,(nn)                        11.00  11.00  OK
+NEG                                8.00   8.00  OK
+RETN +CALL                        63.12  63.12  OK
+IM 0                               8.00   8.00  OK
+RLD                               51.00  51.00  OK
+IN F,(C)                          13.00  13.00  OK
+OUT (C),0                          8.00   8.00  OK
+SBC HL,SP                          8.00   8.00  OK
+LD (nn),SP                        11.00  11.00  OK
+NEG                                8.00   8.00  OK
+RETN +CALL                        63.12  63.12  OK
+IM 1                               8.00   8.00  OK
+NOP                                8.00   8.00  OK
+IN A,(C)                          16.00  16.00  OK
+OUT (C),A                          8.00   8.00  OK
+ADC HL,SP                          8.00   8.00  OK
+LD SP,(nn)                        11.00  11.00  OK
+NEG                                8.00   8.00  OK
+RETN +CALL                        63.12  63.12  OK
+IM 2                               8.00   8.00  OK
+NOP                                8.00   8.00  OK
+LDI                               31.00  31.00  OK
+CPI                               24.00  24.00  OK
+INI                               24.00  24.00  OK
+OUTI                              24.00  24.00  OK
+LDD                               31.00  31.00  OK
+CPD                               24.00  24.00  OK
+IND                               24.00  24.00  OK
+OUTD                              24.00  24.00  OK
+LDIR /elem                        42.50  42.50  OK
+CPIR /elem                        35.50  35.50  OK
+INIR /elem                        35.50  35.50  OK
+OTIR /elem                        35.50  35.50  OK
+LDDR /elem                        42.50  42.50  OK
+CPDR /elem                        35.50  35.50  OK
+INDR /elem                        35.50  35.50  OK
+OTDR /elem                        35.50  35.50  OK
+CALLL nnnn (no return)            27.75  27.75  OK
+CALLQ nnnnnnnn (no return)        27.75  27.75  OK
+CALL nn (no return)               28.12  28.12  OK
+NOP                                8.00   8.00  OK
+LD A,B                             8.00   8.00  OK
+LD A,n                             8.00   8.00  OK
+LD BC,nn                           8.00   8.00  OK
+ADD A,B                            8.00   8.00  OK
+INC B                              8.00   8.00  OK
+ADD HL,BC                          8.00   8.00  OK
+INC BC                             8.00   8.00  OK
+LD A,(HL)                         11.00  11.00  OK
+LD (HL),A                         11.00  11.00  OK
+LD A,(nn)                         11.00  11.00  OK
+LD HL,(nn)                        11.00  11.00  OK
+LD A,(IX+d)                       11.00  11.00  OK
+LD (IX+d),A                       11.00  11.00  OK
+PUSH BC                           15.00  15.00  OK
+POP DE                            16.00  16.00  OK
+EX DE,HL                          16.00  16.00  OK
+EXX                                8.00   8.00  OK
+EX (SP),HL                        23.00  23.00  OK
+RLCA                               8.00   8.00  OK
+BIT 3,A                            8.00   8.00  OK
+SET 3,(HL)                        30.00  30.00  OK
+JR e (taken)                      16.75  16.75  OK
+JR NZ,e (not taken)                8.00   8.00  OK
+JR Z,e (taken)                    16.75  16.75  OK
+JP nn                             17.12  17.12  OK
+DJNZ e (taken)                    20.75  20.75  OK
+CALL nn + RET (pair)              59.12  59.12  OK
+RET +CALL                         59.12  59.12  OK
+
+Done: 256 OK, 0 different. Press KEY1 to run again.
+T0003 0005 0007 0009 000B 000C 000D 000E 000F 0010 0011 0012 0013 00

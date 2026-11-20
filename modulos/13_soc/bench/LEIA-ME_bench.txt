@@ -33,8 +33,8 @@ What it does
    (while a program holds the COM port the Programmer reports "No USB Cable Connection").
    Without a terminal program, PowerShell (also saves the text in Documents\R8064_bench\resultado_COMx.txt):
      $f="$env:USERPROFILE\Documents\R8064_bench\resultado_COM3.txt"; $p=New-Object System.IO.Ports.SerialPort COM3,115200,None,8,One;
-     $p.DtrEnable=$true; $p.RtsEnable=$true; $p.Open(); try { while($true){ $s=$p.ReadExisting(); if($s){ Write-Host -NoNewline $s;
-     Add-Content -Path $f -Value $s -NoNewline }; Start-Sleep -Milliseconds 50 } } finally { $p.Close() }
+     $p.ReadBufferSize=1048576; $p.DtrEnable=$true; $p.RtsEnable=$true; $p.Open(); try { while($true){ $s=$p.ReadExisting(); if($s){ Write-Host -NoNewline $s;
+     Add-Content -Path $f -Value $s -NoNewline }; Start-Sleep -Milliseconds 10 } } finally { $p.Close() }
    (one line; Ctrl+C stops it).
    Messages from the hardware itself (they do not need the CPU):
      "R8064 bench: FPGA up"  after every reset (power-up, KEY1): the bitstream runs and the UART works.
