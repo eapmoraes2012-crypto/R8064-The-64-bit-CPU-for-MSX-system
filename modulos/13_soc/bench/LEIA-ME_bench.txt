@@ -29,6 +29,17 @@ What it does
    interfaces, use the COM port that appears for it). Open it in a terminal (PuTTY, Tera Term, Arduino Serial Monitor...):
      115200 baud, 8 data bits, no parity, 1 stop bit, no flow control.
    Then press KEY1: the bench starts again and prints the table. Keep the text: copy it (or save the terminal log) and send it.
+   The Tang creates TWO COM ports; only one of them is wired to the FPGA. Close the terminal before programming the board again
+   (while a program holds the COM port the Programmer reports "No USB Cable Connection").
+   Without a terminal program, PowerShell (also saves the text in Documents\R8064_bench\resultado_COMx.txt):
+     $f="$env:USERPROFILE\Documents\R8064_bench\resultado_COM3.txt"; $p=New-Object System.IO.Ports.SerialPort COM3,115200,None,8,One;
+     $p.DtrEnable=$true; $p.RtsEnable=$true; $p.Open(); try { while($true){ $s=$p.ReadExisting(); if($s){ Write-Host -NoNewline $s;
+     Add-Content -Path $f -Value $s -NoNewline }; Start-Sleep -Milliseconds 50 } } finally { $p.Close() }
+   (one line; Ctrl+C stops it).
+   Messages from the hardware itself (they do not need the CPU):
+     "R8064 bench: FPGA up"  after every reset (power-up, KEY1): the bitstream runs and the UART works.
+     "CPU silent: pc=... run=... init=... flt=..." every 2.3 s while the CPU prints nothing: init=0 means the SDRAM
+     initialisation/boot copy did not finish; pc shows where the core is; flt = instruction/data fault seen.
 
 Reading the result column
   OK       hardware = simulation (within 0.01 clock)

@@ -33,7 +33,7 @@ module r8064_bench_top #(parameter [3:0] SDR_PSDA = 4'd4)(
 endmodule
 
 // r8064_bench: SoC + bench I/O (no clock generator: the simulation instantiates this module directly).
-module r8064_bench #(parameter BAUD_DIV = 498, parameter INIT_CYC = 20000, parameter TMO_BIT = 22)(
+module r8064_bench #(parameter BAUD_DIV = 498, parameter INIT_CYC = 20000, parameter TMO_BIT = 22, parameter SIL_BIT = 27)(
     input  wire        clk, rst,
     output wire        uart_tx,
     output wire        s_cke, s_cs_n, s_ras_n, s_cas_n, s_we_n, s_dq_oe,
@@ -56,8 +56,8 @@ module r8064_bench #(parameter BAUD_DIV = 498, parameter INIT_CYC = 20000, param
         .mmu_en(mmu_en), .mmu_user(mmu_user), .i_fault(i_fault), .d_fault(d_fault), .i_cause(ic), .d_cause(dc),
         .init_done(init_done), .s_cke(s_cke), .s_cs_n(s_cs_n), .s_ras_n(s_ras_n), .s_cas_n(s_cas_n), .s_we_n(s_we_n),
         .s_dqm(s_dqm), .s_ba(s_ba), .s_a(s_a), .s_dq_o(s_dq_o), .s_dq_oe(s_dq_oe), .s_dq_i(s_dq_i));
-    r8064_bench_io #(.BAUD_DIV(BAUD_DIV), .TMO_BIT(TMO_BIT)) u_io(.clk(clk), .rst(rst), .we(iox_we), .a(iox_a), .wd(iox_wd), .rd(iox_rd),
-        .pc(dbg_pc[31:0]), .soc_rst_req(soc_rst_req), .uart_tx(uart_tx));
+    r8064_bench_io #(.BAUD_DIV(BAUD_DIV), .TMO_BIT(TMO_BIT), .SIL_BIT(SIL_BIT)) u_io(.clk(clk), .rst(rst), .we(iox_we), .a(iox_a), .wd(iox_wd), .rd(iox_rd),
+        .pc(dbg_pc[31:0]), .init_done(init_done), .flt({i_fault, d_fault}), .soc_rst_req(soc_rst_req), .uart_tx(uart_tx));
 endmodule
 
 // r8064_bench_io: I/O ports of the bench (external ports of the SoC, io_x_*):
@@ -69,19 +69,62 @@ endmodule
 //   95h  IN : b0 = one of the last two runs timed out, b1 = T_last < T_previous
 //   96h..99h IN/OUT: free scratch bytes kept across the SoC reset (the firmware keeps its OK / DIF counters there)
 //   other ports: IN = 5Ah (as tb_meas), OUT ignored (the IN/OUT instructions under test use port 00h)
-module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22)(
+// Hardware messages (no CPU needed, to tell a board/UART problem from a CPU/SDRAM problem):
+//   after the reset (power-up, KEY1):            "R8064 bench: FPGA up"
+//   every 2.3 s while the CPU has printed nothing: "CPU silent: pc=xxxxxxxx run=xxxx init=x flt=xx"  (init = SDRAM initialised and
+//   boot copy done, flt = instruction/data fault seen since the reset; all values in hex)
+module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parameter SIL_BIT = 27)(
     input  wire        clk, rst,
     input  wire        we, input wire [7:0] a, input wire [7:0] wd, output reg [7:0] rd,
     input  wire [31:0] pc,
+    input  wire        init_done, input wire [1:0] flt,
     output reg         soc_rst_req,
     output wire        uart_tx
 );
-    // ---- UART TX 8N1
+    // ---- hardware messages
+    reg hm_on = 1'b0, hm_m = 1'b0, spoke = 1'b0; reg [5:0] hm_i = 6'd0; reg [SIL_BIT:0] sil = 0; reg [31:0] hm_pc = 32'd0; reg [15:0] hm_run = 16'd0;
+    reg hm_init = 1'b0; reg [1:0] flt_s = 2'b00; reg [7:0] hm_c; wire [15:0] run_w;
+    function [7:0] hx(input [3:0] v); hx = (v < 4'd10) ? 8'h30 + v : 8'h37 + v; endfunction
+    always @* begin
+        hm_c = 8'h00;
+        if (!hm_m) case (hm_i)                      // "\r\nR8064 bench: FPGA up\r\n"
+            0: hm_c = 8'h0D; 1: hm_c = 8'h0A; 2: hm_c = "R"; 3: hm_c = "8"; 4: hm_c = "0"; 5: hm_c = "6"; 6: hm_c = "4"; 7: hm_c = " ";
+            8: hm_c = "b"; 9: hm_c = "e"; 10: hm_c = "n"; 11: hm_c = "c"; 12: hm_c = "h"; 13: hm_c = ":"; 14: hm_c = " "; 15: hm_c = "F";
+            16: hm_c = "P"; 17: hm_c = "G"; 18: hm_c = "A"; 19: hm_c = " "; 20: hm_c = "u"; 21: hm_c = "p"; 22: hm_c = 8'h0D; 23: hm_c = 8'h0A;
+            default: hm_c = 8'h00;
+        endcase else case (hm_i)                    // "CPU silent: pc=xxxxxxxx run=xxxx init=x flt=xx\r\n"
+            0: hm_c = "C"; 1: hm_c = "P"; 2: hm_c = "U"; 3: hm_c = " "; 4: hm_c = "s"; 5: hm_c = "i"; 6: hm_c = "l"; 7: hm_c = "e"; 8: hm_c = "n";
+            9: hm_c = "t"; 10: hm_c = ":"; 11: hm_c = " "; 12: hm_c = "p"; 13: hm_c = "c"; 14: hm_c = "=";
+            15: hm_c = hx(hm_pc[31:28]); 16: hm_c = hx(hm_pc[27:24]); 17: hm_c = hx(hm_pc[23:20]); 18: hm_c = hx(hm_pc[19:16]);
+            19: hm_c = hx(hm_pc[15:12]); 20: hm_c = hx(hm_pc[11:8]); 21: hm_c = hx(hm_pc[7:4]); 22: hm_c = hx(hm_pc[3:0]);
+            23: hm_c = " "; 24: hm_c = "r"; 25: hm_c = "u"; 26: hm_c = "n"; 27: hm_c = "=";
+            28: hm_c = hx(hm_run[15:12]); 29: hm_c = hx(hm_run[11:8]); 30: hm_c = hx(hm_run[7:4]); 31: hm_c = hx(hm_run[3:0]);
+            32: hm_c = " "; 33: hm_c = "i"; 34: hm_c = "n"; 35: hm_c = "i"; 36: hm_c = "t"; 37: hm_c = "="; 38: hm_c = hm_init ? "1" : "0";
+            39: hm_c = " "; 40: hm_c = "f"; 41: hm_c = "l"; 42: hm_c = "t"; 43: hm_c = "="; 44: hm_c = flt_s[1] ? "1" : "0"; 45: hm_c = flt_s[0] ? "1" : "0";
+            46: hm_c = 8'h0D; 47: hm_c = 8'h0A;
+            default: hm_c = 8'h00;
+        endcase
+    end
+    wire cpu_tx = we && a == 8'h90;
+    wire hm_go = hm_on && !cpu_tx && (hm_c != 8'h00);
+    // ---- UART TX 8N1 (the CPU has priority; the hardware messages only use the idle line)
     reg [9:0] tsh = 10'h3FF; reg [3:0] tbit = 4'd0; reg [15:0] tdiv = 16'd0; reg tbusy = 1'b0;
+    always @(posedge clk) begin
+        if (rst) begin hm_on <= 1'b1; hm_m <= 1'b0; hm_i <= 6'd0; spoke <= 1'b0; sil <= 0; flt_s <= 2'b00; end
+        else begin
+            flt_s <= flt_s | flt;
+            if (cpu_tx) begin spoke <= 1'b1; sil <= 0; end else if (!hm_on) sil <= sil + 1'b1;
+            if (hm_on && !tbusy && !cpu_tx) begin
+                if (hm_c == 8'h00) hm_on <= 1'b0; else hm_i <= hm_i + 6'd1;
+            end
+            if (!hm_on && !spoke && sil[SIL_BIT]) begin hm_on <= 1'b1; hm_m <= 1'b1; hm_i <= 6'd0; sil <= 0; hm_pc <= pc; hm_run <= run_w; hm_init <= init_done; end
+        end
+    end
     always @(posedge clk) begin
         if (rst) begin tsh <= 10'h3FF; tbit <= 4'd0; tdiv <= 16'd0; tbusy <= 1'b0; end
         else if (!tbusy) begin
-            if (we && a == 8'h90) begin tsh <= {1'b1, wd, 1'b0}; tbit <= 4'd0; tdiv <= 16'd0; tbusy <= 1'b1; end
+            if (cpu_tx) begin tsh <= {1'b1, wd, 1'b0}; tbit <= 4'd0; tdiv <= 16'd0; tbusy <= 1'b1; end
+            else if (hm_go) begin tsh <= {1'b1, hm_c, 1'b0}; tbit <= 4'd0; tdiv <= 16'd0; tbusy <= 1'b1; end
         end else if (tdiv == BAUD_DIV - 1) begin
             tdiv <= 16'd0; tsh <= {1'b1, tsh[9:1]};
             if (tbit == 4'd9) tbusy <= 1'b0; else tbit <= tbit + 4'd1;
@@ -93,6 +136,7 @@ module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22)(
     reg [31:0] lp = 32'd0, ppc = 32'd0, cyc = 32'd0, t0 = 32'd0, tl = 32'd0, tp = 32'd0, tcnt = 32'd0;
     reg [5:0] nit = 6'd0; reg armed = 1'b0; reg [3:0] sh = 4'd9, shl = 4'd9; reg tmo_l = 1'b0, tmo_p = 1'b0; reg [15:0] run = 16'd0;
     reg [7:0] scr [0:3];
+    assign run_w = run;
     wire hit = armed && (pc == lp) && (ppc != lp);
     always @(posedge clk) begin
         cyc <= cyc + 32'd1; ppc <= pc; soc_rst_req <= 1'b0;
@@ -123,7 +167,7 @@ module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22)(
     end
     always @* begin
         case (a)
-            8'h90: rd = {7'd0, tbusy};
+            8'h90: rd = {7'd0, tbusy | hm_on};     // busy also while a hardware message is being sent
             8'h92: rd = run[7:0];
             8'h9A: rd = run[15:8];
             8'h93: rd = res[7:0];
