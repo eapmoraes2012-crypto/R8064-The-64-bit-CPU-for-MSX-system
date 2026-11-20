@@ -86,6 +86,37 @@ for c in G.cases:
     d.update(key=c['key'], name=name, sim=int(v * 100 + 1e-6), shift=sh)
     recs.append(d)
 
+
+# ---------------------------------------------------------------- self test printed at power-up / KEY1 (run 0), before anything else
+# Straight-line code: the UART is driven with IN/OUT only, so a broken memory path or stack still shows which step fails.
+#   expected line:  "selftest: M=5A W=1234 D=2000 C=31 S=ABCD R K"
+_ST = [0]
+def _lbl():
+    _ST[0] += 1; return 'tq%d' % _ST[0]      # not 'stN': ST0-ST7 are FPU registers
+def st_putc(ch):                    # ch: assembler expression (character or register C already loaded when ch is None)
+    l = _lbl(); r = [] if ch is None else ['        ld c,%s' % ch]
+    return r + ['%s:    in a,(90h)' % l, '        and 1', '        jr nz,%s' % l, '        ld a,c', '        out (90h),a']
+def st_puts(t): return sum((st_putc('%d' % ord(ch)) for ch in t), [])
+def st_hexa():                      # prints A in hex (destroys A, B, C)
+    r = ['        ld b,a', '        rrca', '        rrca', '        rrca', '        rrca']
+    for first in (True, False):
+        l = _lbl()
+        if not first: r += ['        ld a,b']
+        r += ['        and 0Fh', '        add a,30h', '        cp 3Ah', '        jr c,%s' % l, '        add a,7', '%s:    ld c,a' % l]
+        r += st_putc(None)
+    return r
+def selftest():
+    r = ['        in a,(P_GO)', '        ld c,a', '        in a,(P_RUNH)', '        or c', '        jp nz,st_end']
+    r += st_puts('\r\nselftest: M=')
+    r += ['        ld hl,2410h', '        ld a,5Ah', '        ld (hl),a', '        xor a', '        ld a,(hl)'] + st_hexa()
+    r += st_puts(' W=') + ['        ld hl,1234h', '        ld (2412h),hl', '        ld hl,0', '        ld hl,(2412h)', '        ld a,h'] + st_hexa() + ['        ld hl,(2412h)', '        ld a,l'] + st_hexa()
+    r += st_puts(' D=') + ['        ld a,(2001h)'] + st_hexa() + ['        ld a,(2000h)'] + st_hexa()
+    r += st_puts(' C=') + ['        ld a,(0000h)'] + st_hexa()
+    r += st_puts(' S=') + ['        ld sp,STK', '        ld de,0', '        ld bc,0ABCDh', '        push bc', '        pop de', '        ld a,d'] + st_hexa() + ['        ld a,e'] + st_hexa()
+    r += st_puts(' R') + ['        ld sp,STK', '        call st_sub', '        jr st_ret', 'st_sub:'] + st_puts(' K') + ['        ret', 'st_ret:'] + st_puts('\r\n')
+    r += ['st_end: ld sp,STK']
+    return '\n'.join(r)
+
 # ---------------------------------------------------------------- firmware
 FW = r'''
 P_TX    equ 90h
@@ -137,6 +168,7 @@ start:  ld sp,STK
         ldq ix,0
         ldq iy,0
         ldq ax,0
+%(SELFTEST)s
         in a,(P_GO)
         ld l,a
         in a,(P_RUNH)
@@ -487,7 +519,7 @@ def record(d):
     b = bytes([d['shift'], d['nc'], d['sim'] & 255, d['sim'] >> 8, 0, 0, len(d['E'])]) + d['E'] + bytes([len(d['I'])]) + d['I'] + bytes([d['fix'], len(d['S'])]) + d['S']
     return b
 
-fw_src = FW % dict(BUILD=BUILD, NCASE=len(recs), PREFIX=dbs(PB))
+fw_src = FW % dict(BUILD=BUILD, NCASE=len(recs), PREFIX=dbs(PB), SELFTEST=selftest())
 fw_probe, a = asm(fw_src.split('\n') + ['PTAB:'], org=0)
 fw_end = a.sym['FW_END'][0]
 ptab = fw_end; pos = ptab + 2 * len(recs)
