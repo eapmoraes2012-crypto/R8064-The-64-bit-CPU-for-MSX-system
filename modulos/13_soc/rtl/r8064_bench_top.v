@@ -84,7 +84,8 @@ endmodule
 //   every 2.3 s without output from the CPU: "UART idle : pc=xxxxxxxx run=xxxx init=x flt=xx"  (init = SDRAM initialised and
 //   boot copy done, flt = instruction/data fault seen since the reset; all values in hex). After the bench ends (run = 2 x cases)
 //   these lines keep coming, so a terminal opened late still shows that the board is alive.
-//   The first of these silences prints instead "T xxxx xxxx ...": the low 16 bits of the first 48 values of the core PC after the reset.
+//   Every 4th of these lines (the first one too) is instead "T xxxx xxxx ...": the low 16 bits of the first 48 values of the core PC
+//   after the reset (the bitstream load is a reset too).
 module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parameter SIL_BIT = 27)(
     input  wire        clk, rst,
     input  wire        we, input wire [7:0] a, input wire [7:0] wd, output reg [7:0] rd,
@@ -97,7 +98,7 @@ module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parame
     reg hm_on = 1'b0, hm_m = 1'b0, spoke = 1'b0; reg [5:0] hm_i = 6'd0; reg [SIL_BIT:0] sil = 0; reg [31:0] hm_pc = 32'd0; reg [15:0] hm_run = 16'd0;
     reg hm_init = 1'b0; reg [1:0] flt_s = 2'b00; reg [7:0] hm_c; wire [15:0] run_w;
     // PC trace of the first boot after the reset: the low 16 bits of the first 48 PC values, printed once ("T xxxx xxxx ...")
-    reg [15:0] trc [0:47]; reg [5:0] tn = 6'd0, tk = 6'd0; reg [2:0] tr = 3'd0; reg hm_t = 1'b0, tdone = 1'b0; reg [15:0] tpc = 16'd0;
+    reg [15:0] trc [0:47]; reg [5:0] tn = 6'd0, tk = 6'd0; reg [2:0] tr = 3'd0; reg hm_t = 1'b0; reg [1:0] tsel = 2'd0; reg [15:0] tpc = 16'd0;
     wire [15:0] tv = trc[tk];
     function [7:0] hx(input [3:0] v); hx = (v < 4'd10) ? 8'h30 + v : 8'h37 + v; endfunction
     always @* begin
@@ -133,7 +134,7 @@ module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parame
     reg [9:0] tsh = 10'h3FF; reg [3:0] tbit = 4'd0; reg [15:0] tdiv = 16'd0; reg tbusy = 1'b0;
     always @(posedge clk) begin
         if (rst) begin hm_on <= 1'b1; hm_m <= 1'b0; hm_i <= 6'd0; spoke <= 1'b0; sil <= 0; flt_s <= 2'b00;
-                       tn <= 6'd0; tk <= 6'd0; tr <= 3'd0; hm_t <= 1'b0; tdone <= 1'b0; tpc <= 16'd0; end
+                       tn <= 6'd0; tk <= 6'd0; tr <= 3'd0; hm_t <= 1'b0; tsel <= 2'd0; tpc <= 16'd0; end
         else begin
             if (tn != 6'd48 && pc[15:0] != tpc) begin trc[tn] <= pc[15:0]; tn <= tn + 6'd1; tpc <= pc[15:0]; end
             flt_s <= flt_s | flt;
@@ -145,7 +146,8 @@ module r8064_bench_io #(parameter BAUD_DIV = 498, parameter TMO_BIT = 22, parame
             end
             if (!hm_on && sil[SIL_BIT]) begin
                 hm_on <= 1'b1; sil <= 0; hm_i <= 6'd0;
-                if (!tdone) begin hm_t <= 1'b1; tdone <= 1'b1; tk <= 6'd0; tr <= 3'd0; end
+                tsel <= tsel + 2'd1;
+                if (tsel == 2'd0) begin hm_t <= 1'b1; tk <= 6'd0; tr <= 3'd0; end
                 else begin hm_m <= 1'b1; hm_pc <= pc; hm_run <= run_w; hm_init <= init_done; end
             end
         end
