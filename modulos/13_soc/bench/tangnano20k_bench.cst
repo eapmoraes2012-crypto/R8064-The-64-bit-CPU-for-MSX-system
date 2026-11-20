@@ -1,0 +1,10 @@
+// Tang Nano 20K, timing bench (r8064_bench_top): only the board's own pins. Works with the bare board or plugged in the cartridge board
+// (none of the slot pins is used). Embedded SDRAM: no IO_LOC (fixed GW2AR names).
+IO_LOC "clk27" 4;
+IO_PORT "clk27" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
+IO_LOC "btn_rst" 88;
+IO_PORT "btn_rst" IO_TYPE=LVCMOS33 PULL_MODE=DOWN;
+IO_LOC "uart_tx" 69;
+IO_PORT "uart_tx" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "uart_rx" 70;
+IO_PORT "uart_rx" IO_TYPE=LVCMOS33 PULL_MODE=UP;

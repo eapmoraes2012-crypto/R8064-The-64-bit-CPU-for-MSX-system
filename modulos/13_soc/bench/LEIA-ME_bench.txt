@@ -1,0 +1,45 @@
+R8064 TIMING BENCH - Tang Nano 20K alone (no MSX needed)
+
+What it does
+  The bitstream runs the R8064 SoC (REV48, the same RTL and build macros as the cartridge) from the board's 27 MHz crystal
+  (PLL -> 57.375 MHz) and measures, on the real FPGA, the clocks of 256 instruction cases - the same loops as the simulation table
+  (docs/timings/R8064_timings_REV48.xlsx). Each line is printed on the board's USB serial port next to the simulation value:
+      ADDW rr, rr'                       8.00   8.00  OK
+      LD A,(HL)                         11.00  11.00  OK
+  The last line gives the totals:  Done: 256 OK, 0 different.
+  The whole run takes a few seconds. Press KEY1 (one of the two user buttons, FPGA pin 88) to run it again.
+  It works with the bare board or with the board plugged in the cartridge (no slot pin is used; the MSX may be off).
+
+1) Build (Gowin EDA, Education edition is enough)
+     Double-click rodar_gowin.bat (finds gw_sh.exe in C:\Gowin\*\IDE\bin, or set GWSH=<full path of gw_sh.exe>).
+     Result: proj\impl\pnr\r8064_bench.fs  (log in gowin_build.log)
+   GUI instead: New Project, device GW2AR-LV18QN88C8/I7 version C; add src\r8064_bench_all.v, src\tangnano20k_bench.cst,
+   src\r8064_bench.sdc; Top Module r8064_bench_top; Verilog SystemVerilog 2017; Dual-Purpose Pin: MSPI, SSPI, READY, DONE and
+   RECONFIG_N as regular IO; Run All.
+   If the folder is moved, regenerate the package (the .mem/.hex paths inside r8064_bench_all.v are absolute):
+     python3 modulos/13_soc/gowin/make_bench_pkg.py <out_dir> C:/Users/<you>/Documents/R8064_bench/src/
+
+2) Load the bitstream
+   Gowin Programmer (comes with Gowin EDA): Scan the cable, Operation = "SRAM Program" (temporary, lost at power off), file
+   proj\impl\pnr\r8064_bench.fs, Program/Configure. Or: openFPGALoader -b tangnano20k proj\impl\pnr\r8064_bench.fs
+   The flash keeps the previous design (the cartridge): power cycling the board brings it back.
+
+3) See the results
+   The board shows up in Windows as a USB serial port (Device Manager -> Ports (COM & LPT); the Tang Nano 20K creates two
+   interfaces, use the COM port that appears for it). Open it in a terminal (PuTTY, Tera Term, Arduino Serial Monitor...):
+     115200 baud, 8 data bits, no parity, 1 stop bit, no flow control.
+   Then press KEY1: the bench starts again and prints the table. Keep the text: copy it (or save the terminal log) and send it.
+
+Reading the result column
+  OK       hardware = simulation (within 0.01 clock)
+  DIFF     the board measured another value (send the text: it tells which instructions and by how much)
+  TIMEOUT  the loop did not come back in 73 ms (the core hung or went somewhere else)
+  ERROR    the loop with the instruction was faster than the empty loop (should not happen)
+  No text at all: wrong COM port or baud rate, or the board does not boot (SDRAM). Try the other COM port; then press KEY1.
+
+How it measures (details in modulos/13_soc/bench/gen_bench.py and rtl/r8064_bench_top.v)
+  For each case the firmware builds the loop at 3C1Eh (= 001Eh, the address used in the simulation, modulo the 1 KB
+  instruction cache), arms a counter and jumps to it. The counter follows the core PC: it counts the clocks of 32 loop passes
+  (after 4 passes of warm-up), then resets the SoC. Each case runs twice, without and with the instruction (16 copies):
+  clocks/instruction = (T_with - T_without) / (32 x 16). Code and data are in the caches, native mode, like the simulation.
+  Not tested here: anything that needs the MSX (slot ports 0Bh-0Dh, R8064.COM, Z80/R800 modes with MSX timing).
