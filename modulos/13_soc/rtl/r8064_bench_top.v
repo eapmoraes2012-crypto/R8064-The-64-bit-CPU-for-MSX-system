@@ -6,7 +6,7 @@
 //   Each case takes 2 runs: the loop without the instruction (empty) and with it; clocks/instruction = (T_case - T_empty) * 100 / (32 * copies).
 //   After a reset the firmware reads the run number and the result from the bench, prints a line and builds the next run.
 // Only the SoC is reset between runs (the bench registers, the PLL and the UART keep running); the KEY1 button (pin 88) restarts everything.
-module r8064_bench_top #(parameter [3:0] SDR_PSDA = 4'd4)(
+module r8064_bench_top #(parameter [3:0] SDR_PSDA = 4'd12)(   // 12 = 270 degrees: measured on the board (r8064_sdtest_top: phases 10..13 without errors, 4 = 100% errors)
     input  wire        clk27,        // board crystal (pin 4)
     input  wire        btn_rst,      // KEY1 (pin 88), pressed = 1
     output wire        uart_tx,      // pin 69 -> BL616 -> USB serial on the PC

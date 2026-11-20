@@ -3,7 +3,7 @@
 // FIFOs + state + length). Layer 2 (16 KB window at 8000h-BFFFh) requires /SLTSL, A8-A15 and /MREQ, which the board does NOT have; window accesses are disabled (sb_* = 0).
 // Clock: the board's 14.31818 MHz crystal (pin 80) -> rPLL x4 = 57.2727 MHz (SRC = 3).
 // SoC reset = PLL + button + slot /RESET (synchronized) + "restart the R8064" command (CMD.b3 of the FIFO), stretched by 16 clocks. Any reset redoes the SDRAM and the boot (BOOT=1).
-module r8064_cart_top #(parameter SRC = 3, parameter [3:0] SDR_PSDA = 4'd4, parameter BOOT = 1)(
+module r8064_cart_top #(parameter SRC = 3, parameter [3:0] SDR_PSDA = 4'd12, parameter BOOT = 1)(   // SDR_PSDA 12 = 270 degrees, measured with r8064_sdtest_top
     input  wire        clk27,                 // Tang Nano 27 MHz crystal (pin 4), not used with SRC = 3
     input  wire        clk14m,                // board 14.31818 MHz oscillator (pin 80)
     input  wire        btn_rst,               // KEY1 button (pin 88): pressed = 1
