@@ -11,6 +11,8 @@ module r8064_bench_top #(parameter [3:0] SDR_PSDA = 4'd4)(
     input  wire        btn_rst,      // KEY1 (pin 88), pressed = 1
     output wire        uart_tx,      // pin 69 -> BL616 -> USB serial on the PC
     input  wire        uart_rx,      // pin 70 (not used)
+    output wire [5:0]  led,          // pins 15..20, active low: 0 PLL locked, 1 blink (57 MHz clock), 2 UART activity, 3 SDRAM init + boot done,
+                                     // 4 KEY1 level, 5 blink straight from the 27 MHz crystal
     // embedded SDRAM (fixed GW2AR names)
     output wire        O_sdram_clk, O_sdram_cke, O_sdram_cs_n, O_sdram_ras_n, O_sdram_cas_n, O_sdram_wen_n,
     output wire [3:0]  O_sdram_dqm,
@@ -24,7 +26,8 @@ module r8064_bench_top #(parameter [3:0] SDR_PSDA = 4'd4)(
     reg [2:0] bs = 3'b000; reg [4:0] bst = 5'd0;
     always @(posedge clk) begin bs <= {bs[1:0], btn_rst}; if (bs[2] != bs[1]) bst <= 5'd16; else if (bst != 5'd0) bst <= bst - 5'd1; end
     wire s_cke, s_cs_n, s_ras_n, s_cas_n, s_we_n, s_dq_oe; wire [3:0] s_dqm; wire [1:0] s_ba; wire [10:0] s_a; wire [31:0] s_dq_o;
-    r8064_bench #(.BAUD_DIV(498)) u_b(.clk(clk), .rst(rst_pll | (bst != 5'd0)), .uart_tx(uart_tx),
+    wire init_done;
+    r8064_bench #(.BAUD_DIV(498)) u_b(.clk(clk), .rst(rst_pll | (bst != 5'd0)), .uart_tx(uart_tx), .init_done(init_done),
         .s_cke(s_cke), .s_cs_n(s_cs_n), .s_ras_n(s_ras_n), .s_cas_n(s_cas_n), .s_we_n(s_we_n), .s_dqm(s_dqm), .s_ba(s_ba), .s_a(s_a),
         .s_dq_o(s_dq_o), .s_dq_oe(s_dq_oe), .s_dq_i(IO_sdram_dq));
     assign O_sdram_clk = clk_sd;
@@ -32,12 +35,17 @@ module r8064_bench_top #(parameter [3:0] SDR_PSDA = 4'd4)(
     assign O_sdram_cas_n = s_cas_n; assign O_sdram_wen_n = s_we_n;
     assign O_sdram_dqm = s_dqm;   assign O_sdram_addr = s_a;     assign O_sdram_ba = s_ba;
     assign IO_sdram_dq = s_dq_oe ? s_dq_o : 32'bz;
+    // LEDs (on = 0)
+    reg [24:0] hb = 25'd0, hb27 = 25'd0; reg [21:0] act = 22'd0;
+    always @(posedge clk) begin hb <= hb + 25'd1; if (!uart_tx) act <= {22{1'b1}}; else if (act != 22'd0) act <= act - 22'd1; end
+    always @(posedge clk27) hb27 <= hb27 + 25'd1;
+    assign led = ~{hb27[24], bs[1], init_done, act != 22'd0, hb[24], locked};
 endmodule
 
 // r8064_bench: SoC + bench I/O (no clock generator: the simulation instantiates this module directly).
 module r8064_bench #(parameter BAUD_DIV = 498, parameter INIT_CYC = 20000, parameter TMO_BIT = 22, parameter SIL_BIT = 27)(
     input  wire        clk, rst,
-    output wire        uart_tx,
+    output wire        uart_tx, output wire init_done,
     output wire        s_cke, s_cs_n, s_ras_n, s_cas_n, s_we_n, s_dq_oe,
     output wire [3:0]  s_dqm, output wire [1:0] s_ba, output wire [10:0] s_a, output wire [31:0] s_dq_o, input wire [31:0] s_dq_i
 );
@@ -46,7 +54,7 @@ module r8064_bench #(parameter BAUD_DIV = 498, parameter INIT_CYC = 20000, param
     always @(posedge clk) if (rst) rq <= 5'd0; else if (soc_rst_req) rq <= 5'd16; else if (rq != 5'd0) rq <= rq - 5'd1;
     wire soc_rst = rst | (rq != 5'd0);
 
-    wire io_oe, iox_we, iox_re, nat, cs, z8, ro, mb, dbg_s, gcv, fbi, fbd, mmu_en, mmu_user, i_fault, d_fault, init_done, fifo_irq, fifo_rst;
+    wire io_oe, iox_we, iox_re, nat, cs, z8, ro, mb, dbg_s, gcv, fbi, fbd, mmu_en, mmu_user, i_fault, d_fault, fifo_irq, fifo_rst;
     wire [7:0] io_rd, iox_a, iox_wd, iox_rd, fm_rd, sb_rd, dbg_f; wire [63:0] dbg_pc; wire [2:0] ic, dc;
     r8064_soc #(.BOOT_WORDS(2048), .INIT_IMG(1), .INIT_CYC(INIT_CYC)) u_soc(.clk(clk), .rst(soc_rst), .irq(1'b1),
         .io_we(1'b0), .io_re(1'b0), .io_a(8'd0), .io_wd(8'd0), .io_rd(io_rd), .io_oe(io_oe),

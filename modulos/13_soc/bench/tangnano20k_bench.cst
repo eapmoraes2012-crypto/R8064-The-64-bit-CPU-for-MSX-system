@@ -1,5 +1,5 @@
-// Tang Nano 20K, timing bench (r8064_bench_top): only the board's own pins. Works with the bare board or plugged in the cartridge board
-// (none of the slot pins is used). Embedded SDRAM: no IO_LOC (fixed GW2AR names).
+// Tang Nano 20K, timing bench (r8064_bench_top): only the board's own pins. BARE BOARD ONLY (the LEDs use pins 15-20,
+// which are slot signals on the cartridge board). Embedded SDRAM: no IO_LOC (fixed GW2AR names).
 IO_LOC "clk27" 4;
 IO_PORT "clk27" IO_TYPE=LVCMOS33 PULL_MODE=NONE BANK_VCCIO=3.3;
 IO_LOC "btn_rst" 88;
@@ -8,6 +8,19 @@ IO_LOC "uart_tx" 69;
 IO_PORT "uart_tx" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
 IO_LOC "uart_rx" 70;
 IO_PORT "uart_rx" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+// LEDs (bare board only: on the cartridge board pins 15-20 are slot signals)
+IO_LOC "led[0]" 15;
+IO_PORT "led[0]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "led[1]" 16;
+IO_PORT "led[1]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "led[2]" 17;
+IO_PORT "led[2]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "led[3]" 18;
+IO_PORT "led[3]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "led[4]" 19;
+IO_PORT "led[4]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "led[5]" 20;
+IO_PORT "led[5]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
 // Embedded SDRAM: no IO_LOC (fixed GW2AR pads), but the I/O standard must be given: Gowin defaults unconstrained ports to LVCMOS18,
 // which locks their bank at 1.8 V and conflicts with the 3.3 V pins of the same bank (error CT1136 on clk27, pin 4).
 IO_PORT "O_sdram_clk" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8;
