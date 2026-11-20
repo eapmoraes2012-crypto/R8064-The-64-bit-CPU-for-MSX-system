@@ -89,7 +89,7 @@ for c in G.cases:
 
 # ---------------------------------------------------------------- self test printed at power-up / KEY1 (run 0), before anything else
 # Straight-line code: the UART is driven with IN/OUT only, so a broken memory path or stack still shows which step fails.
-#   expected line:  "selftest: M=5A W=1234 D=2000 C=31 S=ABCD R K"
+#   expected line:  "selftest: M=5A W=1234 D=2000 C=31 S=ABCD R K X=1234 E=7788"
 _ST = [0]
 def _lbl():
     _ST[0] += 1; return 'tq%d' % _ST[0]      # not 'stN': ST0-ST7 are FPU registers
@@ -113,7 +113,10 @@ def selftest():
     r += st_puts(' D=') + ['        ld a,(2001h)'] + st_hexa() + ['        ld a,(2000h)'] + st_hexa()
     r += st_puts(' C=') + ['        ld a,(0000h)'] + st_hexa()
     r += st_puts(' S=') + ['        ld sp,STK', '        ld de,0', '        ld bc,0ABCDh', '        push bc', '        pop de', '        ld a,d'] + st_hexa() + ['        ld a,e'] + st_hexa()
-    r += st_puts(' R') + ['        ld sp,STK', '        call st_sub', '        jr st_ret', 'st_sub:'] + st_puts(' K') + ['        ret', 'st_ret:'] + st_puts('\r\n')
+    r += st_puts(' R') + ['        ld sp,STK', '        call st_sub', '        jr st_ret', 'st_sub:'] + st_puts(' K') + ['        ret', 'st_ret:']
+    # ED page last (a wrong decode derails the rest): Z80 ED instruction, then an R8064 extension (64-bit load)
+    r += st_puts(' X=') + ['        ld de,0', '        ld de,(2412h)', '        ld a,d'] + st_hexa() + ['        ld de,(2412h)', '        ld a,e'] + st_hexa()
+    r += st_puts(' E=') + ['        ldq hl,1122334455667788h', '        ld a,h'] + st_hexa() + ['        ld a,l'] + st_hexa() + st_puts('\r\n')
     r += ['st_end: ld sp,STK']
     return '\n'.join(r)
 
@@ -162,13 +165,19 @@ start:  ld sp,STK
         nop
         nop
         nop
+        ld bc,0
+        ld de,0
+        ld hl,0
+        ld ix,0
+        ld iy,0
+        xor a
+%(SELFTEST)s
         ldq bc,0              ; the register file is not reset with the SoC: clear the upper bits left by the previous loop
         ldq de,0
         ldq hl,0
         ldq ix,0
         ldq iy,0
         ldq ax,0
-%(SELFTEST)s
         in a,(P_GO)
         ld l,a
         in a,(P_RUNH)
