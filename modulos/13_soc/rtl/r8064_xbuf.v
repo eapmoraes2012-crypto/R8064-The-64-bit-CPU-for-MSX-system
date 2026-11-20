@@ -18,7 +18,16 @@ module r8064_xbuf #(parameter INIT_IMG = 0, parameter INIT_PFX = "monitor_l")(
         reg [7:0] mem [0:2047];
         reg [7:0] qr;
         if (INIT_IMG) begin : img
-            initial $readmemh({INIT_PFX, 8'h30 + g[7:0], ".hex"}, mem);
+            // one literal suffix per lane: Gowin EDA does not evaluate a file name built by arithmetic (8'h30 + g) and then leaves
+            // the memory empty without any message (the same problem as EX0205 in r8064_clkgen)
+            if (g == 0) initial $readmemh({INIT_PFX, "0.hex"}, mem);
+            if (g == 1) initial $readmemh({INIT_PFX, "1.hex"}, mem);
+            if (g == 2) initial $readmemh({INIT_PFX, "2.hex"}, mem);
+            if (g == 3) initial $readmemh({INIT_PFX, "3.hex"}, mem);
+            if (g == 4) initial $readmemh({INIT_PFX, "4.hex"}, mem);
+            if (g == 5) initial $readmemh({INIT_PFX, "5.hex"}, mem);
+            if (g == 6) initial $readmemh({INIT_PFX, "6.hex"}, mem);
+            if (g == 7) initial $readmemh({INIT_PFX, "7.hex"}, mem);
         end else begin : sig
         initial begin
             mem[0] = (g == 0) ? 8'h52 : (g == 1) ? 8'h38 : (g == 2) ? 8'h30 : (g == 3) ? 8'h36 : (g == 4) ? 8'h34 : (g == 5) ? 8'h01 : 8'h00;   // 'R','8','0','6','4',1,0,0
