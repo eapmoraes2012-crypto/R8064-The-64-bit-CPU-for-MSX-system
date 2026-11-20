@@ -42,7 +42,8 @@ def descriptor(c):
     full, a = asm(program(c, False)); emp, _ = asm(program(c, True))
     nc = c.get('n_copies', c['n'])
     labels = {k: v[0] for k, v in a.sym.items() if k in ('AFTER', 'SUB')}
-    eb, _ = asm(['        ' + x for x in PREFIX + c['init']], defs={k: BUILD for k in labels}); E = eb[len(PB):]
+    eb, _ = asm(['        ' + x for x in PREFIX + c['init']], defs={k: BUILD for k in labels})
+    E = full[len(PB):len(eb)]            # the extra initialisation as in the full loop (its AFTER/SUB values are the real ones)
     sb, _ = asm([('        ' + x) if not x.startswith('sub:') else x for x in c['sub']], defs={}) if c['sub'] else (b'', None)
     body = full[len(PB) + len(E): len(full) - 3 - len(sb)]
     assert len(body) % nc == 0, c['key']

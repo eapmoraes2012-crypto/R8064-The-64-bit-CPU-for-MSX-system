@@ -29,6 +29,8 @@ module tb_bench;
         repeat (8) @(posedge clk); rst = 0;
         @(posedge clk); #1 dut.u_io.run = 2 * first;
         wait (dut.u_io.run == 2 * last);
+        wait (dut.u_io.tbusy);              // the report of the last case
+        repeat (2) @(posedge clk);
         wait (idle > (last == n ? 200000 : 40000));
         $display("\nTB_END runs=%0d", dut.u_io.run);
         $finish;
