@@ -6,6 +6,22 @@
 #   <out>/src/tangnano20k_cart.cst, r8064_cart.sdc, <out>/gowin_build.tcl, <out>/rodar_gowin.bat
 # Usage: python3 make_gowin_pkg.py <out_dir> [<absolute path of out_dir/src as Gowin will see it, e.g. C:/Users/me/Documents/R8064_gowin/src/>]
 import os, re, shutil, sys
+
+# ROMs whose width is not a multiple of 4 bits: Gowin EDA reports "Entry size .. does not match memory width" (EX2526) for their
+# hex files and does not load them as iverilog does (the core then runs a wrong microcode). For Gowin they go as $readmemb files
+# with exactly the memory width.
+BIN_ROMS = [('uop.mem', 'uop_bin.mem', 107, '$readmemh(UOP_FILE, uopm)', '$readmemb(UOP_FILE, uopm)'),
+            ('rom_ed_b.mem', 'rom_ed_b_bin.mem', 10, '$readmemh(ROM_B_FILE, rom_b)', '$readmemb(ROM_B_FILE, rom_b)')]
+def bin_roms(text, src_dir, out_dir, P):
+    for hexf, binf, w, old, new in BIN_ROMS:
+        assert old in text, old
+        text = text.replace(old, new).replace('"%s%s"' % (P, hexf), '"%s%s"' % (P, binf))
+        lines = [l.strip() for l in open(os.path.join(src_dir, hexf)) if l.strip() and not l.startswith('//')]
+        with open(os.path.join(out_dir, binf), 'w', newline='\r\n') as f:
+            for l in lines:
+                v = int(l, 16); assert v < (1 << w), (hexf, l)
+                f.write(format(v, '0%db' % w) + '\n')
+    return text
 HERE = os.path.dirname(os.path.abspath(__file__)); PNR = os.path.join(HERE, '..', 'pnr')
 out = os.path.abspath(sys.argv[1]); src = os.path.join(out, 'src'); os.makedirs(src, exist_ok=True)
 P = sys.argv[2] if len(sys.argv) > 2 else src.replace('\\', '/') + '/'
@@ -21,7 +37,7 @@ for f in files:
     for n in MEMS: s = s.replace('"%s"' % n, '"%s%s"' % (P, n))
     s = s.replace('INIT_PFX = "monitor_l"', 'INIT_PFX = "%smonitor_l"' % P)
     o += ['// ===================== %s =====================' % os.path.normpath(f).replace(os.sep, '/'), s]
-open(os.path.join(src, 'r8064_cart_all.v'), 'w', newline='\r\n').write('\n'.join(o))
+open(os.path.join(src, 'r8064_cart_all.v'), 'w', newline='\r\n').write(bin_roms('\n'.join(o), PNR, src, P))
 for n in MEMS + ['monitor_l%d.hex' % i for i in range(8)] + ['tangnano20k_cart.cst']: shutil.copy(os.path.join(PNR, n), src)
 shutil.copy(os.path.join(HERE, 'r8064_cart.sdc'), src)
 for n in ('gowin_build.tcl', 'rodar_gowin.bat'): shutil.copy(os.path.join(HERE, n), out)

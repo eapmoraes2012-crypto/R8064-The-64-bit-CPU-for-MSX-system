@@ -7,6 +7,22 @@
 #   <out>/src/tangnano20k_bench.cst, r8064_bench.sdc, <out>/gowin_build.tcl, <out>/rodar_gowin.bat, <out>/LEIA-ME_bench.txt
 # Usage: python3 make_bench_pkg.py <out_dir> [<absolute path of out_dir/src as Gowin will see it, e.g. C:/Users/me/Documents/R8064_bench/src/>]
 import os, re, shutil, sys, subprocess
+
+# ROMs whose width is not a multiple of 4 bits: Gowin EDA reports "Entry size .. does not match memory width" (EX2526) for their
+# hex files and does not load them as iverilog does (the core then runs a wrong microcode). For Gowin they go as $readmemb files
+# with exactly the memory width.
+BIN_ROMS = [('uop.mem', 'uop_bin.mem', 107, '$readmemh(UOP_FILE, uopm)', '$readmemb(UOP_FILE, uopm)'),
+            ('rom_ed_b.mem', 'rom_ed_b_bin.mem', 10, '$readmemh(ROM_B_FILE, rom_b)', '$readmemb(ROM_B_FILE, rom_b)')]
+def bin_roms(text, src_dir, out_dir, P):
+    for hexf, binf, w, old, new in BIN_ROMS:
+        assert old in text, old
+        text = text.replace(old, new).replace('"%s%s"' % (P, hexf), '"%s%s"' % (P, binf))
+        lines = [l.strip() for l in open(os.path.join(src_dir, hexf)) if l.strip() and not l.startswith('//')]
+        with open(os.path.join(out_dir, binf), 'w', newline='\r\n') as f:
+            for l in lines:
+                v = int(l, 16); assert v < (1 << w), (hexf, l)
+                f.write(format(v, '0%db' % w) + '\n')
+    return text
 HERE = os.path.dirname(os.path.abspath(__file__)); PNR = os.path.join(HERE, '..', 'pnr'); BENCH = os.path.join(HERE, '..', 'bench')
 out = os.path.abspath(sys.argv[1]); src = os.path.join(out, 'src'); os.makedirs(src, exist_ok=True)
 P = sys.argv[2] if len(sys.argv) > 2 else src.replace('\\', '/') + '/'
@@ -24,7 +40,7 @@ for f in files:
     for n in MEMS: s = s.replace('"%s"' % n, '"%s%s"' % (P, n))
     s = s.replace('INIT_PFX = "monitor_l"', 'INIT_PFX = "%smonitor_l"' % P)
     o += ['// ===================== %s =====================' % os.path.normpath(f).replace(os.sep, '/'), s]
-open(os.path.join(src, 'r8064_bench_all.v'), 'w', newline='\r\n').write('\n'.join(o))
+open(os.path.join(src, 'r8064_bench_all.v'), 'w', newline='\r\n').write(bin_roms('\n'.join(o), PNR, src, P))
 for n in MEMS: shutil.copy(os.path.join(PNR, n), src)
 for n in ('bench.bin', ): os.remove(os.path.join(src, n))
 for n in ('tangnano20k_bench.cst', 'r8064_bench.sdc'): shutil.copy(os.path.join(BENCH, n), src)
