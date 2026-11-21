@@ -87,7 +87,7 @@ The core is single; the 5 modes result from the combination of three configurati
 - The other S1990 registers are not handled here; they are only passed through.
 - The mode switch is applied at the instruction boundary (empty pipeline).
 
-**Timing governor (`timing_gov.v`)**: holds the *issue* of the next instruction until the original time of the previous one has elapsed, so that Z80/R800 code keeps its timing. Details in section 5.
+**Timing governor (`timing_gov.v`)**: holds the *issue* of the next instruction until the original time of the previous one has elapsed, so that Z80/R800 code keeps its timing. Details in chapter 6.
 
 ## 4. Programming model
 
