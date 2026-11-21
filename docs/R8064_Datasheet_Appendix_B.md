@@ -1,8 +1,8 @@
-# R8064 — Datasheet (Version 0.0 Alpha)
+# R8064 - Datasheet (Preliminary) 2026
 
 ## Appendix B — Instruction set tables
 
-This appendix reproduces, by functional group, the instruction tables from the R8064 ODT file (mnemonic, operation, flags, binary encoding, hexadecimal bytes and timing). The detailed description of each instruction is in Appendix A, in the main tab.
+This appendix reproduces, by functional group, the instruction tables from the R8064 ODT file (mnemonic, operation, flags, binary encoding, hexadecimal bytes and timing). The R8064 timing columns are the early planning model; the measured native-mode timing is in Appendix D of the main file, and the complete list of forms in Appendix C. The detailed description of each instruction is in Appendix A, in the main tab.
 
 **Legend.** Timing columns, in clock cycles, as in the source file: TZ and Z1 (Z80), TR and RW (R800), 64 and W6 (R8064). For instructions inherited from the Z80 the 64 and W6 columns are empty, as in the source; for R8064 extensions only the 64 and W6 columns are filled in. Flags: • unchanged; 3 affected according to the result; 0 and 1 forced; ? undefined; V overflow; P parity. Operands: n = 8-bit immediate; nn = 16-bit; imm32 and imm64 = 32- and 64-bit immediates; adr64 = 64-bit absolute address; rr and rr’ = registers of the indicated width. “--” marks a variable byte (operand) and “…” a sequence of bytes.
 

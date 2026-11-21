@@ -1,10 +1,10 @@
-# R8064 — Datasheet (Version 0.0 Alpha)
+# R8064 - Datasheet (Preliminary) 2026
 
-> This file is the English version of the R8064 datasheet, exported from the project document. Appendix B (instruction set tables) is in [R8064_Datasheet_Appendix_B.md](R8064_Datasheet_Appendix_B.md).
+> Preliminary datasheet: the contents describe the REV48 design and may change. Appendix B (instruction tables by group, from the project document) is in [R8064_Datasheet_Appendix_B.md](R8064_Datasheet_Appendix_B.md). Appendix C (complete instruction list) and Appendix D (measured instruction timing) are at the end of this file and are generated from the sources (`modulos/13_soc/sim/meas/gen_doc_tables.py`).
 
-Version 0.0 Alpha · November 17, 2026 · Edison
+Preliminary · November 20, 2026 · Edison · design revision REV48
 
-64-bit CPU derived from the Z80, implemented in an FPGA (Tang Nano 20K, GW2AR-18) at 57.28 MHz, with Z80/R800 compatibility modes and a native 64-bit mode.
+64-bit CPU derived from the Z80, implemented in an FPGA (Tang Nano 20K, GW2AR-18) at 57.28 MHz, with Z80/R800 compatibility modes and a native 64-bit mode. **First silicon run on November 20, 2026**: the core runs on the Tang Nano 20K, and 256 of 256 measured instruction timings are equal to the simulation (section 11).
 
 ## 1. Overview
 
@@ -16,31 +16,36 @@ The R8064 is a 64-bit CPU derived from the Z80, described in Verilog and impleme
 - 64-bit registers with size-based access: B (8), W (16), L (32) and Q (64 bits).
 - Floating-point arithmetic (FPU) done in firmware, with no dedicated hardware.
 - Bank prefixes ED 0B / ED 0E / ED 0D to access the register banks.
-- MMU with instruction and data TLBs, 4 KB instruction cache and 8 KB data cache.
+- MMU with instruction and data TLBs (Sv39, Sv48, Sv57 and Sv64), 4 KB instruction cache and 4 KB data cache (direct-mapped, 32-byte lines).
 - SDRAM controller for the board's embedded 32-bit memory (8 MB of physical memory, all reachable through the MMU).
-- Bus and I/O interface for the MSX slot, FIFOs and FM port.
+- Bus and I/O interface for the MSX slot, FIFOs and FM port; MSX ↔ R8064 message protocol on I/O ports 0Bh–0Dh (chapter 8).
+- 4-channel DMA (2 channels in the cartridge build), 5-master memory arbiter.
+- Two privilege levels, system call and one-instruction context save (SVCTX/LDCTX) for multitasking (chapter 15).
+- Software: resident monitor, `R8064.COM` and the `r8064io` driver for MSX-DOS, and the R8064AS assembler that runs on the MSX (section 8.2).
 
 **Project status**
 
-The project is verified by simulation (iverilog/vvp) and by synthesis and place-and-route (yosys/nextpnr and Gowin EDA). Behavior in hardware has **not yet been confirmed**: the bitstream was generated, but flashing to the board is pending. Items not yet defined are marked "to be defined".
+The project is verified by simulation (iverilog/vvp and Verilator), by synthesis and place-and-route (Gowin EDA; yosys/nextpnr for the earlier revisions) and, since November 20, 2026, **on the Tang Nano 20K**: the timing bench (section 11.1) runs the core from the board's 27 MHz crystal with the embedded SDRAM and measures 256 instruction cases, all equal to the simulation. Not yet tested on hardware: the MSX cartridge (slot interface, monitor, R8064.COM). Items not yet defined are marked "to be defined".
 
-**Resource summary (board top, latest synthesis)**
+**Resource summary (Gowin EDA, GW2AR-LV18QN88C8/I7)**
 
-| Resource | Use (cartridge, REV47, Gowin EDA) |
-| --- | --- |
-| Logic (LUT + ALU + RAM16) | 12,188 of 20,736 (59%) |
-| Flip-flops | 5,600 (36%) |
-| BSRAM | 46 of 46 |
-| DSP | 4 of 24 |
-| Fmax (57.27 MHz clock) | 59.94 MHz; setup slack +0.78 ns, hold slack +0.20 ns |
+| Resource | Cartridge, REV47 | Timing bench, REV48 (board-tested) |
+| --- | --- | --- |
+| Logic (LUT + ALU + RAM16) | 12,188 of 20,736 (59%) | 12,574 (61%) |
+| Flip-flops | 5,600 (36%) | 6,098 (39%) |
+| BSRAM | 46 of 46 | 46 of 46 |
+| DSP | 4 of 24 | 4 of 24 |
+| Clock / Fmax | 57.27 MHz / 59.94 MHz | 57.375 MHz / 58.51 MHz (TNS 0, setup and hold) |
 
-**Tang Nano 20K build (REV47).** The cartridge is synthesized with the macros `R8064_NOFPU` (no FPU), `R8064_DMA2` (2 DMA channels), `R8064_AW32` and `R8064_NO_MD64`. With `R8064_AW32` only the low 32 address bits are implemented: PC, fetch address, effective addresses and branch targets wrap modulo 2^32 and the high bits read as 0. With `R8064_NO_MD64`, MLTSQ, MLTUQ, DIVSQ and DIVUQ do not exist: they raise the unimplemented-instruction exception (cause 7) if CR14.TE = 1; otherwise they are skipped as a NOP of their own length.
+The cartridge REV48 has not been placed and routed yet (same core as the bench; the slot interface replaces the bench UART).
 
-Without these macros the core is the full 64-bit version, used in simulation. With yosys/nextpnr the cartridge uses 68% and does not route reliably; with Gowin EDA (Education edition) it closes with the figures in the table and generates the bitstream. The SDRAM interface timing was not analysed: the `SDR_PSDA` phase may need adjusting on the board.
+**Tang Nano 20K build (REV47/REV48).** The cartridge is synthesized with the macros `R8064_NOFPU` (no FPU), `R8064_DMA2` (2 DMA channels), `R8064_AW32` and `R8064_NO_MD64`. With `R8064_AW32` only the low 32 address bits are implemented: PC, fetch address, effective addresses and branch targets wrap modulo 2^32 and the high bits read as 0. With `R8064_NO_MD64`, MLTSQ, MLTUQ, DIVSQ and DIVUQ do not exist: they raise the unimplemented-instruction exception (cause 7) if CR14.TE = 1; otherwise they are skipped as a NOP of their own length.
+
+Without these macros the core is the full 64-bit version, used in simulation. With yosys/nextpnr the cartridge uses 68% and does not route reliably; with Gowin EDA (Education edition) it closes with the figures in the table and generates the bitstream. The SDRAM clock phase was measured on the board: `SDR_PSDA` = 12 (270°), see section 7.
 
 ## 2. Architecture
 
-The SoC consists of a core (R8064) with mode registers and a timing governor, the MSX system (I/O and FIFOs), an MMU with instruction and data TLBs, separate instruction (4 KB) and data (8 KB) caches, arbiters and the SDRAM controller. The diagram below shows how the blocks connect.
+The SoC consists of a core (R8064) with mode registers and a timing governor, the MSX system (I/O and FIFOs), an MMU with instruction and data TLBs, separate instruction (4 KB) and data (4 KB) caches, arbiters, the DMA and the SDRAM controller. The diagram below shows how the blocks connect.
 
 The core reaches the SDRAM through the MMU and separate instruction and data caches:
 
@@ -50,7 +55,7 @@ flowchart TB
   MMUI["MMU-I<br/>instruction TLB"]
   MMUD["MMU-D<br/>data TLB"]
   CI["Cache I<br/>4 KB"]
-  CD["Cache D<br/>8 KB"]
+  CD["Cache D<br/>4 KB"]
   SLOT["MSX slot<br/>I/O, FIFOs and FM port"]
   ARB["I/D and top arbiters<br/>cache misses and walker; data before instructions"]
   SDR["SDRAM controller<br/>embedded 32-bit SDRAM, 8 MB physical memory"]
@@ -190,7 +195,15 @@ PUSH AF, POP AF, SVCTX, LDCTX and SYSRT save and restore F in this same layout. 
 
 The set starts from the Z80 and adds extensions through the ED prefix, indexed by decode pages (microcode ROM `uop.mem` and control ROM `ctrl.mem`).
 
-**Extensions already implemented and verified in simulation**
+**Summary.** The instruction set has 245 mnemonics in 495 operand forms: the whole Z80 set (including the undocumented instructions IXH/IXL/IYH/IYL, SLL, IN F,(C), OUT (C),0 and the CB forms with copy to a register), the R800 multiplications (MULUB/MULUW) and the R8064 extensions: 16/32/64-bit arithmetic, logic, shifts and rotations, compare, bit operations, loads with 64-bit absolute addresses and 16-bit displacements (QIX/QIY + dd), push/pop, 16/32/64-bit jumps, calls and returns (absolute, relative, through a register, conditional), multiply and divide, atomics (CAS, XCHG), port I/O by size, control registers, MMU and cache control, privilege and system calls, context save/load and the 80-bit FPU. The size is in the mnemonic: B = 8, W = 16, L = 32, Q = 64 bits.
+
+- **Complete list:** Appendix C (generated from the assembler's instruction table, which is checked against the decode ROMs of the RTL): syntax, encoding, length, instruction id and measured clocks.
+- **Measured timing:** Appendix D (REV48, native mode), confirmed on the board.
+- **Descriptions:** Appendix A (operation, flags, binary encoding). **Tables by group:** Appendix B.
+
+**Build options.** In the cartridge build (`R8064_NOFPU`, `R8064_NO_MD64`) the FPU instructions and MLTSQ/MLTUQ/DIVSQ/DIVUQ do not exist: they raise cause 7 with CR14.TE = 1, otherwise they execute as a NOP of their own length.
+
+**Encoding notes**
 
 - **ED 26 family — CPL/NEG by size.** Third byte: size in \[7:6\] and register `rr` as in the table of section 4.
   - CPL x = `size,001,x` (register in \[2:0\]); NEG x = `size,x,001` (register in \[5:3\]).
@@ -202,7 +215,7 @@ The set starts from the Z80 and adds extensions through the ED prefix, indexed b
 
 **Known limitation.** NEGB writes the main AX and ignores the `swap_af` swap, as already happens in IN A,(C) and LD A,I.
 
-The detailed description of each instruction is in Appendix A, and the complete tables with binary encoding, bytes and timing are in Appendix B.
+The detailed description of each instruction is in Appendix A, the tables by group in Appendix B, the complete list with encodings in Appendix C and the measured timing in Appendix D. The "R8064 T / R8064 W" columns of Appendices A and B come from the planning model (`ref/expected_cycles.csv`) and are superseded by Appendix D.
 
 ### 5.1 ED prefix opcode table
 
@@ -338,6 +351,48 @@ In the MFCR/MTCR encoding, operand n ranges from 0 to 31 and selects bank index 
 
 **Note.** The `timing_gov.v` RTL was adjusted to these constants (16 and 8 clocks per unit; 8 µs VDP pause = 458 clocks; 210-cycle refresh = 1680 clocks, 25-cycle duration = 200 clocks). The timing tests (`tb_gov`, `tb_mode`) were updated but have not yet been run.
 
+### 6.1 Native-mode instruction timing (measured, REV48)
+
+In native mode there is no governor: an instruction takes the clocks of the pipeline. Measured with code and data in the caches (Appendix D; 256 cases also measured on the Tang Nano 20K, identical):
+
+- **Decoder floor: 8 clocks per instruction.** The 4-phase decoder takes 8 clocks; every register/ALU instruction of any size (B, W, L, Q), immediate loads, bit operations, shifts and rotations, FENCE, ISYNC and the not-taken branches take exactly 8 clocks. The fetch of the next bytes overlaps the decode, so these instructions have **no wait clocks**.
+- **Memory waits** appear only where the core must stop for memory: a load waits 3 clocks for the data cache (loads take 11 clocks), a store takes 15 (absolute or indexed) or 11 (through a register); a taken jump or call restarts the fetch at the target (fetch wait of 3 to 5 clocks).
+- **Multi-cycle units:** multiply 16–21 clocks, divide 25–49, CAS 31–35, XCHG 27, SVCTX 180.
+- **Fractional values** (e.g. 17.12) are averages over 16 copies: the alignment of the code in the 32-byte cache line changes the fetch wait slightly.
+
+Summary by class (native mode, cartridge build, in cache):
+
+<!-- BEGIN TIMING_SUMMARY -->
+| Class | Cases | Total (avg) | Execution (avg) | Wait (avg) | Fastest | Slowest |
+| --- | --- | --- | --- | --- | --- | --- |
+| ALU 64-bit (1 cycle) | 54 | 8.00 | 8.00 | 0.00 | 8.00 | 8.00 |
+| Register/immediate | 6 | 8.00 | 8.00 | 0.00 | 8.00 | 8.00 |
+| ALU/bit (1 cycle) | 6 | 8.00 | 8.00 | 0.00 | 8.00 | 8.00 |
+| Control (CR) | 1 | 8.00 | 8.00 | 0.00 | 8.00 | 8.00 |
+| Barrier | 2 | 8.00 | 8.00 | 0.00 | 8.00 | 8.00 |
+| MMU | 1 | 8.00 | 8.00 | 0.00 | 8.00 | 8.00 |
+| Load | 9 | 11.00 | 8.00 | 3.00 | 11.00 | 11.00 |
+| Store | 12 | 14.00 | 11.00 | 3.00 | 11.00 | 15.00 |
+| Branch | 16 | 14.80 | 11.75 | 3.05 | 8.00 | 20.00 |
+| Push | 2 | 15.00 | 12.00 | 3.00 | 15.00 | 15.00 |
+| Pop | 2 | 16.00 | 13.00 | 3.00 | 16.00 | 16.00 |
+| Z80 ED instruction in native mode | 80 | 17.89 | 15.31 | 2.58 | 8.00 | 51.00 |
+| Multiplier in DSP 18x18 | 8 | 18.50 | 18.50 | 0.00 | 16.00 | 21.00 |
+| Call | 8 | 26.44 | 20.00 | 6.44 | 16.00 | 35.00 |
+| Return | 6 | 27.33 | 19.33 | 8.00 | 16.00 | 35.00 |
+| Atomic | 4 | 30.12 | 24.00 | 6.12 | 27.00 | 35.25 |
+| Iterative divider 1 bit/cycle | 6 | 39.12 | 39.12 | 0.00 | 25.00 | 49.00 |
+| Context | 1 | 180.00 | 132.00 | 48.00 | 180.00 | 180.00 |
+<!-- END TIMING_SUMMARY -->
+
+Typical values (clocks; ns at 57.375 MHz): register ALU 8 (139 ns); load 11 (192 ns); store 11–15; JPL/JPQ absolute 16.75; taken JR/JRW 17.12; CALL 27.75–31; RET 31 (return alone); PUSH 15, POP 16; DIVUL 49 (854 ns).
+
+**REV48 changes (wait reduction).** With the MMU off, fetch and data requests skip the TLB stage (2 clocks less per cache access), consecutive fetch requests are issued back to back, and the decoder starts with 4 bytes of the instruction window instead of waiting for the whole window. Compared with REV47: loads, branches, calls and returns are 12 % to 40 % faster; ALU instructions are unchanged (they were already at the decoder floor). A further step would need a pipelined decoder (below 8 clocks); not done.
+
+**Cache misses.** The values above assume hits. A miss fills a 32-byte line from the SDRAM (4 reads of 64 bits) and repeats the access; its cost depends on the open SDRAM page and on refresh, and has not been characterized yet.
+
+### 6.2 PLL
+
 **PLL in the board top.** With the 27 MHz crystal (SRC 0), the rPLL generates 57.375 MHz (REV26b), about 0.18% above the 57.2727 MHz target. As a result the internal Z80 (divider step 2^28, computed for 57.2727 MHz) runs near 3.586 MHz instead of 3.579545 MHz. With the 27 MHz crystal, 57.375 MHz is the best possible rPLL ratio (the exact 70/33 ratio would require a PFD below 3 MHz); the exact 57.2727 MHz clock only comes with SRC = 1 (external 3.579545 MHz), SRC = 2 (57.2727 MHz oscillator) or SRC = 3 (14.31818 MHz). The 0.18% error is accepted during bring-up. Decision for the final version: **to be defined**.
 
 ## 7. Memory
@@ -346,11 +401,11 @@ In the MFCR/MTCR encoding, operand n ranges from 0 to 31 and selects bank index 
 
 | Block | Characteristic |
 | --- | --- |
-| Instruction cache | 4 KB |
-| Data cache | 8 KB |
+| Instruction cache | 4 KB, direct-mapped, 128 lines of 32 bytes (4 × 64 bits) |
+| Data cache | 4 KB, direct-mapped, 32-byte lines, write-through with a 4-entry write buffer, no write allocate |
 | TLB | one for instructions and one for data |
 | Physical memory | 8 MB (64-bit word index with 20 bits = `p_addr[22:3]`) |
-| SDRAM | embedded in the Tang Nano 20K, 32 bits; `INIT_CYC` = 20000, `REF_INT` = 400 |
+| SDRAM | embedded in the Tang Nano 20K, 32 bits, 64 Mbit; CL = 2, BL = 2 (one 64-bit access = 2 words), open-page policy; `INIT_CYC` = 20000, `REF_INT` = 400; clock phase 270° (`SDR_PSDA` = 12) |
 
 **MMU.** With `mmu_en` = 0 the address passes straight through (low 32 bits). Translation faults raise an exception: cause in CR11, address in CR12, EPC in CR13; jump to the vector in CR09. The MMU control is in CR14–CR17 (ASID, table root, TLB flush and cache invalidation). Page table format and replacement policy: **to be defined**.
 
@@ -369,7 +424,7 @@ In the MFCR/MTCR encoding, operand n ranges from 0 to 31 and selects bank index 
 - **TLB:** the tag stores VA\[63:12\] (52 bits) and the leaf level; the comparison ignores the low bits according to the level. The flush by virtual address (CR16) compares all 64 bits.
 - **Cost:** +457 LUT4-eq in the board top (14,766 in total, 71.2%). Fmax with the 52-bit TLB comparators has not yet been measured.
 
-## Physical memory, MSX mapper, MegaRAM and MMU (REV41)
+### 7.1 Physical memory, MSX mapper, MegaRAM and MMU (REV41)
 
 **8 MB physical map.** The embedded SDRAM is 64 Mbit (8 MB). Each access is a 64-bit word; the word index has 20 bits (`p_addr[22:3]`). The system ROM is in BSRAM, outside these 8 MB.
 
@@ -422,13 +477,37 @@ Physical address = 400000h + {bank\[7:0\], address\[12:0\]}. The bank register i
 
 **Future 64-bit address access.** The MMU already translates 64-bit virtual addresses: CR14\[18:16\] = 0 Sv39 (default), 1 Sv48, 2 Sv57, 3 Sv64 (6 levels; the top level indexes VA\[63:57\], with no canonicity check); 4–7 reserved (every translation faults, cause 1). The TLB stores VA\[63:12\]. The PTE holds 56 bits of physical address, but the memory path (caches, arbiter, SDRAM controller) uses a 20-bit index and the embedded SDRAM is only 8 MB; going beyond requires widening these buses and an external memory. In the DMA the 64-bit access is only reserved: SRC/DST\[63:24\], CTRL\[21\] (VIRT) and CTRL\[62:32\] (high COUNT) must be zero, otherwise the channel ends with an error. A complete virtual version of the DMA was simulated and is kept outside the project (`.futuro` files).
 
-**SDRAM clock phase.** Parameter `SDR_PSDA` (default 4 = 90°, steps of 22.5°); it may need adjustment on the board.
+### 7.2 SDRAM interface on the board
+
+**Clock phase (measured, 2026-11-20).** The SDRAM clock is the rPLL output CLKOUTP, shifted by `SDR_PSDA` × 22.5° from the system clock. The SDRAM phase test (`rtl/r8064_sdtest_top.v`: the same `sdram_ctrl`, 57.375 MHz, 8,192 64-bit words written and read back for each of the 16 phases) gave:
+
+| SDR_PSDA (phase) | 0–6 (0°–135°) | 7 (157.5°) | 8–9 | 10–13 (225°–292.5°) | 14 | 15 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Words with errors (of 8,192) | all | 0 | all | **0** | 5,745 | all |
+
+The design uses **12 (270°)**, the middle of the error-free window. The former default 4 (90°) read every word one clock late (the low 32 bits returned the high 32 bits), so the core fetched wrong instruction bytes.
+
+**I/O standard.** The embedded SDRAM ports (`O_sdram_*`, `IO_sdram_dq`) have no `IO_LOC` but must be constrained as `LVCMOS33`: Gowin defaults unconstrained ports to LVCMOS18, which locks their bank at 1.8 V and conflicts with the 3.3 V pins of the same bank (error CT1136 with clk27 on pin 4).
+
+**Part number.** The Tang Nano 20K uses the GW2AR-LV18QN88**C8/I7** (with the SDRAM). The variant GW2AR-LV18QN88**P**C8/I7 has a 1.8 V PSRAM instead and must not be selected in Gowin.
 
 ## 8. Interfaces
 
 **MSX bus and I/O.** The SoC exposes I/O (`io_*`), external I/O (`io_x_*`), port `port_c`, FM port (`fm_*`) and FIFOs (base `E8H`, with `fifo_irq` and `fifo_rst`). In the current board top the MSX bus inputs are tied to 0; there is not yet a way to load a program beyond the `.mem` ROMs of the package.
 
-**Board top pins (QN88, 3.3 V)**
+**Pins of the timing bench (`r8064_bench_top`, bare Tang Nano 20K, QN88, 3.3 V)**
+
+| Signal | Pin | Function |
+| --- | --- | --- |
+| clk27 | 4 | 27 MHz crystal |
+| btn\_rst | 88 | KEY1: a level change restarts the bench |
+| uart\_tx | 69 | UART to the board's USB serial (BL616), 115200 8N1 |
+| uart\_rx | 70 | not used |
+| led\[5:0\] | 15–20 | active low: PLL locked, clock blink, UART activity, SDRAM ready, KEY1, crystal blink |
+
+The cartridge top (`r8064_cart_top`, V9968\_Cartridge board) uses the 14.31818 MHz clock of the board (pin 80, SRC = 3) and the slot pins of `pnr/tangnano20k_cart.cst`.
+
+**Board top pins (`r8064_board_top`, earlier bring-up top, QN88, 3.3 V)**
 
 | Signal | Pin | Function |
 | --- | --- | --- |
@@ -602,6 +681,16 @@ WAITD:  IN   A,(PORT_ST)
 | 98H to 9BH | VDP: in R800 mode there is an 8 µs pause between accesses | `timing_gov` |
 | E8H (FIFO\_BASE) | FIFOs: base + 0 data, base + 1 status/control; 4-port range, details **to be defined** | `msx_if` |
 
+### 8.2 Software
+
+| Program | Where | Function |
+| --- | --- | --- |
+| Monitor | `modulos/13_soc/fw/monitor.asm` (boot image `monitor_l0..7.hex`, copied to SDRAM at reset) | Resident firmware of the R8064: protocol layer 1 (HELLO, PING, POKE, PEEK, CRC, EXEC, events) |
+| R8064.COM | `modulos/13_soc/msx/` | MSX-DOS tool: detect, send/get files, dump, execute and run programs ([user guide](R8064_MSX_Software.md)) |
+| r8064io | `modulos/13_soc/msx/r8064io.asm` | Z80 driver to include in MSX programs (same protocol) |
+| R8064AS.COM | `modulos/13_soc/msx/asm/` | R8064 assembler that runs on the MSX: full instruction set, listing, symbols, send and run ([guide](R8064_Assembler.md)); `asmref.py` is the same assembler for the PC |
+| Timing bench | `modulos/13_soc/bench/` | Firmware and bitstream that measure the instruction timing on a bare Tang Nano 20K (section 11.1) |
+
 ## 9. Interrupts and exceptions
 
 - **IRQ.** SoC input `irq`, in addition to `fifo_irq` from the FIFOs. The governor has its own timing page for IRQ ("tempo\_irq" test passed).
@@ -634,6 +723,10 @@ In native mode, physical addressing is free across all 8 MB (via the MMU). The M
 **DMA and 64 bits (REV40).** The DMA implements neither virtual nor 64-bit addressing on the chip; it only reserves the space: SRC/DST\[63:24\], CTRL\[21\] (VIRT) and CTRL\[62:32\] (high COUNT) must be zero. A complete virtual version (own MMU, Sv39..Sv64, \~2,600 LUT4-eq) was simulated and is kept outside the project for future use.
 
 ## 10. FPGA resources and performance
+
+**Gowin EDA (current flow).** Timing bench REV48 (the cartridge core with the bench I/O instead of the slot interface): logic 12,574 of 20,736 (61%: 10,132 LUT, 1,488 ALU, 159 RAM16), 6,098 registers (39%), 46 of 46 BSRAM (8 SP, 12 SDPB, 14 pROM, 12 pROMX9), 4 DSP; clock 57.375 MHz, Fmax 58.51 MHz, no setup or hold violations. Cartridge REV47: 12,188 (59%), 5,600 FF, Fmax 59.94 MHz at 57.27 MHz. The ROMs whose width is not a multiple of 4 bits (`uop` 107 bits, `rom_ed_b` 10 bits) are given to Gowin as `$readmemb` files with the exact width (the packaging scripts convert them): with the hex files Gowin reported EX2526 and did not load them as the simulators do.
+
+The figures below are from the earlier yosys/nextpnr flow.
 
 **Board top (GW2AR-18, with CPLB/NEGB), yosys + nextpnr synthesis**
 
@@ -699,21 +792,41 @@ Measured with Yosys `synth_gowin`, board top (SRC 0, 57.28 MHz), same source and
 
 **Verified**
 
-- Simulation with iverilog/vvp: `rodar_tudo` suite (includes tempo\_irq, `tb_cplneg` for CPL/NEG) and `rodar_exc`, all passed.
-- yosys synthesis with no errors; place-and-route with 4 seeds passed on the board top.
-- Bitstream generated (`gowin_pack`).
+- Simulation with iverilog/vvp: `rodar_tudo` suite (includes tempo\_irq, `tb_cplneg` for CPL/NEG) and `rodar_exc`; SoC regression (exceptions 1–14, MMU 64-bit and 8 MB, SoC + DMA, channel 3, native mapper and MegaRAM, DMA window, slot interface, cartridge + monitor), all passed with REV48.
+- The whole timing bench (SoC, SDRAM model, firmware) also in Verilator, with every register starting at 0 (2-state), identical to iverilog.
+- MSX software: R8064.COM (17 cases against the cartridge model), R8064AS (1,527 Z80 forms against sjasmplus, every R8064 extension against the decode ROMs, 15,975 lines cross-checked between the MSX program and the PC assembler).
+- Gowin EDA synthesis, place and route and timing (TNS 0) of the timing bench REV48 and of the cartridge REV47.
+- **Hardware (Tang Nano 20K, 2026-11-20):** PLL, embedded SDRAM (phase sweep, section 7.2), boot from the BSRAM image, native mode, self test (memory, stack, CALL, ED page) and 256 of 256 instruction timings equal to the simulation (11.1).
+
+### 11.1 Timing bench (hardware)
+
+`r8064_bench_top` = SoC + bench I/O for the bare board: UART on the USB serial, a counter that follows the core PC, and a SoC reset after each run. The firmware (`bench/gen_bench.py`) rebuilds each loop of the simulation at 3C1Eh (the same address modulo the 1 KB layout used in simulation), runs it with and without the instruction and prints clocks per instruction next to the simulation value. Result of the first run (`docs/timings/bench_tang20k_REV48_2026-11-20.txt`): `selftest: M=5A W=1234 D=2000 C=31 S=ABCD R K X=1234 E=7788` and `Done: 256 OK, 0 different`. The hardware also prints `FPGA up`, a periodic status line (PC, run, SDRAM ready, faults) and the first 48 PC values after reset, which located the SDRAM phase problem.
+
+Problems found on the board and fixed (none showed in simulation):
+
+1. SDRAM ports defaulted to LVCMOS18 (Gowin): constrained as LVCMOS33.
+2. Microcode and ED decoder ROMs with widths of 107 and 10 bits: given to Gowin as exact-width binary files.
+3. SDRAM clock phase 90°: every read one clock late; now 270° (measured window 225°–292.5°).
+4. Boot image file names built by arithmetic in `r8064_xbuf`: now literal per lane (precaution; Gowin gives no message).
 
 **Open items**
 
-- Flash the bitstream to the board (SRAM first) and record the behavior: PLL lock, SDRAM init, heartbeat.
-- Confirm or discard the *hold* violation in the BSRAM.
-- Re-run the module 09 regression after the latest ROM changes.
+- Cartridge REV48: Gowin build and test on the MSX (slot interface, monitor, R8064.COM, R8064AS /G).
+- Z80/R800 modes with the MSX timing on the real machine.
+- Cache-miss timing on the board; DMA and MMU on the board.
 - NEGB ignores `swap_af`.
-- Run `rodar_tudo.bat` to validate `timing_gov.v` adjusted to 57.28 MHz and the updated testbenches.
-- The `gowin_pack` step inside `gerar_bitstream_board.bat` fails; the direct command works.
 - Sections with "to be defined" items: programming model, interfaces, interrupts. The item in section 15.7 (return to user mode) is also open.
 
 ## 12. Bring-up and flashing
+
+**Gowin EDA flow (current).** The packaging scripts write one Verilog file with every module, the build macros and absolute ROM paths: `modulos/13_soc/gowin/make_gowin_pkg.py` (cartridge, `r8064_cart_all.v`) and `make_bench_pkg.py` (timing bench, `r8064_bench_all.v`).
+
+1. New FPGA project, device **GW2AR-LV18QN88C8/I7**, version C (not the "P" variant). Add the `.v`, `.cst` and `.sdc` of the package; top module `r8064_cart_top` or `r8064_bench_top`; Verilog SystemVerilog 2017; dual-purpose pins MSPI, SSPI, READY, DONE and RECONFIG\_N as regular I/O. Run All. Gowin copies the files into the project folder: replace them there after regenerating the package.
+2. Programmer: *SRAM Mode / SRAM Program* (temporary) or *External Flash Mode / exFlash Erase, Program* with *Generic Flash* (permanent). The board must not be opened by a terminal program while programming ("No USB Cable Connection").
+3. Timing bench: open the board's COM port at 115200 8N1 (the Tang creates two COM ports; only one is the FPGA UART). After programming the flash, unplug and plug the board once.
+4. SDRAM phase test (`r8064_sdtest_top`): one line per phase, to re-measure `SDR_PSDA` on another board.
+
+**Earlier yosys/nextpnr flow (board top).**
 
 1. Generate and flash: `pnr\gerar_bitstream_board.bat 0 3 gravar` (SRC = 0: the board's 27 MHz crystal; seed 3; writes to SRAM). Without `gravar`, it only generates `pnr\r8064_board_src0_s3.fs`. Permanent flashing: `openFPGALoader -b tangnano20k -f <file>.fs`. If the `gowin_pack` step fails inside the `.bat`, run `gowin_pack -d GW2A-18C -o <file>.fs board_pnr.json` directly in the OSS CAD Suite terminal.
 2. Observation outputs (QN88, 3.3 V):
@@ -723,10 +836,10 @@ Measured with Yosys `synth_gowin`, board top (SRC 0, 57.28 MHz), same source and
    - `dbg_hb` (pin 81) = heartbeat, approximately 1.7 Hz at 57.3 MHz.
 3. Expected: lock right after power-up; init a few ms later (INIT\_CYC = 20000 clocks, about 349 µs plus the sequence); heartbeat blinking.
 4. Button (pin 88, active high) = SoC reset, synchronized; the PLL is not restarted.
-5. If `dbg_init` does not come up: adjust `SDR_PSDA` in `r8064_board_top` (steps of 22.5°; default 4 = 90°); try 0, 2, 4, 6, 8. Each value requires a new bitstream.
+5. `SDR_PSDA` is now 12 (270°), measured with the SDRAM phase test (section 7.2).
 6. External clock (SRC 1, 2, 3): first check the signal and amplitude (LVCMOS33) on pins 13, 10 and 80.
 
-Current limit: the MSX bus (`io_*`, `fm_*`) has its inputs at 0; there is no way to load a program beyond the package's `.mem` ROMs. Behavior in hardware has not yet been observed.
+In this earlier top the MSX bus (`io_*`, `fm_*`) has its inputs at 0; programs are loaded through the boot image or, in the cartridge, by the MSX (R8064.COM).
 
 ## 13. Electrical characteristics and limits
 
@@ -736,7 +849,8 @@ Current limit: the MSX bus (`io_*`, `fm_*`) has its inputs at 0; there is no way
 | I/O level | LVCMOS33 (3.3 V) |
 | Input clock | 27 MHz crystal (pin 4); optional external (pins 13, 10, 80) |
 | System clock | 57.2727 MHz target; rPLL generates 57.375 MHz with the 27 MHz crystal |
-| Post-routing Fmax (board top) | 71.2 to 76.2 MHz (4 seeds; all 4 pass at 57.28 MHz); pre-silicon estimate |
+| Fmax (Gowin EDA, REV48 timing bench) | 58.51 MHz at 57.375 MHz (no setup or hold violations); confirmed by the board run |
+| SDRAM clock phase | 270° (`SDR_PSDA` = 12); error-free window measured 225°–292.5° |
 | Physical memory | 8 MB (embedded 32-bit SDRAM) |
 | Supply voltages, consumption, temperature, ESD | MSX slot interface: see below; other items to be defined (see the Gowin and board datasheets) |
 
@@ -770,6 +884,9 @@ Source: `13_soc/resultado_soc.txt`.
 | REV32 | 2026-11-10 | CPLB/NEGB; ED 26 family re-encoded |
 | unnumbered | 2026-11-11 | time governor adjusted to 57.28 MHz (16 and 8 clocks per unit); tests not yet run |
 | REV43 | 2026-11-16 | core cleanup (unused logic removed); 32-bit mnemonics renamed E to L (INL, OUTL, CALLL, ...); INW/OUTW; privilege model in CR18; DMA moved to CR19 to CR30 |
+| REV47 | 2026-11-17 | area and timing reductions for the Tang Nano 20K; cartridge build macros; Gowin EDA flow; Version 0.0 Alpha |
+| REV48 | 2026-11-19 | fewer memory waits: MMU-off bypass, back-to-back fetch, early decode capture |
+| — | 2026-11-20 | first run on the Tang Nano 20K; SDRAM phase 270°, LVCMOS33 SDRAM ports, exact-width ROM files; Preliminary 2026 datasheet |
 
 **REV33 (2026-11-11):** opcodes EXINI, MFCR, MTCR and bank prefixes remapped from `ED 09` through `ED 0E` to `ED B4`, `B5`, `B6`, `BD`, `BE` and `BF`, freeing `ED 08~0F` for `JP USER`. Superseded: this remapping was not kept (it collided with JP USER, moved to ED B4\~B7 in REV34); the RTL has always used ED 09, 0A, 0B, 0C, 0D, 0E for these instructions.
 
@@ -798,6 +915,26 @@ Source: `13_soc/resultado_soc.txt`.
 **REV45 (2026-11-14):** MSX ↔ R8064 transfer protocol (proposal, to be approved): ports 0Bh (status and command), 0Ch (data) and 0Dh (length), window 8000h–BFFFh with ownership controlled by the WINDOW bit, messages of up to 2,048 bytes and 16 KB blocks, commands PING, HELLO, RESET, WIN\_PUT, WIN\_GET, POKE, PEEK, EXEC, STOP, CRC and EVT, no /WAIT and optional /INT. The hardware and firmware changes are listed in chapter 8. Pending: approval of the protocol, implementation (port decoding, status bits, BSRAM buffer, core access to the buffer, monitor) and confirmation that ports 0Bh to 0Dh are free on the MSX.
 
 **REV46 (2026-11-14):** MSX ↔ R8064 protocol approved and implemented in RTL: ports 0Bh to 0Dh (`r8064_slot_dec`), WINDOW and ERROR bits, 16 KB buffer (`r8064_xbuf`, 8 BSRAM) and DMA with an address aperture at bit 23 of SRC/DST (buffer ↔ SDRAM in one transfer, about 20 clocks per word in REV46; 4 to 7 since REV43b). EXEC mode codes: 00h Z80 ROM, 01h Z80 DRAM, 02h R800 ROM, 03h R800 DRAM, 04h native; argument in HL, return value in HL. The H flag of shifts and rotations (including RLCA, RLA, RRCA, RRA, RLD and RRD) is cleared, as on the classic Z80 (this is what the RTL already did; the documentation said "undefined"). The DMA now rejects SRC/DST with bits \[63:24\] nonzero (before: \[63:23\]). Simulation: the new `tb_dma_win` testbench (status, signature, 16 KB through the slot, START/DONE, buffer → SDRAM and SDRAM → buffer with 2,048 words, offset in the buffer, DMA waiting without the window, 6 error cases, LEN pointer, ERROR, FIFO, restart) passed; the SoC regression (exceptions ×8, MMU 64-bit, SoC, SoC+DMA, channel 3, MMU 8 MB, native mapper, DMA) and the system/FIFO regression passed (`tb_fifo` now expects WINDOW = 1 in the status). PnR with the buffer wired: 44 of 46 BSRAM and 57.28 MHz is met on 3 of 4 seeds (best: 77.8 MHz). Pending: monitor, slot pins and hardware.
+
+### 14.1 Core update notes (2026-11-16, REV43)
+
+**Cleanup.** Everything the core no longer used was removed: the "unimplemented opcode" micro-op (bit 103 of the micro-op ROM), the second dead field (bit 64), the ALU copies that were no longer instantiated, and the stale test cases that exercised them. The micro-op ROM is 107 bits wide (bit 106 = FPU). The illegal-opcode and division-error exceptions are now gated only by TE (CR14 bit 2).
+
+**Renamed mnemonics.** The 32-bit size letter is now **L** instead of E: INL, OUTL, CALLL and so on. Sizes are B, W, L and Q. The register names EA and QA, and the internal letters used by the ROM generators, are unchanged. The renamed mnemonics are applied in the instruction tables, the reference files (`instr_ids.csv`, `expected_cycles.csv`), the generators, the testbenches and the project notes.
+
+**INW/OUTW.** The 16-bit port instructions transfer their bytes in sequence on port C, with the lane carried in the micro-op field `ioff`. They are validated in the core regressions.
+
+**Privilege model.** CR18 = {PU, U}; SYSRT restores the mode from PU, IFF1 from IFF2 and the PC from CR13. Causes: 0 = interrupt in user mode, 5 = SCALL, 6 = division error, 7 = illegal opcode (aux 0) or privileged instruction (aux 2).
+
+**Control registers.** CR00 to CR07 and CR31 are free. Because CR18 now holds the privilege mode, the DMA registers moved from CR18..CR29 to CR19..CR30.
+
+**Status.** The core, mode governor, r64 and Z80 regressions pass. Fmax has not been measured after the cleanup (run the PnR script on the board machine). REV43b: the new exceptions (privilege, SCALL, user-mode interrupt, illegal ED with TE) pass in Z80 and R800 modes (tb\_soc\_exc scenarios 1 to 14); the division-error exception is tested only in native mode (the SoC has no mul/div); by the author's decision (2026-11-16) it will not be implemented in the legacy modes. The SoC testbenches were moved to the current CR numbering (DMA = CR19 to CR30) and pass, including tb\_soc\_nat (4 MB mapper + MegaRAM at 400000h, ASCII8 read-only protection). The "PUSH BC pushes AX" observation was a testbench error (ldrr(7,...) loads AX, and four testbenches used the toy uop ROM, which has no real PUSH); the core was correct. REV43d: r8064\_msx\_sys.v had lost the 4 MB mapper, the MegaRAM at 400000h, the native-mode mapper and the ASCII8 protection described in this datasheet; all three were restored and the SoC and module 10 regressions pass again. DMA: no idle states between words (buffer → SDRAM 14,694 → 8,472 clocks per 2,048 words; SDRAM → buffer 21,007 → 14,750); boot sequencer (BOOT\_WORDS) copies the buffer image to SDRAM before the core leaves reset. FLN error reduced from 8.9 to 1.9 ulp (LN2 split in two constants). Without the physical board, what remains is PnR/Fmax (rodar\_pnr\_board.bat in 13\_soc/pnr) while the cartridge top-level for the MSX slot (r8064\_cart\_top + r8064\_slot\_if, REV43e) is written and simulated: Z80 I/O cycles on ports 0Bh to 0Dh, PING/HELLO with the real monitor, INT and the slot /RESET. Target: the V9968\_Cartridge board (Tang Nano 20K + 3 SN74LVC8T245, 4th revision), which wires only A0-A7, D0-D7, /IORQ, /RD, /WR, /RESET, WAIT, INT and BUSDIR to the FPGA; therefore only protocol layer 1 (FIFOs, status, length) is available, not the 16 KB window (which needs /SLTSL, A8-A15 and /MREQ). Pin map: 13\_soc/pnr/tangnano20k\_cart.cst; PnR: rodar\_pnr\_cart.bat.
+
+**REV47 (2026-11-17):** Tang Nano 20K cartridge build (`R8064_NOFPU`, `R8064_DMA2`, `R8064_AW32`, `R8064_NO_MD64`), area and timing reductions, Gowin EDA single-file package (59 % logic, Fmax 59.94 MHz). MSX software: R8064.COM and the r8064io driver (protocol layer 1, ports 0Bh–0Dh), the R8064AS assembler for MSX.
+
+**REV48 (2026-11-19):** memory wait reduction. A: with the MMU off the fetch and data requests skip the TLB stage and fetch requests are issued back to back; B: the decoder captures the instruction window with 4 bytes and refreshes it while waiting. Fetch latency 5 → 3 clocks, data hold 4.7 → 2.8 clocks; loads, branches, calls and returns 12 % to 40 % faster (Appendix D). New measurement bench in simulation (`sim/tb_meas.v`, `sim/meas/gen_meas.py`) with the split into execution, fetch wait and data wait.
+
+**Board bring-up (2026-11-20):** timing bench and SDRAM phase test for the bare board; four hardware problems found and fixed (section 11.1); 256 of 256 instruction timings on the board equal to the simulation. The cartridge package was regenerated with the same fixes.
 
 ## 15. Multitasking
 
@@ -959,6 +1096,8 @@ This section is a design analysis. None of it is in the RTL, the tests or the ve
 ### Appendix A — Instruction Descriptions
 
 Each entry follows the format of the Zilog Z380 manual: title, syntax, operation, description, flags and a table of addressing modes (syntax), instruction format (opcode) and execution time (T-states Z80 / Z80+M1 / R800 / R800+Wait / R8064 / R8064 waits; "–" = not yet defined).
+
+> **Timing columns.** The Z80 and R800 columns are the times the governor reproduces in those modes. The "R8064 T" and "R8064 W" columns are the early planning model and **do not** describe the hardware: the measured native-mode clocks (execution and waits) are in Appendix D, and the complete list of forms with their encodings in Appendix C.
 
 #### ADC — Add with Carry
 
@@ -1976,16 +2115,805 @@ The FPU works on a stack of eight 80-bit registers (ST0–ST7), with constant lo
 | FSTSW | 11 101 101 · 00 010 100 / ED 14 | – | – | – | – | 1 | 4 |
 | FINIT | 11 101 101 · 10 000 010 / ED 82 | – | – | – | – | 4 | 4 |
 
-## 16. Core update (2026-11-16, REV43)
+### Appendix C — Complete instruction list
 
-**Cleanup.** Everything the core no longer used was removed: the "unimplemented opcode" micro-op (bit 103 of the micro-op ROM), the second dead field (bit 64), the ALU copies that were no longer instantiated, and the stale test cases that exercised them. The micro-op ROM is 107 bits wide (bit 106 = FPU). The illegal-opcode and division-error exceptions are now gated only by TE (CR14 bit 2).
+<!-- BEGIN APPENDIX_C -->
+Generated from `modulos/13_soc/msx/asm/r8isa.py` by `modulos/13_soc/sim/meas/gen_doc_tables.py`: 245 mnemonics, 495 operand forms (249 Z80/R800 base forms and 246 R8064 extension forms). This is the set accepted by the R8064AS assembler; the extension forms are checked against the decode ROMs of the RTL (`verify_rom.py`) and the base set against sjasmplus (`verify_z80.py`).
 
-**Renamed mnemonics.** The 32-bit size letter is now **L** instead of E: INL, OUTL, CALLL and so on. Sizes are B, W, L and Q. The register names EA and QA, and the internal letters used by the ROM generators, are unchanged. The renamed mnemonics are applied in the instruction tables, the reference files (`instr_ids.csv`, `expected_cycles.csv`), the generators, the testbenches and the project notes.
+Operand codes in the encoding: **a** = code of the 1st operand, **b** = of the 2nd, **c** = of the 3rd (`a·8` = shifted 3 bits). Register codes: r = B 0, C 1, D 2, E 3, H 4, L 5, A 7; ss = BC 0, DE 1, HL 2, SP 3; qq = BC, DE, HL, AF; rr (R8064) = BC 0, DE 2, IY 3, HL 4, IX 5, AX 7 (and N0–N7, BC', DE', HL', AX' through the bank prefixes, section 4.2); p = IXH/IXL/IYH/IYL; xy = IX (DD) or IY (FD); cc = NZ 0, Z 1, NC 2, C 3, PO 4, PE 5, P 6, M 7; uu = BC, DE, HL, AX (0–3). `n×8` = 8-byte immediate or address, little-endian. Bytes = length without a bank prefix (ED 0B/0D/0E adds 2).
 
-**INW/OUTW.** The 16-bit port instructions transfer their bytes in sequence on port C, with the lane carried in the micro-op field `ioff`. They are validated in the core regressions.
+**Native clocks** = measured clocks per instruction in native mode with code and data in the caches (REV48, Appendix D); a value marked † was measured in simulation only (not in the cartridge build). "–" = not measured (system, FPU and removed instructions; see Appendix D).
 
-**Privilege model.** CR18 = {PU, U}; SYSRT restores the mode from PU, IFF1 from IFF2 and the PC from CR13. Causes: 0 = interrupt in user mode, 5 = SCALL, 6 = division error, 7 = illegal opcode (aux 0) or privileged instruction (aux 2).
+### C.1 R8064 extensions
 
-**Control registers.** CR00 to CR07 and CR31 are free. Because CR18 now holds the privilege mode, the DMA registers moved from CR18..CR29 to CR19..CR30.
+| Mnemonic | Syntax | Encoding (hex) | Bytes | id | Native clocks |
+| --- | --- | --- | --- | --- | --- |
+| ADCL | `ADCL rr, rr` | ED 3F 40+a·8+b | 3 | 2 | 8.00 |
+| ADCQ | `ADCQ rr, rr` | ED 3F 80+a·8+b | 3 | 3 | 8.00 |
+| ADCW | `ADCW rr, rr` | ED 3F 00+a·8+b | 3 | 1 | 8.00 |
+| ADDL | `ADDL rr, rr` | ED 3E 40+a·8+b | 3 | 5 | 8.00 |
+| ADDQ | `ADDQ rr, rr` | ED 3E 80+a·8+b | 3 | 6 | 8.00 |
+| ADDW | `ADDW rr, rr` | ED 3E 00+a·8+b | 3 | 4 | 8.00 |
+| ANDL | `ANDL rr, rr` | ED 38 40+a·8+b | 3 | 108 | 8.00 |
+| ANDQ | `ANDQ rr, rr` | ED 38 80+a·8+b | 3 | 109 | 8.00 |
+| ANDW | `ANDW rr, rr` | ED 38 00+a·8+b | 3 | 107 | 8.00 |
+| BITL | `BITL b, rr` | ED 33 00+a·8+b | 3 | 127 | 8.00 |
+| BITW | `BITW b, rr` | ED 30 00+a·8+b | 3 | 126 | 8.00 |
+| CALLL | `CALLL (rr)` | ED 37 08+a | 3 | 116 | 31.00 |
+| CALLL | `CALLL cc, (rr)` | ED 37 C0+a·8+b | 3 | 117 | 35.00 taken / 16.00 not taken |
+| CALLL | `CALLL nnnn` | ED 35 nnnn | 6 | 118 | 27.75 |
+| CALLQ | `CALLQ (rr)` | ED 36 08+a | 3 | 119 | 27.00 |
+| CALLQ | `CALLQ cc, (rr)` | ED 36 C0+a·8+b | 3 | 120 | 31.00 taken / 16.00 not taken |
+| CALLQ | `CALLQ nnnnnnnn` | ED 34 n×8 | 10 | 121 | 27.75 |
+| CASL | `CASL (rr), rr` | ED AD 00+a·8+b | 3 | 189 | 35.25 |
+| CASQ | `CASQ (rr), rr` | ED AD 40+a·8+b | 3 | 190 | 31.25 |
+| CMPL | `CMPL rr, rr` | ED 02 40+a·8+b | 3 | 38 | 8.00 |
+| CMPQ | `CMPQ rr, rr` | ED 02 80+a·8+b | 3 | 39 | 8.00 |
+| CMPW | `CMPW rr, rr` | ED 02 00+a·8+b | 3 | 37 | 8.00 |
+| CPL | `CPL rr, rr` | ED 02 40+a·8+b | 3 | 38 | 8.00 |
+| CPLB | `CPLB rr` | ED 26 08+a | 3 | 294 | – |
+| CPLL | `CPLL rr` | ED 26 88+a | 3 | 170 | 8.00 |
+| CPLQ | `CPLQ rr` | ED 26 C8+a | 3 | 171 | 8.00 |
+| CPLW | `CPLW rr` | ED 26 48+a | 3 | 169 | 8.00 |
+| CPQ | `CPQ rr, rr` | ED 02 80+a·8+b | 3 | 39 | 8.00 |
+| CPW | `CPW rr, rr` | ED 02 00+a·8+b | 3 | 37 | 8.00 |
+| DECL | `DECL rr` | ED 3C 41+a·8 | 3 | 8 | 8.00 |
+| DECQ | `DECQ rr` | ED 3C 81+a·8 | 3 | 9 | 8.00 |
+| DECW | `DECW rr` | ED 3C 01+a·8 | 3 | 7 | 8.00 |
+| DIVSB | `DIVSB AX, r` | ED 3D 08+b | 3 | 10 | 28.00 |
+| DIVSB | `DIVSB r` | ED 3D 08+a | 3 | 10 | 28.00 |
+| DIVSL | `DIVSL AX, rr` | ED 3D 88+b | 3 | 12 | 47.31 |
+| DIVSL | `DIVSL rr` | ED 3D 88+a | 3 | 12 | 47.31 |
+| DIVSQ | `DIVSQ QDE:QAX, rr` | ED 3D C8+b | 3 | 13 | 78.31 † |
+| DIVSQ | `DIVSQ rr` | ED 3D C8+a | 3 | 13 | 78.31 † |
+| DIVSW | `DIVSW DX:AX, rr` | ED 3D 48+b | 3 | 11 | 44.44 |
+| DIVSW | `DIVSW rr` | ED 3D 48+a | 3 | 11 | 44.44 |
+| DIVUB | `DIVUB AX, r` | ED 3C 08+b | 3 | 14 | 25.00 |
+| DIVUB | `DIVUB r` | ED 3C 08+a | 3 | 14 | 25.00 |
+| DIVUL | `DIVUL AX, rr` | ED 3C 88+b | 3 | 16 | 49.00 |
+| DIVUL | `DIVUL rr` | ED 3C 88+a | 3 | 16 | 49.00 |
+| DIVUQ | `DIVUQ QDE:QAX, rr` | ED 3C C8+b | 3 | 17 | 86.00 † |
+| DIVUQ | `DIVUQ rr` | ED 3C C8+a | 3 | 17 | 86.00 † |
+| DIVUW | `DIVUW DX:AX, rr` | ED 3C 48+b | 3 | 15 | 41.00 |
+| DIVUW | `DIVUW rr` | ED 3C 48+a | 3 | 15 | 41.00 |
+| DJNZW | `DJNZW ee` | ED 2E ee | 4 | 132 | 20.00 |
+| EXINI | `EXINI` | ED 09 | 2 | 291 | – |
+| FABS | `FABS` | ED BC 41 | 3 | 201 | – |
+| FADD | `FADD ST0, STn` | ED BC 00+b | 3 | 195 | – |
+| FADD | `FADD STn` | ED BC 00+a | 3 | 195 | – |
+| FCHS | `FCHS` | ED BC 40 | 3 | 200 | – |
+| FCOM | `FCOM STn` | ED BC 20+a | 3 | 199 | – |
+| FCOPP | `FCOPP` | ED 80 | 2 | 40 | – |
+| FCOPP | `FCOPP ST0, ST1` | ED 80 | 2 | 40 | – |
+| FCOS | `FCOS` | ED 81 | 2 | 41 | – |
+| FCOS | `FCOS ST0` | ED 81 | 2 | 41 | – |
+| FDIV | `FDIV ST0, STn` | ED 88+b | 2 | 42 | – |
+| FDIV | `FDIV STn` | ED 88+a | 2 | 42 | – |
+| FENCE | `FENCE` | ED A5 | 2 | 184 | 8.00 |
+| FILD | `FILD (HL)` | ED BC 48 | 3 | 204 | – |
+| FINIT | `FINIT` | ED 82 | 2 | 43 | – |
+| FIST | `FIST` | ED 83 | 2 | 44 | – |
+| FISTP | `FISTP` | ED 84 | 2 | 45 | – |
+| FLD | `FLD STn` | ED BC 10+a | 3 | 197 | – |
+| FLD1 | `FLD1` | ED BC 42 | 3 | 202 | – |
+| FLD32 | `FLD32 (HL)` | ED BC 49 | 3 | 205 | – |
+| FLD64 | `FLD64 (HL)` | ED BC 4A | 3 | 206 | – |
+| FLD80 | `FLD80 (HL)` | ED 85 | 2 | 46 | – |
+| FLDL2 | `FLDL2` | ED 86 | 2 | 47 | – |
+| FLDLG | `FLDLG` | ED 87 | 2 | 48 | – |
+| FLDLN | `FLDLN` | ED 90 | 2 | 49 | – |
+| FLDPI | `FLDPI` | ED 91 | 2 | 50 | – |
+| FLDZ | `FLDZ` | ED 92 | 2 | 51 | – |
+| FLN | `FLN` | ED 93 | 2 | 52 | – |
+| FLN | `FLN ST0` | ED 93 | 2 | 52 | – |
+| FLUSH | `FLUSH` | ED 94 | 2 | 53 | – |
+| FMUL | `FMUL ST0, STn` | ED 98+b | 2 | 54 | – |
+| FMUL | `FMUL STn` | ED 98+a | 2 | 54 | – |
+| FREM | `FREM` | ED 95 | 2 | 55 | – |
+| FREM1 | `FREM1` | ED 96 | 2 | 56 | – |
+| FRINT | `FRINT` | ED BC 43 | 3 | 203 | – |
+| FRSTR | `FRSTR (rr)` | ED AF 48+a | 3 | 194 | – |
+| FSAVE | `FSAVE (rr)` | ED AF 08+a | 3 | 193 | – |
+| FSIN | `FSIN` | ED 97 | 2 | 57 | – |
+| FSIN | `FSIN ST0` | ED 97 | 2 | 57 | – |
+| FSINC | `FSINC` | ED 10 | 2 | 58 | – |
+| FSINC | `FSINC ST0` | ED 10 | 2 | 58 | – |
+| FSP32 | `FSP32 (HL)` | ED BC 4C | 3 | 208 | – |
+| FSP64 | `FSP64 (HL)` | ED BC 4E | 3 | 210 | – |
+| FSQRT | `FSQRT` | ED 11 | 2 | 59 | – |
+| FSQRT | `FSQRT ST0` | ED 11 | 2 | 59 | – |
+| FST32 | `FST32 (HL)` | ED BC 4B | 3 | 207 | – |
+| FST64 | `FST64 (HL)` | ED BC 4D | 3 | 209 | – |
+| FST80 | `FST80 (HL)` | ED 12 | 2 | 60 | – |
+| FSTP | `FSTP STn` | ED BC 18+a | 3 | 198 | – |
+| FSTP8 | `FSTP8 (HL)` | ED 13 | 2 | 61 | – |
+| FSTSW | `FSTSW` | ED 14 | 2 | 62 | – |
+| FSUB | `FSUB ST0, STn` | ED 18+b | 2 | 63 | – |
+| FSUB | `FSUB STn` | ED 18+a | 2 | 63 | – |
+| FTAN | `FTAN` | ED 15 | 2 | 64 | – |
+| FTAN | `FTAN ST0` | ED 15 | 2 | 64 | – |
+| FXCH | `FXCH STn` | ED BC 08+a | 3 | 196 | – |
+| FYL2P | `FYL2P` | ED 16 | 2 | 65 | – |
+| FYL2P | `FYL2P ST0` | ED 16 | 2 | 65 | – |
+| FYL2X | `FYL2X` | ED 17 | 2 | 66 | – |
+| FYL2X | `FYL2X ST0` | ED 17 | 2 | 66 | – |
+| INCL | `INCL rr` | ED 3E 41+a·8 | 3 | 19 | 8.00 |
+| INCQ | `INCQ rr` | ED 3E 81+a·8 | 3 | 20 | 8.00 |
+| INCW | `INCW rr` | ED 3E 01+a·8 | 3 | 18 | 8.00 |
+| INL | `INL rr, (C)` | ED 27 41+a·8 | 3 | 164 | – |
+| INQ | `INQ rr, (C)` | ED 27 81+a·8 | 3 | 165 | – |
+| INW | `INW rr, (C)` | ED 27 01+a·8 | 3 | 163 | – |
+| ISYNC | `ISYNC` | ED A6 | 2 | 185 | 8.00 |
+| JP | `JP USER, (u4)` | ED B4+b | 2 | 175 | – |
+| JPL | `JPL (rr)` | ED 2A 41+a·8 | 3 | 135 | 20.00 |
+| JPL | `JPL cc, (rr)` | ED 2A 00+a·8+b | 3 | 136 | 20.00 taken / 12.00 not taken |
+| JPL | `JPL cc, nnnn` | ED 2A 81+a·8 nnnn | 7 | 137 | 17.12 taken / 8.00 not taken |
+| JPL | `JPL nnnn` | ED 2C nnnn | 6 | 138 | 16.75 |
+| JPQ | `JPQ (rr)` | ED 2A C1+a·8 | 3 | 139 | 16.00 |
+| JPQ | `JPQ cc, (rr)` | ED 2A 40+a·8+b | 3 | 140 | 16.00 taken / 8.00 not taken |
+| JPQ | `JPQ cc, nnnnnnnn` | ED 2A C6+a·8 n×8 | 11 | 141 | 17.12 taken / 8.00 not taken |
+| JPQ | `JPQ nnnnnnnn` | ED 2B n×8 | 10 | 142 | 16.75 |
+| JRW | `JRW cc, ee` | ED 2A 01+a·8 ee | 5 | 133 | 17.12 taken / 8.00 not taken |
+| JRW | `JRW ee` | ED 2D ee | 4 | 134 | 16.00 |
+| LDCR | `LDCR k, rr` | ED 20 00+a·8+b | 3 | 180 | – |
+| LDCTX | `LDCTX (rr)` | ED AE 48+a | 3 | 192 | – |
+| LDL | `LDL (nnnnnnnn), rr` | ED 3A 01+b·8 n×8 | 11 | 79 | 15.00 |
+| LDL | `LDL (Qxy+dd), rr` | ED DD/FD 06+b·8 dd | 5 | 80 | 15.00 |
+| LDL | `LDL (Qxy+dd), nnnn` | ED DD/FD 46 dd nnnn | 9 | 81 | 15.00 |
+| LDL | `LDL (rr), rr` | ED 3A C0+a·8+b | 3 | 84 | 11.00 |
+| LDL | `LDL rr, (Qxy+dd)` | ED DD/FD 86+a·8 dd | 5 | 85 | 11.00 |
+| LDL | `LDL rr, (rr)` | ED 3A 00+a·8+b | 3 | 87 | 11.00 |
+| LDL | `LDL rr, nnnn` | ED 3A 41+a·8 nnnn | 7 | 88 | 8.00 |
+| LDL | `LDL rr, rr` | ED 3A 40+a·8+b | 3 | 89 | 8.00 |
+| LDL | `LDL rr, (nnnnnnnn)` | ED 3A 81+a·8 n×8 | 11 | 90 | 11.00 |
+| LDQ | `LDQ (nnnnnnnn), rr` | ED 39 01+b·8 n×8 | 11 | 91 | 15.00 |
+| LDQ | `LDQ (Qxy+dd), rr` | ED DD/FD 00+b·8 dd | 5 | 92 | 15.00 |
+| LDQ | `LDQ (Qxy+dd), nnnnnnnn` | ED DD/FD 40 dd n×8 | 13 | 93 | 15.00 |
+| LDQ | `LDQ (rr), rr` | ED 39 C0+a·8+b | 3 | 96 | 11.00 |
+| LDQ | `LDQ rr, (Qxy+dd)` | ED DD/FD C6+a·8 dd | 5 | 97 | 11.00 |
+| LDQ | `LDQ rr, (rr)` | ED 39 00+a·8+b | 3 | 99 | 11.00 |
+| LDQ | `LDQ rr, nnnnnnnn` | ED 39 41+a·8 n×8 | 11 | 100 | 8.00 |
+| LDQ | `LDQ rr, rr` | ED 39 40+a·8+b | 3 | 101 | 8.00 |
+| LDQ | `LDQ rr, (nnnnnnnn)` | ED 39 81+a·8 n×8 | 11 | 102 | 11.00 |
+| LDW | `LDW (nnnnnnnn), rr` | ED 3B 01+b·8 n×8 | 11 | 67 | 15.00 |
+| LDW | `LDW (Qxy+dd), rr` | ED DD/FD 01+b·8 dd | 5 | 68 | 15.00 |
+| LDW | `LDW (Qxy+dd), nn` | ED DD/FD 41 dd nn | 7 | 69 | 15.00 |
+| LDW | `LDW (rr), rr` | ED 3B C0+a·8+b | 3 | 72 | 11.00 |
+| LDW | `LDW rr, (Qxy+dd)` | ED DD/FD 81+a·8 dd | 5 | 73 | 11.00 |
+| LDW | `LDW rr, (rr)` | ED 3B 00+a·8+b | 3 | 75 | 11.00 |
+| LDW | `LDW rr, nn` | ED 3B 41+a·8 nn | 5 | 76 | 8.00 |
+| LDW | `LDW rr, rr` | ED 3B 40+a·8+b | 3 | 77 | 8.00 |
+| LDW | `LDW rr, (nnnnnnnn)` | ED 3B 81+a·8 n×8 | 11 | 78 | 11.00 |
+| MFCR | `MFCR k` | ED 0A n | 3 | 292 | – |
+| MLTSB | `MLTSB A, r` | ED 3F 08+b | 3 | 21 | 16.00 |
+| MLTSB | `MLTSB AL, r` | ED 3F 08+b | 3 | 21 | 16.00 |
+| MLTSB | `MLTSB r` | ED 3F 08+a | 3 | 21 | 16.00 |
+| MLTSL | `MLTSL AX, rr` | ED 3F 88+b | 3 | 23 | 16.00 |
+| MLTSL | `MLTSL rr` | ED 3F 88+a | 3 | 23 | 16.00 |
+| MLTSQ | `MLTSQ QDE:QAX, rr` | ED 3F C8+b | 3 | 24 | 24.00 † |
+| MLTSQ | `MLTSQ rr` | ED 3F C8+a | 3 | 24 | 24.00 † |
+| MLTSW | `MLTSW HL, rr` | ED 3F 48+b | 3 | 22 | 21.00 |
+| MLTSW | `MLTSW rr` | ED 3F 48+a | 3 | 22 | 21.00 |
+| MLTUB | `MLTUB HL, r` | ED C1+b·8 | 2 | 25 | 16.00 |
+| MLTUB | `MLTUB r` | ED C1+a·8 | 2 | 25 | 16.00 |
+| MLTUL | `MLTUL AX, rr` | ED 3E 88+b | 3 | 29 | 16.00 |
+| MLTUL | `MLTUL rr` | ED 3E 88+a | 3 | 29 | 16.00 |
+| MLTUQ | `MLTUQ AX, rr` | ED 3E C8+b | 3 | 30 | 19.00 † |
+| MLTUQ | `MLTUQ rr` | ED 3E C8+a | 3 | 30 | 19.00 † |
+| MLTUW | `MLTUW HL, rr` | ED 3E 48+b | 3 | 28 | 21.00 |
+| MLTUW | `MLTUW rr` | ED 3E 48+a | 3 | 28 | 21.00 |
+| MTCR | `MTCR k` | ED 0C n | 3 | 293 | – |
+| NEGB | `NEGB rr` | ED 26 01+a·8 | 3 | 295 | – |
+| NEGL | `NEGL rr` | ED 26 81+a·8 | 3 | 173 | 8.00 |
+| NEGQ | `NEGQ rr` | ED 26 C1+a·8 | 3 | 174 | 8.00 |
+| NEGW | `NEGW rr` | ED 26 41+a·8 | 3 | 172 | 8.00 |
+| ORL | `ORL rr, rr` | ED 37 40+a·8+b | 3 | 111 | 8.00 |
+| ORQ | `ORQ rr, rr` | ED 37 80+a·8+b | 3 | 112 | 8.00 |
+| ORW | `ORW rr, rr` | ED 37 00+a·8+b | 3 | 110 | 8.00 |
+| OUTL | `OUTL (C), rr` | ED 27 46+b·8 | 3 | 167 | – |
+| OUTQ | `OUTQ (C), rr` | ED 27 86+b·8 | 3 | 168 | – |
+| OUTW | `OUTW (C), rr` | ED 27 06+b·8 | 3 | 166 | – |
+| PGINV | `PGINV (rr)` | ED C4+a·8 | 2 | 186 | 8.00 |
+| POPL | `POPL rr` | ED 38 08+a | 3 | 103 | 16.00 |
+| POPQ | `POPQ rr` | ED 38 48+a | 3 | 104 | 16.00 |
+| PROT | `PROT 0` | ED 00 | 2 | 176 | – |
+| PROT | `PROT 1` | ED 01 | 2 | 176 | – |
+| PROT | `PROT OFF` | ED 00 | 2 | 176 | – |
+| PROT | `PROT ON` | ED 01 | 2 | 176 | – |
+| PUSHL | `PUSHL rr` | ED 38 88+a | 3 | 105 | 15.00 |
+| PUSHQ | `PUSHQ rr` | ED 38 C8+a | 3 | 106 | 15.00 |
+| RESET | `RESET` | ED 25 | 2 | 177 | – |
+| RESL | `RESL b, rr` | ED 32 00+a·8+b | 3 | 129 | 8.00 |
+| RESW | `RESW b, rr` | ED 30 80+a·8+b | 3 | 128 | 8.00 |
+| RETL | `RETL cc` | ED 03 40+a·8 | 3 | 122 | 35.00 taken / 16.00 not taken |
+| RETL | `RETL` | ED 04 | 2 | 124 | 31.00 |
+| RETQ | `RETQ cc` | ED 03 80+a·8 | 3 | 123 | 35.00 taken / 16.00 not taken |
+| RETQ | `RETQ` | ED 05 | 2 | 125 | 31.00 |
+| RLCL | `RLCL rr` | ED 06 86+a·8 | 3 | 157 | 8.00 |
+| RLCQ | `RLCQ rr` | ED 06 C6+a·8 | 3 | 158 | 8.00 |
+| RLCW | `RLCW rr` | ED 06 46+a·8 | 3 | 156 | 8.00 |
+| RRCL | `RRCL rr` | ED 07 86+a·8 | 3 | 161 | 8.00 |
+| RRCQ | `RRCQ rr` | ED 07 C6+a·8 | 3 | 162 | 8.00 |
+| RRCW | `RRCW rr` | ED 07 46+a·8 | 3 | 160 | 8.00 |
+| SARB | `SARB r` | ED 29 30+a | 3 | 143 | 8.00 |
+| SARL | `SARL rr` | ED 29 B0+a | 3 | 145 | 8.00 |
+| SARQ | `SARQ rr` | ED 29 F0+a | 3 | 146 | 8.00 |
+| SARW | `SARW rr` | ED 29 70+a | 3 | 144 | 8.00 |
+| SCALL | `SCALL n` | ED 22 n | 3 | 182 | – |
+| SETL | `SETL b, rr` | ED 31 00+a·8+b | 3 | 131 | 8.00 |
+| SETW | `SETW b, rr` | ED 2F 00+a·8+b | 3 | 130 | 8.00 |
+| SHLB | `SHLB r` | ED 29 06+a·8 | 3 | 147 | 8.00 |
+| SHLL | `SHLL rr` | ED 29 86+a·8 | 3 | 149 | 8.00 |
+| SHLQ | `SHLQ rr` | ED 29 C6+a·8 | 3 | 150 | 8.00 |
+| SHLW | `SHLW rr` | ED 29 46+a·8 | 3 | 148 | 8.00 |
+| SHRB | `SHRB r` | ED 28 06+a·8 | 3 | 151 | 8.00 |
+| SHRL | `SHRL rr` | ED 28 86+a·8 | 3 | 153 | 8.00 |
+| SHRQ | `SHRQ rr` | ED 28 C6+a·8 | 3 | 154 | 8.00 |
+| SHRW | `SHRW rr` | ED 28 46+a·8 | 3 | 152 | 8.00 |
+| SLAB | `SLAB r` | ED 29 06+a·8 | 3 | 147 | 8.00 |
+| SLAL | `SLAL rr` | ED 29 86+a·8 | 3 | 149 | 8.00 |
+| SLAQ | `SLAQ rr` | ED 29 C6+a·8 | 3 | 150 | 8.00 |
+| SLAW | `SLAW rr` | ED 29 46+a·8 | 3 | 148 | 8.00 |
+| SRLB | `SRLB r` | ED 28 06+a·8 | 3 | 151 | 8.00 |
+| SRLL | `SRLL rr` | ED 28 86+a·8 | 3 | 153 | 8.00 |
+| SRLQ | `SRLQ rr` | ED 28 C6+a·8 | 3 | 154 | 8.00 |
+| SRLW | `SRLW rr` | ED 28 46+a·8 | 3 | 152 | 8.00 |
+| STCR | `STCR rr, k` | ED 21 00+b·8+a | 3 | 181 | 8.00 |
+| STDBY | `STDBY` | ED 24 | 2 | 178 | – |
+| SUBCL | `SUBCL rr, rr` | ED 3D 40+a·8+b | 3 | 32 | 8.00 |
+| SUBCQ | `SUBCQ rr, rr` | ED 3D 80+a·8+b | 3 | 33 | 8.00 |
+| SUBCW | `SUBCW rr, rr` | ED 3D 00+a·8+b | 3 | 31 | 8.00 |
+| SUBL | `SUBL rr, rr` | ED 3C 40+a·8+b | 3 | 35 | 8.00 |
+| SUBQ | `SUBQ rr, rr` | ED 3C 80+a·8+b | 3 | 36 | 8.00 |
+| SUBW | `SUBW rr, rr` | ED 3C 00+a·8+b | 3 | 34 | 8.00 |
+| SVCTX | `SVCTX (rr)` | ED AE 08+a | 3 | 191 | 180.00 |
+| SYSRT | `SYSRT` | ED A4 | 2 | 183 | – |
+| WAKE | `WAKE` | ED 23 | 2 | 179 | – |
+| XCHGL | `XCHGL rr, (rr)` | ED AC 00+a·8+b | 3 | 187 | 27.00 |
+| XCHGQ | `XCHGQ rr, (rr)` | ED AC 40+a·8+b | 3 | 188 | 27.00 |
+| XORL | `XORL rr, rr` | ED 36 40+a·8+b | 3 | 114 | 8.00 |
+| XORQ | `XORQ rr, rr` | ED 36 80+a·8+b | 3 | 115 | 8.00 |
+| XORW | `XORW rr, rr` | ED 36 00+a·8+b | 3 | 113 | 8.00 |
 
-**Status.** The core, mode governor, r64 and Z80 regressions pass. Fmax has not been measured after the cleanup (run the PnR script on the board machine). REV43b: the new exceptions (privilege, SCALL, user-mode interrupt, illegal ED with TE) pass in Z80 and R800 modes (tb\_soc\_exc scenarios 1 to 14); the division-error exception is tested only in native mode (the SoC has no mul/div); by the author's decision (2026-11-16) it will not be implemented in the legacy modes. The SoC testbenches were moved to the current CR numbering (DMA = CR19 to CR30) and pass, including tb\_soc\_nat (4 MB mapper + MegaRAM at 400000h, ASCII8 read-only protection). The "PUSH BC pushes AX" observation was a testbench error (ldrr(7,...) loads AX, and four testbenches used the toy uop ROM, which has no real PUSH); the core was correct. REV43d: r8064\_msx\_sys.v had lost the 4 MB mapper, the MegaRAM at 400000h, the native-mode mapper and the ASCII8 protection described in this datasheet; all three were restored and the SoC and module 10 regressions pass again. DMA: no idle states between words (buffer → SDRAM 14,694 → 8,472 clocks per 2,048 words; SDRAM → buffer 21,007 → 14,750); boot sequencer (BOOT\_WORDS) copies the buffer image to SDRAM before the core leaves reset. FLN error reduced from 8.9 to 1.9 ulp (LN2 split in two constants). Without the physical board, what remains is PnR/Fmax (rodar\_pnr\_board.bat in 13\_soc/pnr) while the cartridge top-level for the MSX slot (r8064\_cart\_top + r8064\_slot\_if, REV43e) is written and simulated: Z80 I/O cycles on ports 0Bh to 0Dh, PING/HELLO with the real monitor, INT and the slot /RESET. Target: the V9968\_Cartridge board (Tang Nano 20K + 3 SN74LVC8T245, 4th revision), which wires only A0-A7, D0-D7, /IORQ, /RD, /WR, /RESET, WAIT, INT and BUSDIR to the FPGA; therefore only protocol layer 1 (FIFOs, status, length) is available, not the 16 KB window (which needs /SLTSL, A8-A15 and /MREQ). Pin map: 13\_soc/pnr/tangnano20k\_cart.cst; PnR: rodar\_pnr\_cart.bat.
+### C.2 Z80 and R800 base set
+
+Same encodings as the Z80 (including the undocumented instructions) and the R800 multiplications. In the Z80/R800 modes their time is set by the timing governor (chapter 6); measured native-mode examples are in D.2.
+
+| Mnemonic | Syntax | Encoding (hex) | Bytes |
+| --- | --- | --- | --- |
+| ADC | `ADC (HL)` | 8E | 1 |
+| ADC | `ADC (xy+d)` | DD/FD 8E d | 3 |
+| ADC | `ADC A, (HL)` | 8E | 1 |
+| ADC | `ADC A, (xy+d)` | DD/FD 8E d | 3 |
+| ADC | `ADC A, n` | CE n | 2 |
+| ADC | `ADC A, p` | DD/FD 88+b | 2 |
+| ADC | `ADC A, r` | 88+b | 1 |
+| ADC | `ADC HL, ss` | ED 4A+b·16 | 2 |
+| ADC | `ADC n` | CE n | 2 |
+| ADC | `ADC p` | DD/FD 88+a | 2 |
+| ADC | `ADC r` | 88+a | 1 |
+| ADD | `ADD (HL)` | 86 | 1 |
+| ADD | `ADD (xy+d)` | DD/FD 86 d | 3 |
+| ADD | `ADD A, (HL)` | 86 | 1 |
+| ADD | `ADD A, (xy+d)` | DD/FD 86 d | 3 |
+| ADD | `ADD A, n` | C6 n | 2 |
+| ADD | `ADD A, p` | DD/FD 80+b | 2 |
+| ADD | `ADD A, r` | 80+b | 1 |
+| ADD | `ADD HL, ss` | 09+b·16 | 1 |
+| ADD | `ADD n` | C6 n | 2 |
+| ADD | `ADD p` | DD/FD 80+a | 2 |
+| ADD | `ADD r` | 80+a | 1 |
+| ADD | `ADD xy, BC` | DD/FD 09 | 2 |
+| ADD | `ADD xy, DE` | DD/FD 19 | 2 |
+| ADD | `ADD xy, SP` | DD/FD 39 | 2 |
+| ADD | `ADD xy, xy` | DD/FD 29 | 2 |
+| AND | `AND (HL)` | A6 | 1 |
+| AND | `AND (xy+d)` | DD/FD A6 d | 3 |
+| AND | `AND A, (HL)` | A6 | 1 |
+| AND | `AND A, (xy+d)` | DD/FD A6 d | 3 |
+| AND | `AND A, n` | E6 n | 2 |
+| AND | `AND A, p` | DD/FD A0+b | 2 |
+| AND | `AND A, r` | A0+b | 1 |
+| AND | `AND n` | E6 n | 2 |
+| AND | `AND p` | DD/FD A0+a | 2 |
+| AND | `AND r` | A0+a | 1 |
+| BIT | `BIT b, (HL)` | CB 46+a·8 | 2 |
+| BIT | `BIT b, (xy+d)` | DD/FD CB d 46+a·8 | 4 |
+| BIT | `BIT b, r` | CB 40+a·8+b | 2 |
+| CALL | `CALL cc, nn` | C4+a·8 nn | 3 |
+| CALL | `CALL nn` | CD nn | 3 |
+| CCF | `CCF` | 3F | 1 |
+| CP | `CP (HL)` | BE | 1 |
+| CP | `CP (xy+d)` | DD/FD BE d | 3 |
+| CP | `CP A, (HL)` | BE | 1 |
+| CP | `CP A, (xy+d)` | DD/FD BE d | 3 |
+| CP | `CP A, n` | FE n | 2 |
+| CP | `CP A, p` | DD/FD B8+b | 2 |
+| CP | `CP A, r` | B8+b | 1 |
+| CP | `CP n` | FE n | 2 |
+| CP | `CP p` | DD/FD B8+a | 2 |
+| CP | `CP r` | B8+a | 1 |
+| CPD | `CPD` | ED A9 | 2 |
+| CPDR | `CPDR` | ED B9 | 2 |
+| CPI | `CPI` | ED A1 | 2 |
+| CPIR | `CPIR` | ED B1 | 2 |
+| CPL | `CPL` | 2F | 1 |
+| DAA | `DAA` | 27 | 1 |
+| DEC | `DEC (HL)` | 35 | 1 |
+| DEC | `DEC (xy+d)` | DD/FD 35 d | 3 |
+| DEC | `DEC p` | DD/FD 05+a·8 | 2 |
+| DEC | `DEC r` | 05+a·8 | 1 |
+| DEC | `DEC ss` | 0B+a·16 | 1 |
+| DEC | `DEC xy` | DD/FD 2B | 2 |
+| DI | `DI` | F3 | 1 |
+| DJNZ | `DJNZ e` | 10 e | 2 |
+| EI | `EI` | FB | 1 |
+| EX | `EX (SP), HL` | E3 | 1 |
+| EX | `EX (SP), xy` | DD/FD E3 | 2 |
+| EX | `EX AF, AF` | 08 | 1 |
+| EX | `EX AF, AF'` | 08 | 1 |
+| EX | `EX DE, HL` | EB | 1 |
+| EXX | `EXX` | D9 | 1 |
+| HALT | `HALT` | 76 | 1 |
+| IM | `IM 0` | ED 46 | 2 |
+| IM | `IM 1` | ED 56 | 2 |
+| IM | `IM 2` | ED 5E | 2 |
+| IN | `IN (C)` | ED 70 | 2 |
+| IN | `IN A, (n)` | DB n | 2 |
+| IN | `IN F, (C)` | ED 70 | 2 |
+| IN | `IN r, (C)` | ED 40+a·8 | 2 |
+| INC | `INC (HL)` | 34 | 1 |
+| INC | `INC (xy+d)` | DD/FD 34 d | 3 |
+| INC | `INC p` | DD/FD 04+a·8 | 2 |
+| INC | `INC r` | 04+a·8 | 1 |
+| INC | `INC ss` | 03+a·16 | 1 |
+| INC | `INC xy` | DD/FD 23 | 2 |
+| IND | `IND` | ED AA | 2 |
+| INDR | `INDR` | ED BA | 2 |
+| INI | `INI` | ED A2 | 2 |
+| INIR | `INIR` | ED B2 | 2 |
+| JP | `JP (HL)` | E9 | 1 |
+| JP | `JP (xy)` | DD/FD E9 | 2 |
+| JP | `JP cc, nn` | C2+a·8 nn | 3 |
+| JP | `JP nn` | C3 nn | 3 |
+| JR | `JR cc, e` | 20+a·8 e | 2 |
+| JR | `JR e` | 18 e | 2 |
+| LD | `LD (BC), A` | 02 | 1 |
+| LD | `LD (DE), A` | 12 | 1 |
+| LD | `LD (HL), n` | 36 n | 2 |
+| LD | `LD (HL), r` | 70+b | 1 |
+| LD | `LD (nn), A` | 32 nn | 3 |
+| LD | `LD (nn), HL` | 22 nn | 3 |
+| LD | `LD (nn), ss` | ED 43+b·16 nn | 4 |
+| LD | `LD (nn), xy` | DD/FD 22 nn | 4 |
+| LD | `LD (xy+d), n` | DD/FD 36 d n | 4 |
+| LD | `LD (xy+d), r` | DD/FD 70+b d | 3 |
+| LD | `LD A, (BC)` | 0A | 1 |
+| LD | `LD A, (DE)` | 1A | 1 |
+| LD | `LD A, (nn)` | 3A nn | 3 |
+| LD | `LD A, I` | ED 57 | 2 |
+| LD | `LD A, R` | ED 5F | 2 |
+| LD | `LD HL, (nn)` | 2A nn | 3 |
+| LD | `LD I, A` | ED 47 | 2 |
+| LD | `LD R, A` | ED 4F | 2 |
+| LD | `LD SP, HL` | F9 | 1 |
+| LD | `LD SP, xy` | DD/FD F9 | 2 |
+| LD | `LD p, n` | DD/FD 06+a·8 n | 3 |
+| LD | `LD p, p` | DD/FD 40+a·8+b | 2 |
+| LD | `LD p, r` | DD/FD 40+a·8+b | 2 |
+| LD | `LD r, (HL)` | 46+a·8 | 1 |
+| LD | `LD r, (xy+d)` | DD/FD 46+a·8 d | 3 |
+| LD | `LD r, n` | 06+a·8 n | 2 |
+| LD | `LD r, p` | DD/FD 40+a·8+b | 2 |
+| LD | `LD r, r` | 40+a·8+b | 1 |
+| LD | `LD ss, (nn)` | ED 4B+a·16 nn | 4 |
+| LD | `LD ss, nn` | 01+a·16 nn | 3 |
+| LD | `LD xy, (nn)` | DD/FD 2A nn | 4 |
+| LD | `LD xy, nn` | DD/FD 21 nn | 4 |
+| LDD | `LDD` | ED A8 | 2 |
+| LDDR | `LDDR` | ED B8 | 2 |
+| LDI | `LDI` | ED A0 | 2 |
+| LDIR | `LDIR` | ED B0 | 2 |
+| MLTUB | `MLTUB A, r` | ED C1+b·8 | 2 |
+| MLTUW | `MLTUW HL, BC` | ED C3 | 2 |
+| MLTUW | `MLTUW HL, SP` | ED F3 | 2 |
+| MULUB | `MULUB A, r` | ED C1+b·8 | 2 |
+| MULUW | `MULUW HL, BC` | ED C3 | 2 |
+| MULUW | `MULUW HL, SP` | ED F3 | 2 |
+| NEG | `NEG` | ED 44 | 2 |
+| NOP | `NOP` | 00 | 1 |
+| OR | `OR (HL)` | B6 | 1 |
+| OR | `OR (xy+d)` | DD/FD B6 d | 3 |
+| OR | `OR A, (HL)` | B6 | 1 |
+| OR | `OR A, (xy+d)` | DD/FD B6 d | 3 |
+| OR | `OR A, n` | F6 n | 2 |
+| OR | `OR A, p` | DD/FD B0+b | 2 |
+| OR | `OR A, r` | B0+b | 1 |
+| OR | `OR n` | F6 n | 2 |
+| OR | `OR p` | DD/FD B0+a | 2 |
+| OR | `OR r` | B0+a | 1 |
+| OTDR | `OTDR` | ED BB | 2 |
+| OTIR | `OTIR` | ED B3 | 2 |
+| OUT | `OUT (C), 0` | ED 71 | 2 |
+| OUT | `OUT (C), r` | ED 41+b·8 | 2 |
+| OUT | `OUT (n), A` | D3 n | 2 |
+| OUTD | `OUTD` | ED AB | 2 |
+| OUTI | `OUTI` | ED A3 | 2 |
+| POP | `POP qq` | C1+a·16 | 1 |
+| POP | `POP xy` | DD/FD E1 | 2 |
+| PUSH | `PUSH qq` | C5+a·16 | 1 |
+| PUSH | `PUSH xy` | DD/FD E5 | 2 |
+| RES | `RES b, (HL)` | CB 86+a·8 | 2 |
+| RES | `RES b, (xy+d)` | DD/FD CB d 86+a·8 | 4 |
+| RES | `RES b, (xy+d), r` | DD/FD CB d 80+a·8+c | 4 |
+| RES | `RES b, r` | CB 80+a·8+b | 2 |
+| RET | `RET` | C9 | 1 |
+| RET | `RET cc` | C0+a·8 | 1 |
+| RETI | `RETI` | ED 4D | 2 |
+| RETN | `RETN` | ED 45 | 2 |
+| RL | `RL (HL)` | CB 16 | 2 |
+| RL | `RL (xy+d)` | DD/FD CB d 16 | 4 |
+| RL | `RL (xy+d), r` | DD/FD CB d 10+b | 4 |
+| RL | `RL r` | CB 10+a | 2 |
+| RLA | `RLA` | 17 | 1 |
+| RLC | `RLC (HL)` | CB 06 | 2 |
+| RLC | `RLC (xy+d)` | DD/FD CB d 06 | 4 |
+| RLC | `RLC (xy+d), r` | DD/FD CB d 00+b | 4 |
+| RLC | `RLC r` | CB 00+a | 2 |
+| RLCA | `RLCA` | 07 | 1 |
+| RLD | `RLD` | ED 6F | 2 |
+| RR | `RR (HL)` | CB 1E | 2 |
+| RR | `RR (xy+d)` | DD/FD CB d 1E | 4 |
+| RR | `RR (xy+d), r` | DD/FD CB d 18+b | 4 |
+| RR | `RR r` | CB 18+a | 2 |
+| RRA | `RRA` | 1F | 1 |
+| RRC | `RRC (HL)` | CB 0E | 2 |
+| RRC | `RRC (xy+d)` | DD/FD CB d 0E | 4 |
+| RRC | `RRC (xy+d), r` | DD/FD CB d 08+b | 4 |
+| RRC | `RRC r` | CB 08+a | 2 |
+| RRCA | `RRCA` | 0F | 1 |
+| RRD | `RRD` | ED 67 | 2 |
+| RST | `RST p` | C7+a·8 | 1 |
+| SBC | `SBC (HL)` | 9E | 1 |
+| SBC | `SBC (xy+d)` | DD/FD 9E d | 3 |
+| SBC | `SBC A, (HL)` | 9E | 1 |
+| SBC | `SBC A, (xy+d)` | DD/FD 9E d | 3 |
+| SBC | `SBC A, n` | DE n | 2 |
+| SBC | `SBC A, p` | DD/FD 98+b | 2 |
+| SBC | `SBC A, r` | 98+b | 1 |
+| SBC | `SBC HL, ss` | ED 42+b·16 | 2 |
+| SBC | `SBC n` | DE n | 2 |
+| SBC | `SBC p` | DD/FD 98+a | 2 |
+| SBC | `SBC r` | 98+a | 1 |
+| SCF | `SCF` | 37 | 1 |
+| SET | `SET b, (HL)` | CB C6+a·8 | 2 |
+| SET | `SET b, (xy+d)` | DD/FD CB d C6+a·8 | 4 |
+| SET | `SET b, (xy+d), r` | DD/FD CB d C0+a·8+c | 4 |
+| SET | `SET b, r` | CB C0+a·8+b | 2 |
+| SLA | `SLA (HL)` | CB 26 | 2 |
+| SLA | `SLA (xy+d)` | DD/FD CB d 26 | 4 |
+| SLA | `SLA (xy+d), r` | DD/FD CB d 20+b | 4 |
+| SLA | `SLA r` | CB 20+a | 2 |
+| SLI | `SLI (HL)` | CB 36 | 2 |
+| SLI | `SLI (xy+d)` | DD/FD CB d 36 | 4 |
+| SLI | `SLI (xy+d), r` | DD/FD CB d 30+b | 4 |
+| SLI | `SLI r` | CB 30+a | 2 |
+| SLL | `SLL (HL)` | CB 36 | 2 |
+| SLL | `SLL (xy+d)` | DD/FD CB d 36 | 4 |
+| SLL | `SLL (xy+d), r` | DD/FD CB d 30+b | 4 |
+| SLL | `SLL r` | CB 30+a | 2 |
+| SRA | `SRA (HL)` | CB 2E | 2 |
+| SRA | `SRA (xy+d)` | DD/FD CB d 2E | 4 |
+| SRA | `SRA (xy+d), r` | DD/FD CB d 28+b | 4 |
+| SRA | `SRA r` | CB 28+a | 2 |
+| SRL | `SRL (HL)` | CB 3E | 2 |
+| SRL | `SRL (xy+d)` | DD/FD CB d 3E | 4 |
+| SRL | `SRL (xy+d), r` | DD/FD CB d 38+b | 4 |
+| SRL | `SRL r` | CB 38+a | 2 |
+| SUB | `SUB (HL)` | 96 | 1 |
+| SUB | `SUB (xy+d)` | DD/FD 96 d | 3 |
+| SUB | `SUB A, (HL)` | 96 | 1 |
+| SUB | `SUB A, (xy+d)` | DD/FD 96 d | 3 |
+| SUB | `SUB A, n` | D6 n | 2 |
+| SUB | `SUB A, p` | DD/FD 90+b | 2 |
+| SUB | `SUB A, r` | 90+b | 1 |
+| SUB | `SUB n` | D6 n | 2 |
+| SUB | `SUB p` | DD/FD 90+a | 2 |
+| SUB | `SUB r` | 90+a | 1 |
+| XOR | `XOR (HL)` | AE | 1 |
+| XOR | `XOR (xy+d)` | DD/FD AE d | 3 |
+| XOR | `XOR A, (HL)` | AE | 1 |
+| XOR | `XOR A, (xy+d)` | DD/FD AE d | 3 |
+| XOR | `XOR A, n` | EE n | 2 |
+| XOR | `XOR A, p` | DD/FD A8+b | 2 |
+| XOR | `XOR A, r` | A8+b | 1 |
+| XOR | `XOR n` | EE n | 2 |
+| XOR | `XOR p` | DD/FD A8+a | 2 |
+| XOR | `XOR r` | A8+a | 1 |
+<!-- END APPENDIX_C -->
+
+### Appendix D — Measured instruction timing (REV48, native mode)
+
+<!-- BEGIN APPENDIX_D -->
+Generated from `modulos/13_soc/bench/ref_rev48.json` (simulation of the REV48 RTL by `sim/meas/gen_meas.py`) by `sim/meas/gen_doc_tables.py`. Native mode, MMU off, code and data in the caches; each value is the average over 16 copies of the instruction in a loop, minus the same loop without it. Total = execution + wait. **Wait** = clocks in which the core stands still waiting for memory: *fetch* (the decoder lacks instruction bytes) or *data* (a load/store waits for the cache). Column **Board**: ✓ = the same value was measured on the Tang Nano 20K by the timing bench (256 of 256 cases, 2026-11-20). ns at 57.375 MHz (board crystal; × 1.0018 for 57.2727 MHz).
+
+### D.1 R8064 instructions
+
+| id | Instruction | Total | Execution | Fetch wait | Data wait | ns | Class | Board | Note |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | ADCW HL, rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 2 | ADCL EA, rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 3 | ADCQ QA, rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 4 | ADDW rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 5 | ADDL rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 6 | ADDQ rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 7 | DECW rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 8 | DECL rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 9 | DECQ rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 10 | DIVSB AX, t | 28.00 | 28.00 | 0.00 | 0.00 | 488 | Iterative divider 1 bit/cycle | ✓ |  |
+| 11 | DIVSW DX:AX, rr | 44.44 | 44.44 | 0.00 | 0.00 | 775 | Iterative divider 1 bit/cycle | ✓ |  |
+| 12 | DIVSL QA, rr | 47.31 | 47.31 | 0.00 | 0.00 | 825 | Iterative divider 1 bit/cycle | ✓ |  |
+| 13 | DIVSQ QDE:QA, rr | 78.31 | 78.31 | 0.00 | 0.00 | 1365 | Iterative divider 1 bit/cycle | n/a | not in the cartridge build (R8064_NO_MD64) |
+| 14 | DIVUB AX, t | 25.00 | 25.00 | 0.00 | 0.00 | 436 | Iterative divider 1 bit/cycle | ✓ |  |
+| 15 | DIVUW DX:AX, rr | 41.00 | 41.00 | 0.00 | 0.00 | 715 | Iterative divider 1 bit/cycle | ✓ |  |
+| 16 | DIVUL QA, rr | 49.00 | 49.00 | 0.00 | 0.00 | 854 | Iterative divider 1 bit/cycle | ✓ |  |
+| 17 | DIVUQ QDE:QA, rr | 86.00 | 86.00 | 0.00 | 0.00 | 1499 | Iterative divider 1 bit/cycle | n/a | not in the cartridge build (R8064_NO_MD64) |
+| 18 | INCW rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 19 | INCL rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 20 | INCQ rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 21 | MLTSB AL, u | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Multiplier in DSP 18x18 | ✓ |  |
+| 22 | MLTSW HL,rr | 21.00 | 21.00 | 0.00 | 0.00 | 366 | Multiplier in DSP 18x18 | ✓ |  |
+| 23 | MLTSL QA, rr | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Multiplier in DSP 18x18 | ✓ |  |
+| 24 | MLTSQ QDE:QA, rr | 24.00 | 24.00 | 0.00 | 0.00 | 418 | Multiplier in DSP 18x18 | n/a | not in the cartridge build (R8064_NO_MD64) |
+| 25 | MLTUB HL, u | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Multiplier in DSP 18x18 | ✓ |  |
+| 26 | MLTUW HL, BC | 21.00 | 21.00 | 0.00 | 0.00 | 366 | Multiplier in DSP 18x18 | ✓ |  |
+| 27 | MLTUW HL, SP | 21.00 | 21.00 | 0.00 | 0.00 | 366 | Multiplier in DSP 18x18 | ✓ |  |
+| 28 | MLTUW HL, rr | 21.00 | 21.00 | 0.00 | 0.00 | 366 | Multiplier in DSP 18x18 | ✓ |  |
+| 29 | MLTUL EA, rr | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Multiplier in DSP 18x18 | ✓ |  |
+| 30 | MLTUQ QA, rr | 19.00 | 19.00 | 0.00 | 0.00 | 331 | Multiplier in DSP 18x18 | n/a | not in the cartridge build (R8064_NO_MD64) |
+| 31 | SUBCW rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 32 | SUBCL rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 33 | SUBCQ rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 34 | SUBW rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 35 | SUBL rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 36 | SUBQ rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 37 | CPW rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 38 | CPL rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 39 | CPQ rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 67 | LDW (nnnnnnnn), rr | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Store | ✓ |  |
+| 68 | LDW (QIX+dd), rr | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Store | ✓ |  |
+| 69 | LDW (QIX+dd), nn | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Store | ✓ |  |
+| 72 | LDW (rr), rr’ | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Store | ✓ |  |
+| 73 | LDW rr, (QIX+dd) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Load | ✓ |  |
+| 75 | LDW rr, (rr’) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Load | ✓ |  |
+| 76 | LDW rr, nn | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Register/immediate | ✓ |  |
+| 77 | LDW rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Register/immediate | ✓ |  |
+| 78 | LDW rr, (nnnnnnnn) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Load | ✓ |  |
+| 79 | LDL (nnnnnnnn), rr | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Store | ✓ |  |
+| 80 | LDL (QIX+dd), rr | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Store | ✓ |  |
+| 81 | LDL (QIX+dd), nnnn | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Store | ✓ |  |
+| 84 | LDL (rr), rr’ | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Store | ✓ |  |
+| 85 | LDL rr, (QIX+dd) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Load | ✓ |  |
+| 87 | LDL rr, (rr’) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Load | ✓ |  |
+| 88 | LDL rr, nnnn | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Register/immediate | ✓ |  |
+| 89 | LDL rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Register/immediate | ✓ |  |
+| 90 | LDL rr, (nnnnnnnn) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Load | ✓ |  |
+| 91 | LDQ (nnnnnnnn), rr | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Store | ✓ |  |
+| 92 | LDQ (QIX+dd), rr | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Store | ✓ |  |
+| 93 | LDQ (QIX+dd), nnnnnnnn | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Store | ✓ |  |
+| 96 | LDQ (rr), rr’ | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Store | ✓ |  |
+| 97 | LDQ rr, (QIX+dd) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Load | ✓ |  |
+| 99 | LDQ rr, (rr’) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Load | ✓ |  |
+| 100 | LDQ rr, nnnnnnnn | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Register/immediate | ✓ |  |
+| 101 | LDQ rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Register/immediate | ✓ |  |
+| 102 | LDQ rr, (nnnnnnnn) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Load | ✓ |  |
+| 103 | POPL rr | 16.00 | 13.00 | 0.00 | 3.00 | 279 | Pop | ✓ |  |
+| 104 | POPQ rr | 16.00 | 13.00 | 0.00 | 3.00 | 279 | Pop | ✓ |  |
+| 105 | PUSHL rr | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Push | ✓ |  |
+| 106 | PUSHQ rr | 15.00 | 12.00 | 0.00 | 3.00 | 261 | Push | ✓ |  |
+| 107 | ANDW rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 108 | ANDL rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 109 | ANDQ rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 110 | ORW rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 111 | ORL rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 112 | ORQ rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 113 | XORW rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 114 | XORL rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 115 | XORQ rr, rr’ | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 116 | CALLL (rr) | 31.00 | 24.00 | 4.00 | 3.00 | 540 | Call | ✓ |  |
+| 117 | CALLL cc,(rr) (taken) | 35.00 | 28.00 | 4.00 | 3.00 | 610 | Call | ✓ |  |
+| 117 | CALLL cc,(rr) (not taken) | 16.00 | 12.00 | 4.00 | 0.00 | 279 | Call | ✓ |  |
+| 118 | CALLL nnnn | 27.75 | 20.00 | 4.75 | 3.00 | 484 | Call | ✓ |  |
+| 119 | CALLQ (rr) | 27.00 | 20.00 | 4.00 | 3.00 | 471 | Call | ✓ |  |
+| 120 | CALLQ cc,(rr) (taken) | 31.00 | 24.00 | 4.00 | 3.00 | 540 | Call | ✓ |  |
+| 120 | CALLQ cc,(rr) (not taken) | 16.00 | 12.00 | 4.00 | 0.00 | 279 | Call | ✓ |  |
+| 121 | CALLQ nnnnnnnn | 27.75 | 20.00 | 4.75 | 3.00 | 484 | Call | ✓ |  |
+| 122 | RETL cc (taken) | 35.00 | 25.00 | 7.00 | 3.00 | 610 | Return | ✓ | return alone (CALL+RET pair minus CALL) |
+| 122 | RETL cc (not taken) | 16.00 | 12.00 | 4.00 | 0.00 | 279 | Return | ✓ | return alone (CALL+RET pair minus CALL) |
+| 123 | RETQ cc (taken) | 35.00 | 25.00 | 7.00 | 3.00 | 610 | Return | ✓ | return alone (CALL+RET pair minus CALL) |
+| 123 | RETQ cc (not taken) | 16.00 | 12.00 | 4.00 | 0.00 | 279 | Return | ✓ | return alone (CALL+RET pair minus CALL) |
+| 124 | RETL | 31.00 | 21.00 | 7.00 | 3.00 | 540 | Return | ✓ | return alone (CALL+RET pair minus CALL) |
+| 125 | RETQ | 31.00 | 21.00 | 7.00 | 3.00 | 540 | Return | ✓ | return alone (CALL+RET pair minus CALL) |
+| 126 | BITW bbbb, tt | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU/bit (1 cycle) | ✓ |  |
+| 127 | BITL bbbbb, tt | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU/bit (1 cycle) | ✓ |  |
+| 128 | RESW bbbb, tt | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU/bit (1 cycle) | ✓ |  |
+| 129 | RESL bbbbb, tt | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU/bit (1 cycle) | ✓ |  |
+| 130 | SETW bbbb, tt | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU/bit (1 cycle) | ✓ |  |
+| 131 | SETL bbbbb, tt | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU/bit (1 cycle) | ✓ |  |
+| 132 | DJNZW nn | 20.00 | 16.00 | 4.00 | 0.00 | 349 | Branch | ✓ |  |
+| 133 | JRW cc, nn (taken) | 17.12 | 12.00 | 5.12 | 0.00 | 298 | Branch | ✓ |  |
+| 133 | JRW cc, nn (not taken) | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Branch | ✓ |  |
+| 134 | JRW nn | 16.00 | 12.00 | 4.00 | 0.00 | 279 | Branch | ✓ |  |
+| 135 | JPL (vv) | 20.00 | 16.00 | 4.00 | 0.00 | 349 | Branch | ✓ |  |
+| 136 | JPL cc, (vv) (taken) | 20.00 | 16.00 | 4.00 | 0.00 | 349 | Branch | ✓ |  |
+| 136 | JPL cc, (vv) (not taken) | 12.00 | 12.00 | 0.00 | 0.00 | 209 | Branch | ✓ |  |
+| 137 | JPL cc, nnnn (taken) | 17.12 | 12.00 | 5.12 | 0.00 | 298 | Branch | ✓ |  |
+| 137 | JPL cc, nnnn (not taken) | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Branch | ✓ |  |
+| 138 | JPL nnnn | 16.75 | 12.00 | 4.75 | 0.00 | 292 | Branch | ✓ |  |
+| 139 | JPQ (vv) | 16.00 | 12.00 | 4.00 | 0.00 | 279 | Branch | ✓ |  |
+| 140 | JPQ cc, (vv) (taken) | 16.00 | 12.00 | 4.00 | 0.00 | 279 | Branch | ✓ |  |
+| 140 | JPQ cc, (vv) (not taken) | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Branch | ✓ |  |
+| 141 | JPQ cc, nnnnnnnn (taken) | 17.12 | 12.00 | 5.12 | 0.00 | 298 | Branch | ✓ |  |
+| 141 | JPQ cc, nnnnnnnn (not taken) | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Branch | ✓ |  |
+| 142 | JPQ nnnnnnnn | 16.75 | 12.00 | 4.75 | 0.00 | 292 | Branch | ✓ |  |
+| 143 | SARB u | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 144 | SARW rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 145 | SARL rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 146 | SARQ rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 147 | SHLB u | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 148 | SHLW rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 149 | SHLL rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 150 | SHLQ rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 151 | SHRB u | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 152 | SHRW rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 153 | SHRL rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 154 | SHRQ rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 156 | RLCW rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 157 | RLCL rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 158 | RLCQ rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 160 | RRCW rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 161 | RRCL rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 162 | RRCQ rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 169 | CPLW rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 170 | CPLL rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 171 | CPLQ rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 172 | NEGW rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 173 | NEGL rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 174 | NEGQ rr | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ALU 64-bit (1 cycle) | ✓ |  |
+| 181 | STCR rr, kk | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Control (CR) | ✓ |  |
+| 184 | FENCE | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Barrier | ✓ |  |
+| 185 | ISYNC | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Barrier | ✓ |  |
+| 186 | PGINV (uu) | 8.00 | 8.00 | 0.00 | 0.00 | 139 | MMU | ✓ |  |
+| 187 | XCHGL rr, (rr’) | 27.00 | 21.00 | 0.00 | 6.00 | 471 | Atomic | ✓ |  |
+| 188 | XCHGQ rr, (rr’) | 27.00 | 21.00 | 0.00 | 6.00 | 471 | Atomic | ✓ |  |
+| 189 | CASL (rr’), rr | 35.25 | 29.00 | 0.44 | 5.81 | 614 | Atomic | ✓ |  |
+| 190 | CASQ (rr’), rr | 31.25 | 25.00 | 0.44 | 5.81 | 545 | Atomic | ✓ |  |
+| 191 | SVCTX (uu) | 180.00 | 132.00 | 0.00 | 48.00 | 3137 | Context | ✓ |  |
+| 211 | IN B,(C) | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Z80 ED instruction in native mode | ✓ |  |
+| 212 | OUT (C),B | 12.00 | 12.00 | 0.00 | 0.00 | 209 | Z80 ED instruction in native mode | ✓ |  |
+| 213 | SBC HL,BC | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 214 | LD (nn),BC | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Z80 ED instruction in native mode | ✓ |  |
+| 215 | NEG | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 216 | RETN | 35.00 | 25.00 | 7.00 | 3.00 | 610 | Z80 ED instruction in native mode | ✓ | return alone (CALL+RET pair minus CALL) |
+| 217 | IM 0 | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 218 | LD I,A | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 219 | IN C,(C) | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Z80 ED instruction in native mode | ✓ |  |
+| 220 | OUT (C),C | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 221 | ADC HL,BC | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 222 | LD BC,(nn) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Z80 ED instruction in native mode | ✓ |  |
+| 223 | NEG | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 224 | RETI | 35.00 | 25.00 | 7.00 | 3.00 | 610 | Z80 ED instruction in native mode | ✓ | return alone (CALL+RET pair minus CALL) |
+| 225 | IM 0 | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 226 | LD R,A | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 227 | IN D,(C) | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Z80 ED instruction in native mode | ✓ |  |
+| 228 | OUT (C),D | 12.00 | 12.00 | 0.00 | 0.00 | 209 | Z80 ED instruction in native mode | ✓ |  |
+| 229 | SBC HL,DE | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 230 | LD (nn),DE | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Z80 ED instruction in native mode | ✓ |  |
+| 231 | NEG | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 232 | RETN | 35.00 | 25.00 | 7.00 | 3.00 | 610 | Z80 ED instruction in native mode | ✓ | return alone (CALL+RET pair minus CALL) |
+| 233 | IM 1 | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 234 | LD A,I | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Z80 ED instruction in native mode | ✓ |  |
+| 235 | IN E,(C) | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Z80 ED instruction in native mode | ✓ |  |
+| 236 | OUT (C),E | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 237 | ADC HL,DE | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 238 | LD DE,(nn) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Z80 ED instruction in native mode | ✓ |  |
+| 239 | NEG | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 240 | RETN | 35.00 | 25.00 | 7.00 | 3.00 | 610 | Z80 ED instruction in native mode | ✓ | return alone (CALL+RET pair minus CALL) |
+| 241 | IM 2 | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 242 | LD A,R | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Z80 ED instruction in native mode | ✓ |  |
+| 243 | IN H,(C) | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Z80 ED instruction in native mode | ✓ |  |
+| 244 | OUT (C),H | 12.00 | 12.00 | 0.00 | 0.00 | 209 | Z80 ED instruction in native mode | ✓ |  |
+| 245 | SBC HL,HL | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 246 | LD (nn),HL | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Z80 ED instruction in native mode | ✓ |  |
+| 247 | NEG | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 248 | RETN | 35.00 | 25.00 | 7.00 | 3.00 | 610 | Z80 ED instruction in native mode | ✓ | return alone (CALL+RET pair minus CALL) |
+| 249 | IM 0 | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 250 | RRD | 51.00 | 45.00 | 0.00 | 6.00 | 889 | Z80 ED instruction in native mode | ✓ |  |
+| 251 | IN L,(C) | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Z80 ED instruction in native mode | ✓ |  |
+| 252 | OUT (C),L | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 253 | ADC HL,HL | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 254 | LD HL,(nn) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Z80 ED instruction in native mode | ✓ |  |
+| 255 | NEG | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 256 | RETN | 35.00 | 25.00 | 7.00 | 3.00 | 610 | Z80 ED instruction in native mode | ✓ | return alone (CALL+RET pair minus CALL) |
+| 257 | IM 0 | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 258 | RLD | 51.00 | 45.00 | 0.00 | 6.00 | 889 | Z80 ED instruction in native mode | ✓ |  |
+| 259 | IN F,(C) | 13.00 | 13.00 | 0.00 | 0.00 | 227 | Z80 ED instruction in native mode | ✓ |  |
+| 260 | OUT (C),0 | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 261 | SBC HL,SP | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 262 | LD (nn),SP | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Z80 ED instruction in native mode | ✓ |  |
+| 263 | NEG | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 264 | RETN | 35.00 | 25.00 | 7.00 | 3.00 | 610 | Z80 ED instruction in native mode | ✓ | return alone (CALL+RET pair minus CALL) |
+| 265 | IM 1 | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 266 | NOP | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 267 | IN A,(C) | 16.00 | 16.00 | 0.00 | 0.00 | 279 | Z80 ED instruction in native mode | ✓ |  |
+| 268 | OUT (C),A | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 269 | ADC HL,SP | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 270 | LD SP,(nn) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | Z80 ED instruction in native mode | ✓ |  |
+| 271 | NEG | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 272 | RETN | 35.00 | 25.00 | 7.00 | 3.00 | 610 | Z80 ED instruction in native mode | ✓ | return alone (CALL+RET pair minus CALL) |
+| 273 | IM 2 | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 274 | NOP | 8.00 | 8.00 | 0.00 | 0.00 | 139 | Z80 ED instruction in native mode | ✓ |  |
+| 275 | LDI | 31.00 | 25.00 | 0.00 | 6.00 | 540 | Z80 ED instruction in native mode | ✓ |  |
+| 276 | CPI | 24.00 | 21.00 | 0.00 | 3.00 | 418 | Z80 ED instruction in native mode | ✓ |  |
+| 277 | INI | 24.00 | 21.00 | 0.00 | 3.00 | 418 | Z80 ED instruction in native mode | ✓ |  |
+| 278 | OUTI | 24.00 | 21.00 | 0.00 | 3.00 | 418 | Z80 ED instruction in native mode | ✓ |  |
+| 279 | LDD | 31.00 | 25.00 | 0.00 | 6.00 | 540 | Z80 ED instruction in native mode | ✓ |  |
+| 280 | CPD | 24.00 | 21.00 | 0.00 | 3.00 | 418 | Z80 ED instruction in native mode | ✓ |  |
+| 281 | IND | 24.00 | 21.00 | 0.00 | 3.00 | 418 | Z80 ED instruction in native mode | ✓ |  |
+| 282 | OUTD | 24.00 | 21.00 | 0.00 | 3.00 | 418 | Z80 ED instruction in native mode | ✓ |  |
+| 283 | LDIR | 42.50 | 32.75 | 3.75 | 6.00 | 741 | Z80 ED instruction in native mode | ✓ | per element (16 elements) |
+| 284 | CPIR | 35.50 | 28.75 | 3.75 | 3.00 | 619 | Z80 ED instruction in native mode | ✓ | per element (16 elements) |
+| 285 | INIR | 35.50 | 28.75 | 3.75 | 3.00 | 619 | Z80 ED instruction in native mode | ✓ | per element (16 elements) |
+| 286 | OTIR | 35.50 | 28.75 | 3.75 | 3.00 | 619 | Z80 ED instruction in native mode | ✓ | per element (16 elements) |
+| 287 | LDDR | 42.50 | 32.75 | 3.75 | 6.00 | 741 | Z80 ED instruction in native mode | ✓ | per element (16 elements) |
+| 288 | CPDR | 35.50 | 28.75 | 3.75 | 3.00 | 619 | Z80 ED instruction in native mode | ✓ | per element (16 elements) |
+| 289 | INDR | 35.50 | 28.75 | 3.75 | 3.00 | 619 | Z80 ED instruction in native mode | ✓ | per element (16 elements) |
+| 290 | OTDR | 35.50 | 28.75 | 3.75 | 3.00 | 619 | Z80 ED instruction in native mode | ✓ | per element (16 elements) |
+
+### D.2 Z80 base instructions in native mode (examples)
+
+| Instruction | Total | Execution | Fetch wait | Data wait | ns | Board | Note |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| CALLL nnnn (no return) | 27.75 | 20.00 | 4.75 | 3.00 | 484 | ✓ | call without return (helper) |
+| CALLQ nnnnnnnn (no return) | 27.75 | 20.00 | 4.75 | 3.00 | 484 | ✓ | call without return (helper) |
+| CALL nn (no return) | 28.12 | 20.00 | 5.12 | 3.00 | 490 | ✓ | call without return (helper) |
+| NOP | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| LD A,B | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| LD A,n | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| LD BC,nn | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| ADD A,B | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| INC B | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| ADD HL,BC | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| INC BC | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| LD A,(HL) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | ✓ |  |
+| LD (HL),A | 11.00 | 8.00 | 0.00 | 3.00 | 192 | ✓ |  |
+| LD A,(nn) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | ✓ |  |
+| LD HL,(nn) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | ✓ |  |
+| LD A,(IX+d) | 11.00 | 8.00 | 0.00 | 3.00 | 192 | ✓ |  |
+| LD (IX+d),A | 11.00 | 8.00 | 0.00 | 3.00 | 192 | ✓ |  |
+| PUSH BC | 15.00 | 12.00 | 0.00 | 3.00 | 261 | ✓ |  |
+| POP DE | 16.00 | 13.00 | 0.00 | 3.00 | 279 | ✓ |  |
+| EX DE,HL | 16.00 | 16.00 | 0.00 | 0.00 | 279 | ✓ |  |
+| EXX | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| EX (SP),HL | 23.00 | 17.00 | 0.00 | 6.00 | 401 | ✓ |  |
+| RLCA | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| BIT 3,A | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| SET 3,(HL) | 30.00 | 24.00 | 0.00 | 6.00 | 523 | ✓ |  |
+| JR e (taken) | 16.75 | 12.00 | 4.75 | 0.00 | 292 | ✓ |  |
+| JR NZ,e (not taken) | 8.00 | 8.00 | 0.00 | 0.00 | 139 | ✓ |  |
+| JR Z,e (taken) | 16.75 | 12.00 | 4.75 | 0.00 | 292 | ✓ |  |
+| JP nn | 17.12 | 12.00 | 5.12 | 0.00 | 298 | ✓ |  |
+| DJNZ e (taken) | 20.75 | 16.00 | 4.75 | 0.00 | 362 | ✓ |  |
+| CALL nn + RET (pair) | 59.12 | 41.00 | 12.12 | 6.00 | 1031 | ✓ |  |
+| RET | 31.00 | 21.00 | 7.00 | 3.00 | 540 | ✓ | return alone (CALL+RET pair minus CALL) |
+
+### D.3 Not measured
+
+| ids | Reason |
+| --- | --- |
+| 40–66, 193–210 | FPU: not in the cartridge build (R8064_NOFPU) |
+| 155, 159 | removed from the core |
+| 175–180, 182–183 | system/privileged: changes mode, CRs or resets (not measured in a loop) |
+| 192 | LDCTX loads the whole register context (not measured in a loop) |
+| 70–71, 74, 82–83, 86, 94–95, 98, 163–168 | no separate operand form (encoded by another id) |
+<!-- END APPENDIX_D -->

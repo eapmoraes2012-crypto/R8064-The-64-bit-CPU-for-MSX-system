@@ -3,9 +3,9 @@
 64-bit CPU derived from the Z80 (with Z80/R800 timing modes and a native mode), built module by module for an MSX slot.
 Clock target: 57.28 MHz (3.58 MHz x 16).
 
-**Version 0.0 Alpha** (REV47, 17/11/2026). Nothing has been verified on hardware yet.
+**Preliminary 2026** (REV48, 20/11/2026). First run on the Tang Nano 20K on 20/11/2026: the core runs from the embedded SDRAM and 256 of 256 measured instruction timings equal the simulation (timing bench, `modulos/13_soc/bench`). The MSX cartridge has not been tested on hardware yet.
 
-**Datasheet:** [docs/R8064_Datasheet.md](docs/R8064_Datasheet.md) (Appendix B, instruction set tables: [docs/R8064_Datasheet_Appendix_B.md](docs/R8064_Datasheet_Appendix_B.md)).
+**Datasheet:** [R8064 - Datasheet (Preliminary) 2026](docs/R8064_Datasheet.md), with the complete instruction list (Appendix C) and the measured timing (Appendix D); Appendix B, instruction tables by group: [docs/R8064_Datasheet_Appendix_B.md](docs/R8064_Datasheet_Appendix_B.md). Timing spreadsheet: [docs/timings](docs/timings).
 
 **MSX software:** user guide [docs/R8064_MSX_Software.md](docs/R8064_MSX_Software.md); files in [modulos/13_soc/msx](modulos/13_soc/msx/README.md) — `R8064.COM` (MSX-DOS) and the `r8064io.asm` Z80 driver to send and read data and programs to/from the R8064 through ports 0Bh–0Dh.
 
