@@ -5,7 +5,8 @@
 #   Appendix D (measured timing): modulos/13_soc/bench/ref_rev48.json (gen_meas.py, REV48 RTL, native mode, in cache), confirmed on
 #              the Tang Nano 20K by the timing bench (docs/timings/bench_tang20k_REV48_2026-11-20.txt);
 #   class summary for chapter 6.
-# The tables are written between the markers <!-- BEGIN name --> / <!-- END name --> of docs/R8064_Datasheet.md.
+# The tables are written between the markers <!-- BEGIN name --> / <!-- END name --> of docs/R8064_Datasheet_Appendix_C.md,
+# docs/R8064_Datasheet_Appendix_D.md and (class summary) docs/R8064_Datasheet.md.
 # Usage: python3 gen_doc_tables.py [<datasheet.md>]
 import os, sys, re, json, csv, collections
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..', '..'))
@@ -144,10 +145,12 @@ for c in sorted(g, key=lambda c: sum(v['clocks'] for v in g[c]) / len(g[c])):
     S.append('| %s | %d | %.2f | %.2f | %.2f | %.2f | %.2f |' % (c, len(l), a(lambda v: v['clocks']), a(lambda v: v['exec']), a(lambda v: v['wait']),
              min(v['clocks'] for v in l), max(v['clocks'] for v in l)))
 
-txt = open(DS, encoding='utf-8').read()
-for name, block in (('APPENDIX_C', C), ('APPENDIX_D', D), ('TIMING_SUMMARY', S)):
+DOCS = os.path.dirname(DS)
+for fn, name, block in (('R8064_Datasheet_Appendix_C.md', 'APPENDIX_C', C), ('R8064_Datasheet_Appendix_D.md', 'APPENDIX_D', D),
+                        (os.path.basename(DS), 'TIMING_SUMMARY', S)):
+    f = os.path.join(DOCS, fn); txt = open(f, encoding='utf-8').read()
     b, e = '<!-- BEGIN %s -->' % name, '<!-- END %s -->' % name
-    assert b in txt and e in txt, name
+    assert b in txt and e in txt, (fn, name)
     txt = txt[:txt.index(b) + len(b)] + '\n' + '\n'.join(block) + '\n' + txt[txt.index(e):]
-open(DS, 'w', encoding='utf-8').write(txt)
+    open(f, 'w', encoding='utf-8').write(txt)
 print('C: %d ext + %d base forms; D: %d rows; summary %d classes' % (len(ext), len(base), len(D), len(S) - 2))
